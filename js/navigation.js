@@ -12,14 +12,10 @@ class Navigation {
     this.isScrolling = false;
     this.isMobileMenuOpen = false;
     
-    
     // Contact form elements
     this.contactForm = document.getElementById('contact-form');
     
     this.init();
-
-    this.setupGameTrigger(); // ADD THIS LINE
-
   }
   
   init() {
@@ -171,23 +167,6 @@ class Navigation {
       }, 2000);
     });
   }
-
-setupGameTrigger() {
-  const faceElement = document.getElementById('face');
-  if (faceElement) {
-    faceElement.style.cursor = 'pointer';
-    faceElement.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation(); // ADD THIS LINE
-      console.log("Face clicked - opening game!"); // Add this for testing
-      if (window.openFlyingJohnnyGame) {
-        window.openFlyingJohnnyGame();
-      } else {
-        console.log("Game function not found");
-      }
-    });
-  }
-}
   
   showFormMessage(message, type) {
     // Remove existing message
@@ -312,19 +291,14 @@ setupGameTrigger() {
     });
     
     // Also handle logo click to scroll to top
-const logo = document.querySelector('.logo');
-if (logo) {
-  logo.addEventListener('click', (e) => {
-    // Don't scroll to top if clicking the face image OR if target is the face
-    if (e.target.id === 'face' || e.target.closest('#face')) {
-      e.preventDefault();
-      e.stopPropagation();
-      return; // Do nothing, let the game trigger handle it
+    const logo = document.querySelector('.logo');
+    if (logo) {
+      logo.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToTop();
+      });
     }
-    e.preventDefault();
-    this.scrollToTop();
-  });
-}
+  }
   
   setupScrollEffects() {
     let ticking = false;
