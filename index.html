@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Johnny Jansen - Director & Creative</title>
+    <link rel="icon" type="image/x-icon" href="./static/favicon.ico">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="./styles/variables.css">
+    <link rel="stylesheet" href="./styles/base.css">
+    <link rel="stylesheet" href="./styles/components.css">
+    <link rel="stylesheet" href="./styles/sections.css">
+    <link rel="stylesheet" href="./styles/backgrounds.css">
+    <link rel="stylesheet" href="./styles/responsive.css">
+    
+    <style>
+        /* Enhanced Dropdown Navigation System */
+.nav-dropdown-system {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+        
+        .nav-item {
+            position: relative;
+        }
+        
+        .nav-primary {
+            padding: var(--space-sm) var(--space-lg);
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-full);
+            color: var(--white);
+            font-family: var(--font-primary);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all var(--transition-medium);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            min-width: 85px;
+            justify-content: center;
+            height: 40px;
+        }
+        
+        .nav-primary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(55, 255, 139, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .nav-primary.active {
+            border-color: var(--primary-color);
+            background: rgba(55, 255, 139, 0.1);
+            color: var(--primary-color);
+        }
+        
+        /* Dropdown Arrow */
+        .nav-primary.has-dropdown::after {
+            content: "▼";
+            font-size: 10px;
+            margin-left: var(--space-xs);
+            transition: transform var(--transition-medium);
+        }
+        
+        .nav-item:hover .nav-primary.has-dropdown::after {
+            transform: rotate(180deg);
+        }
+        
+        /* Dropdown Menu */
+        .nav-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(-10px);
+            transition: all var(--transition-medium);
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .nav-item:hover .nav-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .nav-dropdown-item {
+            display: block;
+            padding: var(--space-sm) var(--space-md);
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-medium);
+            font-size: var(--font-size-sm);
+            text-transform: none;
+            letter-spacing: 0;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .nav-dropdown-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .nav-dropdown-item:hover {
+            background: rgba(55, 255, 139, 0.1);
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        /* Special Button Styling */
+        .nav-primary.remoose {
+            background: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
+            border-color: transparent;
+            color: var(--white);
+        }
+        
+        .nav-primary.remoose:hover {
+            background: linear-gradient(135deg, #FEE140 0%, #FA709A 100%);
+            box-shadow: 0 0 15px rgba(250, 112, 154, 0.4);
+            color: var(--white);
+        }
+        
+        .nav-primary.contact {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.0);
+            color: var(--primary-color);
+        }
+
+        .nav-primary.contact:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.0);
+            color: var(--white);
+            box-shadow: none;
+        }
+        
+        .remoose-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: var(--space-xs);
+        }
+        
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            .nav-dropdown-system {
+                flex-direction: column;
+                gap: var(--space-sm);
+                width: 100%;
+                padding: var(--space-lg);
+            }
+            
+            .nav-primary {
+                width: 100%;
+                padding: var(--space-md);
+                justify-content: center;
+            }
+            
+            .nav-dropdown {
+                position: static;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                margin-top: var(--space-sm);
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .nav-item:hover .nav-dropdown {
+                transform: none;
+            }
+            
+            .nav-dropdown-item {
+                padding: var(--space-sm) var(--space-md);
+                text-align: center;
+            }
+            
+            .nav-dropdown-item:hover {
+                transform: none;
+                background: rgba(55, 255, 139, 0.2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="main-nav">
+        <div class="container">
+<a href="#" class="logo">
+    <img src="./static/logo.png" alt="Johnny Jansen" class="logo-img" id="face">
+    <span class="logo-text">Johnny Jansen</span>
+</a>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <!-- Dropdown Navigation System -->
+            <div class="nav-menu">
+                <div class="nav-dropdown-system">
+                    <!-- Work Dropdown -->
+                    <div class="nav-item">
+                        <button class="nav-primary has-dropdown">
+                            Work
+                        </button>
+                        <div class="nav-dropdown">
+                            <a href="#music-video" class="nav-dropdown-item">Music Videos</a>
+                            <a href="#documentary" class="nav-dropdown-item">Documentary</a>
+                            <a href="#motion-design" class="nav-dropdown-item">Motion Design</a>
+                            <a href="#ugc" class="nav-dropdown-item">UGC Content</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Story Dropdown -->
+                    <div class="nav-item">
+                        <button class="nav-primary has-dropdown">
+                            Story
+                        </button>
+                        <div class="nav-dropdown">
+                            <a href="#about" class="nav-dropdown-item">About</a>
+                            <a href="career.html" class="nav-dropdown-item">Career Timeline</a>
+                            <!-- <a href="#awards" class="nav-dropdown-item">Awards</a> -->
+                        </div>
+                    </div>
+                    
+                    <!-- Remoose (Direct Link) -->
+                    <a href="#remoose" style="display: flex; align-items: center; padding: 8px; min-width: 60px; flex-shrink: 0;">
+                        <img src="./static/logo-remoose-white.png" alt="Remoose" style="height: 40px; width: auto; flex-shrink: 0;">
+                    </a>
+                    
+                    <!-- Contact (Direct Link) -->
+                    <!-- <a href="#contact" class="nav-primary contact">
+                        Contact
+                    </a> -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+<section class="hero">
+    <div class="hero-video">
+        <img src="static/hero-animation.webp" alt="Hero Animation" class="hero-webp">
+    </div>
+    <div class="hero-content">
+        <!-- Add interactive face here -->
+        <div class="hero-face">
+            <img src="./static/face/cc.png" alt="Johnny Face" id="hero-face" class="hero-face-img">
+        </div>
+        <h1>Johnny Jansen</h1>
+        <p>Award-Winning Director & Creative Visionary</p>
+        <a href="#music-video" class="cta-button">Explore My Work</a>
+    </div>
+</section>
+
+    <!-- About Section -->
+    <section id="about" class="section" style="background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);">
+        <div class="container">
+            <div class="section-header">
+                <h2>About Johnny</h2>
+                <p>The creative vision behind award-winning storytelling</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: center;">
+                <div>
+                    <h3 style="color: var(--white); font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">From Vision to Recognition</h3>
+                    <p style="color: rgba(255,255,255,0.9); font-size: var(--font-size-lg); line-height: 1.7; margin-bottom: var(--space-md);">
+                        Over a decade of storytelling evolution, from film production assistant to award-winning director. My work spans music videos, documentaries, motion design, and pioneering UGC strategies for global brands.
+                    </p>
+                    <p style="color: rgba(255,255,255,0.9); font-size: var(--font-size-lg); line-height: 1.7; margin-bottom: var(--space-lg);">
+                        As Co-founder and Chief Creative Officer of Remoose, I'm building the future of digital communication while continuing to direct compelling narratives that resonate with audiences worldwide.
+                    </p>
+                    <a href="career.html" class="cta-button">View Full Career Timeline</a>
+                </div>
+                <div style="text-align: center;">
+                    <div style="background: rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: var(--space-xl);">
+                        <h4 style="color: var(--white); margin-bottom: var(--space-lg);">By The Numbers</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg);">
+                            <div>
+                                <div style="font-size: var(--font-size-3xl); color: var(--primary-color); font-weight: bold;">25+</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: var(--font-size-sm);">Music Videos</div>
+                            </div>
+                            <div>
+                                <div style="font-size: var(--font-size-3xl); color: var(--primary-color); font-weight: bold;">5M+</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: var(--font-size-sm);">Users Managed</div>
+                            </div>
+                            <div>
+                                <div style="font-size: var(--font-size-3xl); color: var(--primary-color); font-weight: bold;">10M+</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: var(--font-size-sm);">Total Impressions</div>
+                            </div>
+                            <div>
+                                <div style="font-size: var(--font-size-3xl); color: var(--primary-color); font-weight: bold;">4</div>
+                                <div style="color: rgba(255,255,255,0.8); font-size: var(--font-size-sm);">Major Awards</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Remoose Section -->
+<section id="remoose" class="section remoose-section">
+    <!-- Dynamic Background Grid (will be populated by API) -->
+    <div class="remoose-background-grid" id="background-grid">
+        <!-- Background items will be inserted here -->
+    </div>
+    
+    <!-- Content overlay -->
+    <div class="remoose-overlay"></div>
+    
+    <div class="container">
+        <div class="section-header">
+            <img src="./static/logo-remoose.png" alt="Remoose" class="remoose-main-logo">
+            <!-- <p>Co-founder & Chief Creative Officer</p> -->
+        </div>
+
+        <div class="remoose-intro">
+            <h3>Crowd Sourced Storytelling</h3>
+            <p>As Chief Creative Officer and Head of Content at Remoose, I specialize in UGC content development, having created successful systems for both LEGO and Disney. Explore my latest interactive scenes and animations.</p>
+    <a href="#" class="cta-button" onclick="document.getElementById('remoose-grid').scrollIntoView({behavior: 'smooth'})">Click on a scene below to try Remoose</a>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading latest Remoose scenes...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error" style="display: none;">
+            <p>Unable to load Remoose scenes. Please try again later.</p>
+        </div>
+
+        <!-- Main Content Grid (will be populated by API) -->
+        <div class="remoose-grid" id="remoose-grid" style="display: none;">
+            <!-- Dynamic content will be inserted here -->
+        </div>
+    </div>
+</section>
+
+    <!-- Music Video Section -->
+    <section id="music-video" class="section section-bg-image" data-bg="music-video">
+        <div class="section-overlay"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Music Video Director</h2>
+                <p>Award-winning music video director with recognition from Leo Awards, Prism Prize, WCMA, and Juno Award nomination</p>
+            </div>
+
+            <div class="awards-grid">
+                <div class="award-card">
+                    <h3>Leo Award</h3>
+                    <p>Outstanding Achievement in Music Videos</p>
+                </div>
+                <div class="award-card">
+                    <h3>Prism Prize</h3>
+                    <p>Canadian Music Video Recognition</p>
+                </div>
+                <div class="award-card">
+                    <h3>WCMA</h3>
+                    <p>Western Canadian Music Awards</p>
+                </div>
+                <div class="award-card">
+                    <h3>Juno Nomination</h3>
+                    <p>Best Music Video 2020</p>
+                </div>
+            </div>
+
+            <div class="demo-reel">
+                <h3>Demo Reel</h3>
+                <div class="video-embed">
+                    <iframe src="https://player.vimeo.com/video/387499815" 
+                            frameborder="0" 
+                            allow="autoplay; fullscreen; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <p>A showcase of my best music video work featuring dynamic cinematography and creative storytelling</p>
+            </div>
+
+            <div class="video-grid">
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_VIDEO_ID" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Featured Music Video</h4>
+                        <p>Award-winning piece showcasing innovative visual storytelling</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Notable Work</h4>
+                        <p>Creative collaboration with emerging artists</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_VIDEO_ID" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Recent Project</h4>
+                        <p>Latest work demonstrating evolving artistic vision</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- UGC Section -->
+    <section id="ugc" class="section section-bg-pattern" data-pattern="dots">
+        <div class="section-overlay"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>UGC Specialist</h2>
+                <p>Expert in user-generated content strategies, community engagement, and interactive storytelling experiences</p>
+            </div>
+
+            <div class="ugc-projects">
+                <div class="project-card">
+                    <h3>LEGO Life - Build Your Own Adventure</h3>
+                    <p>Created a serialized storytelling experience for LEGO Life community spanning 2 seasons. Each week, the community voted on which bricks to use and commented on story direction.</p>
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_LEGO_VIDEO" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <h3>Club Penguin - Businesmoose</h3>
+                    <p>As "Businesmoose," created engaging UGC content for the Club Penguin community, moderating the game environment while producing creative and interactive videos.</p>
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_CP_VIDEO" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <a href="#remoose" class="internal-link">→ Learn more about Remoose</a>
+                </div>
+
+                <div class="project-card">
+                    <h3>UGC Strategy Consulting</h3>
+                    <p>Developed comprehensive UGC content plans and systems for major brands including LEGO and Disney, focusing on community-driven storytelling and engagement strategies.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentary Section -->
+    <section id="documentary" class="section section-bg-image" data-bg="documentary">
+        <div class="section-overlay"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Documentary Filmmaker</h2>
+                <p>Director of compelling feature documentaries exploring human stories and cultural phenomena</p>
+            </div>
+
+            <div class="doc-grid">
+                <div class="doc-card">
+                    <div class="doc-status">In Post-Production</div>
+                    <h3>Most Likely to Become Famous</h3>
+                    <p>A meta-documentary about bringing our best friend Kyle Tubbs back to life after his tragic death from a fentanyl overdose at 27. The film blurs reality and fiction, exploring grief, artistry, and the opioid epidemic through the lens of friendship and creative collaboration.</p>
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/286303683" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <p class="runtime">Runtime: 90 minutes | A story of resurrection through art</p>
+                </div>
+
+                <div class="doc-card">
+                    <div class="doc-status">In Development</div>
+                    <h3>The Club Penguin Story</h3>
+                    <p>A three-episode documentary series exploring how Club Penguin, created by a few dads in a small Canadian town, became the world's most popular children's computer game before selling to Disney for $350 million.</p>
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/880652226" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <p class="runtime">3 Episodes | The rise and fall of a digital phenomenon</p>
+                </div>
+            </div>
+
+            <div class="ocean-kitchen">
+                <h3>Ocean Kitchen</h3>
+                <p>Short-form documentary series for Ocean Wise exploring sustainable seafood and ocean conservation</p>
+                <div class="video-grid">
+                    <div class="video-card">
+                        <div class="video-embed">
+                            <iframe src="https://player.vimeo.com/video/YOUR_OCEAN_VIDEO_1" 
+                                    frameborder="0" 
+                                    allow="autoplay; fullscreen; picture-in-picture" 
+                                    allowfullscreen>
+                            </iframe>
+                        </div>
+                        <div class="video-info">
+                            <h4>Sustainable Fishing</h4>
+                            <p>Exploring responsible fishing practices</p>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-embed">
+                            <iframe src="https://player.vimeo.com/video/YOUR_OCEAN_VIDEO_2" 
+                                    frameborder="0" 
+                                    allow="autoplay; fullscreen; picture-in-picture" 
+                                    allowfullscreen>
+                            </iframe>
+                        </div>
+                        <div class="video-info">
+                            <h4>Ocean Conservation</h4>
+                            <p>The impact of climate change on marine life</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Motion Design Section -->
+    <section id="motion-design" class="section section-bg-pattern" data-pattern="waves">
+        <div class="section-overlay"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Motion Designer</h2>
+                <p>Advanced animation and After Effects work for high-level clients, bringing brands to life through dynamic visual storytelling</p>
+            </div>
+
+            <div class="demo-reel">
+                <h3>Motion Design Reel</h3>
+                <div class="video-embed">
+                    <iframe src="https://player.vimeo.com/video/YOUR_MOTION_REEL_ID" 
+                            frameborder="0" 
+                            allow="autoplay; fullscreen; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <p>Showcase of advanced animation work including brand campaigns, title sequences, and commercial projects</p>
+            </div>
+
+            <div class="video-grid">
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_1" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Brand Campaign</h4>
+                        <p>High-end commercial animation for major client</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_2" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Title Sequence</h4>
+                        <p>Creative opening sequence design</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_3" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Explainer Animation</h4>
+                        <p>Complex concept visualization</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_4" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Logo Animation</h4>
+                        <p>Dynamic brand identity design</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_5" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Product Showcase</h4>
+                        <p>3D product visualization and animation</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://player.vimeo.com/video/YOUR_MOTION_6" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Social Media Campaign</h4>
+                        <p>Animated content for digital platforms</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Awards Section -->
+    <!-- <section id="awards" class="section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <div class="section-header">
+                <h2>Awards & Recognition</h2>
+                <p>Recognized for excellence in visual storytelling and creative direction</p>
+            </div>
+            
+            <div class="awards-grid" style="max-width: 800px; margin: 0 auto;">
+                <div class="award-card">
+                    <h3>Juno Award Nomination</h3>
+                    <p>Best Music Video 2020</p>
+                    <small style="color: rgba(255,255,255,0.7);">Canada's Premier Music Awards</small>
+                </div>
+                <div class="award-card">
+                    <h3>Leo Award Winner</h3>
+                    <p>Outstanding Achievement in Music Videos</p>
+                    <small style="color: rgba(255,255,255,0.7);">BC Film Industry Excellence</small>
+                </div>
+                <div class="award-card">
+                    <h3>Prism Prize</h3>
+                    <p>Canadian Music Video Recognition</p>
+                    <small style="color: rgba(255,255,255,0.7);">Cultural Impact & Innovation</small>
+                </div>
+                <div class="award-card">
+                    <h3>WCMA Winner</h3>
+                    <p>Western Canadian Music Awards</p>
+                    <small style="color: rgba(255,255,255,0.7);">Regional Excellence in Video</small>
+                </div>
+            </div>
+        </div>
+    </section> -->
+
+
+
+    <!-- Contact Section -->
+    <section id="contact" class="section section-bg-image" data-bg="contact">
+        <div class="section-overlay"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Get In Touch</h2>
+                <p>Ready to create something amazing together? Let's talk about your next project</p>
+            </div>
+
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-card">
+                        <h3>Let's Collaborate</h3>
+                        <p>Whether you need a music video director, documentary filmmaker, or UGC specialist, I'm here to bring your vision to life.</p>
+                        
+                        <div class="contact-details">
+                            <div class="contact-item">
+                                <h4>Services</h4>
+                                <ul>
+                                    <li>Music Video Direction</li>
+                                    <li>Documentary Production</li>
+                                    <li>Motion Design & Animation</li>
+                                    <li>UGC Strategy & Content</li>
+                                    <li>Creative Consulting</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="contact-item">
+                                <h4>Awards & Recognition</h4>
+                                <ul>
+                                    <li>Leo Award Winner</li>
+                                    <li>Prism Prize Nominee</li>
+                                    <li>WCMA Winner</li>
+                                    <li>Juno Award Nominee</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form-wrapper">
+                    <form class="contact-form" id="contact-form">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="company">Company/Organization</label>
+                            <input type="text" id="company" name="company">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="projectType">Project Type</label>
+                            <select id="projectType" name="projectType">
+                                <option value="">Select a project type</option>
+                                <option value="music-video">Music Video</option>
+                                <option value="documentary">Documentary</option>
+                                <option value="motion-design">Motion Design</option>
+                                <option value="ugc">UGC Content</option>
+                                <option value="consulting">Creative Consulting</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="budget">Budget Range</label>
+                            <select id="budget" name="budget">
+                                <option value="">Select budget range</option>
+                                <option value="under-10k">Under $10,000</option>
+                                <option value="10k-25k">$10,000 - $25,000</option>
+                                <option value="25k-50k">$25,000 - $50,000</option>
+                                <option value="50k-100k">$50,000 - $100,000</option>
+                                <option value="100k-plus">$100,000+</option>
+                                <option value="tbd">To be discussed</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timeline">Timeline</label>
+                            <select id="timeline" name="timeline">
+                                <option value="">Select timeline</option>
+                                <option value="asap">ASAP</option>
+                                <option value="1-month">Within 1 month</option>
+                                <option value="3-months">Within 3 months</option>
+                                <option value="6-months">Within 6 months</option>
+                                <option value="flexible">Flexible</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="message">Project Details *</label>
+                            <textarea id="message" name="message" rows="6" required placeholder="Tell me about your project, vision, and goals..."></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <button type="submit" class="submit-button">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://instagram.com/johnnyjansen" target="_blank" class="social-link" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </a>
+                <a href="https://twitter.com/johnnyjansen" target="_blank" class="social-link" aria-label="Twitter/X">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </a>
+                <a href="https://youtube.com/@johnnyjansen" target="_blank" class="social-link" aria-label="YouTube">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                </a>
+                <a href="https://linkedin.com/in/johnnyjansen" target="_blank" class="social-link" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                </a>
+            </div>
+            <p>&copy; 2025 Johnny Jansen. All rights reserved.</p>
+            <p>Award-winning director, UGC specialist, and creative visionary</p>
+        </div>
+    </footer>
+
+    <!-- Enhanced Navigation Script -->
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+    
+    // Mobile menu toggle
+    if (mobileToggle && navMenu) {
+        mobileToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            mobileToggle.classList.toggle('active');
+            navMenu.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (navMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+    }
+    
+    // Close menu when clicking nav links
+    document.querySelectorAll('.nav-dropdown-item, a[href^="#"]').forEach(link => {
+        link.addEventListener('click', () => {
+            if (navMenu && navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
+                mobileToggle.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (navMenu && navMenu.classList.contains('active') && 
+            !navMenu.contains(e.target) && 
+            !mobileToggle.contains(e.target)) {
+            navMenu.classList.remove('active');
+            mobileToggle.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+});
+
+    </script>
+    <script>
+class RemooseSection {
+    constructor() {
+        this.apiUrl = 'https://remoose.com/api/scene/recent?filter_by_user=true&username=03beeeed-f188-4183-ae85-abc09e3cca9e&page=1';
+        this.baseUrl = 'https://remoose.com';
+        this.scenes = [];
+        
+        this.init();
+    }
+
+    async init() {
+        try {
+            await this.loadScenes();
+            this.renderBackgroundGrid();
+            this.renderMainGrid();
+            this.hideLoading();
+        } catch (error) {
+            this.showError();
+            console.error('Failed to load Remoose scenes:', error);
+        }
+    }
+
+    async loadScenes() {
+        const response = await fetch(this.apiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        this.scenes = await response.json();
+        this.validScenes = this.scenes.filter(scene => !scene.failedToRender);
+        this.backgroundScenes = this.scenes;
+    }
+
+renderBackgroundGrid() {
+    const backgroundGrid = document.getElementById('background-grid');
+    backgroundGrid.innerHTML = '';
+
+    // Calculate how many items we need to fill the screen
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const itemSize = 150; // Size of each grid item
+    const itemsNeeded = Math.ceil((screenWidth / itemSize) * (screenHeight / itemSize)) + 20; // Extra for safety
+    
+    for (let i = 0; i < itemsNeeded; i++) {
+        const scene = this.backgroundScenes[i % this.backgroundScenes.length];
+        
+        const bgItem = document.createElement('a');
+        bgItem.className = 'remoose-bg-item';
+        bgItem.href = `${this.baseUrl}${scene.sceneURL}`;
+        bgItem.target = '_blank';
+        bgItem.rel = 'noopener noreferrer';
+        
+        const img = document.createElement('img');
+        img.src = scene.thumbnail; // Use thumbnail instead of webpURL
+        img.alt = `Remoose Scene ${scene.id}`;
+        img.loading = 'lazy';
+        
+        img.onerror = () => {
+            img.src = scene.webpURL || scene.pngURL; // Fallback to webp or png
+        };
+        
+        bgItem.appendChild(img);
+        backgroundGrid.appendChild(bgItem);
+    }
+}
+
+    renderMainGrid() {
+        const mainGrid = document.getElementById('remoose-grid');
+        mainGrid.innerHTML = '';
+
+        const displayScenes = this.validScenes.length > 0 ? this.validScenes : this.scenes.slice(0, 6);
+        
+        displayScenes.slice(0, 6).forEach(scene => {
+            const gridItem = this.createGridItem(scene);
+            mainGrid.appendChild(gridItem);
+        });
+    }
+
+    createGridItem(scene) {
+        const item = document.createElement('a');
+        item.className = 'remoose-embed';
+        item.href = `${this.baseUrl}${scene.sceneURL}`;
+        item.target = '_blank';
+        item.rel = 'noopener noreferrer';
+        
+        const img = document.createElement('img');
+        img.src = scene.webpURL;
+        img.alt = `Remoose Scene by ${scene.username}`;
+        img.loading = 'lazy';
+        
+        img.onerror = () => {
+            img.src = scene.thumbnail || scene.pngURL;
+        };
+        
+        const sceneInfo = document.createElement('div');
+        sceneInfo.className = 'scene-info';
+        
+        const tags = document.createElement('div');
+        tags.className = 'scene-tags';
+        tags.textContent = scene.tags.slice(0, 3).join(' ');
+        
+        const date = document.createElement('div');
+        date.className = 'scene-date';
+        date.textContent = this.formatDate(scene.date);
+        
+        sceneInfo.appendChild(tags);
+        sceneInfo.appendChild(date);
+        
+        item.appendChild(img);
+        item.appendChild(sceneInfo);
+        
+        return item;
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    }
+
+    hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('remoose-grid').style.display = 'grid';
+    }
+
+    showError() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+    }
+}
+
+// Initialize Remoose section when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit to ensure other scripts are loaded
+    setTimeout(() => {
+        new RemooseSection();
+    }, 500);
+});
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    var faces = [
+        "static/face/cl.png",
+        "static/face/tl.png", 
+        "static/face/ct.png",
+        "static/face/tr.png",
+        "static/face/cr.png",
+        "static/face/br.png",
+        "static/face/bc.png",
+        "static/face/bl.png"
+    ];
+
+    // Function to update face direction
+    function updateFace(faceElement, mouseX, mouseY) {
+        var face = $(faceElement).offset();
+        if (!face) return;
+        
+        face.left += $(faceElement).width() / 2;
+        face.top += $(faceElement).height() / 2;
+        var dist = Math.sqrt(Math.pow(face.left - mouseX, 2) + Math.pow(face.top - mouseY, 2));
+        
+        if (dist < 100) {
+            $(faceElement).attr("src", "static/face/cc.png");
+        } else {
+            var rad = Math.atan2(face.top - mouseY, face.left - mouseX);
+            var deg = rad * 180 / Math.PI;
+            if (deg < 0) {
+                deg += 360;
+            }
+            var i = Math.round(deg / 45);
+            if (i >= faces.length) i = 0;
+            $(faceElement).attr("src", faces[i]);
+        }
+    }
+
+    // Update both faces on mouse move
+    $(document).mousemove(function(e) {
+        updateFace("#face", e.pageX, e.pageY); // Navigation face
+        updateFace("#hero-face", e.pageX, e.pageY); // Hero face
+    });
+});
+</script>
+<div class="floating-contact">
+    <a href="#contact" class="floating-contact-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="contact-icon">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+        </svg>
+        <span class="contact-text">Contact</span>
+    </a>
+</div>
+</body>

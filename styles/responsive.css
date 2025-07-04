@@ -1,0 +1,315 @@
+/* ===================================
+   RESPONSIVE STYLES
+   ================================== */
+
+/* ===== LARGE DESKTOP (1200px+) ===== */
+@media (min-width: 1200px) {
+  .container {
+    padding: 0 var(--space-xl);
+  }
+  
+  .hero h1 {
+    font-size: 5.5rem;
+  }
+  
+  .section-header h2 {
+    font-size: 3.5rem;
+  }
+  
+  .awards-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .video-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .remoose-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ===== TABLET (768px - 1199px) ===== */
+@media (max-width: 1199px) and (min-width: 769px) {
+  .doc-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+  
+  .ugc-projects {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  
+  .awards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .remoose-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== MOBILE & SMALL TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  /* ===== NAVIGATION ===== */
+  .nav-links {
+    display: none;
+  }
+  
+  .logo {
+    font-size: var(--font-size-xl);
+  }
+  
+  .logo-img {
+    height: 32px;
+  }
+  
+  /* ===== HERO ===== */
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .hero p {
+    font-size: var(--font-size-xl);
+  }
+  
+  /* ===== TYPOGRAPHY ===== */
+  .section-header h2 {
+    font-size: 2rem;
+  }
+  
+  .section-header p {
+    font-size: var(--font-size-base);
+  }
+  
+  /* ===== GRIDS ===== */
+  .awards-grid,
+  .doc-grid,
+  .ugc-projects,
+  .video-grid,
+  .remoose-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  /* ===== CARDS ===== */
+  .doc-card,
+  .project-card {
+    padding: var(--space-lg);
+  }
+  
+  .demo-reel {
+    padding: var(--space-lg);
+  }
+  
+  /* ===== SPACING ===== */
+  .section {
+    padding: var(--space-2xl) 0;
+  }
+  
+  .section-header {
+    margin-bottom: var(--space-xl);
+  }
+  
+  /* ===== BUTTONS ===== */
+  .button {
+    --fs-size: 1.5em;
+    --button-letter-spacing: 2px;
+  }
+  
+  .cta-button {
+    padding: var(--space-md) var(--space-xl);
+    font-size: var(--font-size-sm);
+  }
+  
+  /* ===== REMOOSE SECTION ===== */
+  .remoose-intro {
+    padding: var(--space-lg);
+  }
+  
+  .remoose-intro h3 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .remoose-intro p {
+    font-size: var(--font-size-base);
+  }
+  
+  /* ===== VIDEO EMBEDS ===== */
+.remoose-embed {
+    min-width: 300px;
+    height: 300px;
+  }
+}
+
+/* ===== SMALL MOBILE (480px and below) ===== */
+@media (max-width: 480px) {
+  /* ===== CONTAINER ===== */
+  .container {
+    padding: 0 var(--space-sm);
+  }
+  
+  /* ===== HERO ===== */
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero p {
+    font-size: var(--font-size-lg);
+  }
+  
+  /* ===== TYPOGRAPHY ===== */
+  .section-header h2 {
+    font-size: 1.8rem;
+  }
+  
+  h3 {
+    font-size: var(--font-size-xl);
+  }
+  
+  /* ===== CARDS ===== */
+  .award-card,
+  .doc-card,
+  .project-card {
+    padding: var(--space-md);
+  }
+  
+  .demo-reel {
+    padding: var(--space-md);
+  }
+  
+  /* ===== SPACING ===== */
+  .section {
+    padding: var(--space-xl) 0;
+  }
+  
+  /* ===== BUTTONS ===== */
+  .button {
+    --fs-size: 1.2em;
+    --button-letter-spacing: 1px;
+  }
+  
+  /* ===== REMOOSE ===== */
+.remoose-embed {
+    min-width: 300px;
+    height: 300px;
+  }
+  
+  .remoose-intro h3 {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* ===== LANDSCAPE MOBILE ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero {
+    height: 100vh;
+    min-height: 500px;
+  }
+  
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero p {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-sm);
+  }
+}
+
+/* ===== HIGH DPI DISPLAYS ===== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hero-webp,
+  .logo-img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .hero-webp {
+    animation: none;
+  }
+  
+  .button:hover .hover-text {
+    transition: none;
+  }
+}
+
+/* ===== TOUCH DEVICES ===== */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover,
+  .video-card:hover,
+  .remoose-embed:hover {
+    transform: none;
+  }
+  
+  .cta-button:hover {
+    transform: none;
+    background: var(--secondary-color);
+  }
+  
+  .button:hover .hover-text {
+    width: 0%;
+    filter: none;
+  }
+  
+  /* Add touch-friendly tap states */
+  .card:active,
+  .video-card:active {
+    transform: scale(0.98);
+  }
+  
+  .cta-button:active {
+    transform: scale(0.95);
+    background: var(--secondary-dark);
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  .hero,
+  nav,
+  footer {
+    display: none;
+  }
+  
+  .section {
+    page-break-inside: avoid;
+    padding: 1rem 0;
+  }
+  
+  .video-embed,
+  .remoose-embed {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+    .contact-info {
+        display: none; /* Hide the entire "Let's Collaborate" section on mobile */
+    }
+    
+    .contact-content {
+        grid-template-columns: 1fr; /* Make contact form full width */
+    }
+}

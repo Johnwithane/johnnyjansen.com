@@ -1,0 +1,408 @@
+/* ===================================
+   DYNAMIC BACKGROUNDS SYSTEM
+   ================================== */
+
+/* ===== SECTION BACKGROUND SYSTEM ===== */
+.section-bg-image {
+  position: relative;
+}
+
+.section-bg-image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.75; /* Adjustable transparency - change this value */
+  z-index: -2;
+}
+
+.section-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-light);
+  z-index: -1;
+}
+
+/* ===== BACKGROUND IMAGES ===== */
+.section-bg-image[data-bg="music-video"]::before {
+  background-image: url('../static/music-video-bg.webp');
+}
+
+.section-bg-image[data-bg="documentary"]::before {
+  background-image: url('../static/documentary-bg.webp');
+}
+
+.section-bg-image[data-bg="contact"]::before {
+  background-image: url('../static/contact-bg.webp');
+}
+
+/* ===== PATTERN BACKGROUNDS ===== */
+.section-bg-pattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-bg-pattern::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  opacity: 0.15; /* Adjustable transparency */
+  z-index: -2;
+}
+
+.section-bg-pattern::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--overlay-light);
+  z-index: -1;
+}
+
+/* ===== DOTS PATTERN ===== */
+.section-bg-pattern[data-pattern="dots"]::before {
+  background: radial-gradient(circle, var(--primary-color) 10%, transparent 20%),
+    radial-gradient(circle, transparent 10%, var(--accent-color) 20%);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+  animation: moveDotsBackground 20s linear infinite;
+}
+
+@keyframes moveDotsBackground {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(30px, 30px);
+  }
+}
+
+/* ===== WAVES PATTERN ===== */
+.section-bg-pattern[data-pattern="waves"]::before {
+  background: repeating-radial-gradient(
+      circle at 50% 50%,
+      rgba(102, 126, 234, 0.2) 0%,
+      transparent 30%
+    ),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      var(--accent-color) 0%,
+      var(--accent-color) 5px,
+      transparent 5px,
+      transparent 15px
+    );
+  animation: wavePattern 15s ease-in-out infinite;
+}
+
+@keyframes wavePattern {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(10px, 10px) scale(1.1);
+  }
+}
+
+/* ===== RAIN PATTERN ===== */
+.section-bg-pattern[data-pattern="rain"]::before {
+  background-color: transparent;
+  background-image: radial-gradient(4px 100px at 0px 235px, var(--primary-color), transparent),
+    radial-gradient(4px 100px at 300px 235px, var(--primary-color), transparent),
+    radial-gradient(1.5px 1.5px at 150px 117.5px, var(--primary-color) 100%, transparent 150%),
+    radial-gradient(4px 100px at 0px 252px, var(--accent-color), transparent),
+    radial-gradient(4px 100px at 300px 252px, var(--accent-color), transparent),
+    radial-gradient(1.5px 1.5px at 150px 126px, var(--accent-color) 100%, transparent 150%),
+    radial-gradient(4px 100px at 0px 150px, var(--secondary-color), transparent),
+    radial-gradient(4px 100px at 300px 150px, var(--secondary-color), transparent),
+    radial-gradient(1.5px 1.5px at 150px 75px, var(--secondary-color) 100%, transparent 150%);
+  background-size:
+    300px 235px,
+    300px 235px,
+    300px 235px,
+    300px 252px,
+    300px 252px,
+    300px 252px,
+    300px 150px,
+    300px 150px,
+    300px 150px;
+  animation: rainAnimation 60s linear infinite;
+}
+
+@keyframes rainAnimation {
+  0% {
+    background-position:
+      0px 220px,
+      3px 220px,
+      151.5px 337.5px,
+      25px 24px,
+      28px 24px,
+      176.5px 150px,
+      50px 16px,
+      53px 16px,
+      201.5px 91px;
+  }
+  100% {
+    background-position:
+      0px 2200px,
+      3px 2200px,
+      151.5px 2317.5px,
+      25px 2024px,
+      28px 2024px,
+      176.5px 2150px,
+      50px 2016px,
+      53px 2016px,
+      201.5px 2091px;
+  }
+}
+
+/* ===== GEOMETRIC PATTERN ===== */
+.section-bg-pattern[data-pattern="geometric"]::before {
+  background: 
+    linear-gradient(45deg, transparent 40%, var(--primary-color) 40%, var(--primary-color) 60%, transparent 60%),
+    linear-gradient(-45deg, transparent 40%, var(--accent-color) 40%, var(--accent-color) 60%, transparent 60%);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  animation: geometricShift 25s linear infinite;
+}
+
+@keyframes geometricShift {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* ===== CIRCUIT PATTERN ===== */
+.section-bg-pattern[data-pattern="circuit"]::before {
+  background-image:
+    linear-gradient(90deg, var(--primary-color) 1px, transparent 1px),
+    linear-gradient(180deg, var(--primary-color) 1px, transparent 1px),
+    radial-gradient(circle at 20px 20px, var(--accent-color) 2px, transparent 2px),
+    radial-gradient(circle at 60px 60px, var(--secondary-color) 2px, transparent 2px);
+  background-size: 40px 40px, 40px 40px, 80px 80px, 120px 120px;
+  animation: circuitPulse 30s linear infinite;
+}
+
+@keyframes circuitPulse {
+  0%, 100% {
+    opacity: 0.1;
+    transform: translate(0, 0);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(20px, 20px);
+  }
+}
+
+/* ===== HEXAGON PATTERN ===== */
+.section-bg-pattern[data-pattern="hexagon"]::before {
+  background: 
+    radial-gradient(circle at 25% 25%, var(--primary-color) 20%, transparent 21%),
+    radial-gradient(circle at 75% 25%, var(--accent-color) 20%, transparent 21%),
+    radial-gradient(circle at 25% 75%, var(--secondary-color) 20%, transparent 21%),
+    radial-gradient(circle at 75% 75%, var(--primary-color) 20%, transparent 21%);
+  background-size: 60px 60px;
+  animation: hexagonFloat 40s ease-in-out infinite;
+}
+
+@keyframes hexagonFloat {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(30px, -15px) rotate(120deg);
+  }
+  66% {
+    transform: translate(-15px, 30px) rotate(240deg);
+  }
+}
+
+/* ===== GRID PATTERN ===== */
+.section-bg-pattern[data-pattern="grid"]::before {
+  background-image:
+    linear-gradient(rgba(55, 255, 139, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(55, 255, 139, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(102, 126, 234, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102, 126, 234, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  animation: gridShift 35s linear infinite;
+}
+
+@keyframes gridShift {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  }
+}
+
+/* ===== ORGANIC PATTERN ===== */
+.section-bg-pattern[data-pattern="organic"]::before {
+  background: 
+    radial-gradient(ellipse at center, var(--primary-color) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--accent-color) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--secondary-color) 0%, transparent 50%);
+  background-size: 80px 120px, 120px 80px, 100px 100px;
+  background-position: 0 0, 40px 60px, 80px 40px;
+  animation: organicFlow 45s ease-in-out infinite;
+}
+
+@keyframes organicFlow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.1);
+  }
+  50% {
+    transform: translate(-10px, 20px) scale(0.9);
+  }
+  75% {
+    transform: translate(30px, 10px) scale(1.05);
+  }
+}
+
+/* ===== SPIRAL PATTERN ===== */
+.section-bg-pattern[data-pattern="spiral"]::before {
+  background: 
+    conic-gradient(from 0deg at 50% 50%, 
+      var(--primary-color) 0deg, 
+      transparent 60deg, 
+      var(--accent-color) 120deg, 
+      transparent 180deg, 
+      var(--secondary-color) 240deg, 
+      transparent 300deg);
+  background-size: 100px 100px;
+  animation: spiralRotate 50s linear infinite;
+}
+
+@keyframes spiralRotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1.2);
+  }
+}
+
+/* ===== UTILITY CLASSES FOR BACKGROUND OPACITY ===== */
+.bg-opacity-10::before { opacity: 0.1 !important; }
+.bg-opacity-20::before { opacity: 0.2 !important; }
+.bg-opacity-30::before { opacity: 0.3 !important; }
+.bg-opacity-40::before { opacity: 0.4 !important; }
+.bg-opacity-50::before { opacity: 0.5 !important; }
+.bg-opacity-60::before { opacity: 0.6 !important; }
+.bg-opacity-70::before { opacity: 0.7 !important; }
+.bg-opacity-75::before { opacity: 0.75 !important; }
+.bg-opacity-80::before { opacity: 0.8 !important; }
+.bg-opacity-90::before { opacity: 0.9 !important; }
+
+/* ===== SPECIAL BLUR EFFECT ===== */
+.section-bg-pattern[data-pattern="rain"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: blur(1em) brightness(0.6);
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px
+  );
+  background-size: 8px 8px;
+}
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+@media (prefers-reduced-motion: reduce) {
+  .section-bg-pattern::before {
+    animation: none !important;
+  }
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+  .section-bg-pattern::before {
+    background-size: 50% 50%; /* Smaller patterns on mobile */
+    animation-duration: 1.5s; /* Faster animations */
+  }
+}
+
+@media (max-width: 480px) {
+  .section-bg-pattern::before {
+    background-size: 30% 30%; /* Even smaller on small screens */
+    opacity: 0.1; /* More subtle */
+  }
+}
+
+/* ===== BACKGROUND TRANSITIONS ===== */
+.section-bg-image::before,
+.section-bg-pattern::before {
+  transition: opacity 0.5s ease;
+}
+
+/* ===== HOVER EFFECTS FOR INTERACTIVE SECTIONS ===== */
+.section:hover .section-bg-pattern::before {
+  animation-play-state: running;
+}
+
+.section:not(:hover) .section-bg-pattern::before {
+  animation-play-state: paused;
+}
+
+/* ===== CUSTOM BRAND COLORS FOR PATTERNS ===== */
+:root {
+  --pattern-primary: var(--primary-color);
+  --pattern-secondary: var(--secondary-color);
+  --pattern-accent: var(--accent-color);
+}
+
+/* Allow easy color customization */
+.section-bg-pattern[data-color="music"] {
+  --pattern-primary: #FF6B6B;
+  --pattern-secondary: #EE5A24;
+  --pattern-accent: #FF9F43;
+}
+
+.section-bg-pattern[data-color="documentary"] {
+  --pattern-primary: #4ECDC4;
+  --pattern-secondary: #44A08D;
+  --pattern-accent: #26D0CE;
+}
+
+.section-bg-pattern[data-color="ugc"] {
+  --pattern-primary: #667EEA;
+  --pattern-secondary: #764BA2;
+  --pattern-accent: #A8EDEA;
+}
+
+.section-bg-pattern[data-color="motion"] {
+  --pattern-primary: #A8EDEA;
+  --pattern-secondary: #FED6E3;
+  --pattern-accent: #FDA7DF;
+}
+
+.section-bg-pattern[data-color="remoose"] {
+  --pattern-primary: #FA709A;
+  --pattern-secondary: #FEE140;
+  --pattern-accent: #FC9842;
+}

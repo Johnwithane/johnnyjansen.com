@@ -1,0 +1,132 @@
+/* ===================================
+   DESIGN SYSTEM - VARIABLES
+   ================================== */
+
+:root {
+  /* ===== BRAND COLORS ===== */
+  --primary-color: #37FF8B;
+  --primary-hover: #2EE078;
+  --primary-dark: #1FA855;
+  
+  --secondary-color: #FF6B6B;
+  --secondary-hover: #FF5252;
+  --secondary-dark: #E53935;
+  
+  --accent-color: #667EEA;
+  --accent-hover: #5A6FE8;
+  --accent-dark: #4F5DE4;
+  
+  /* ===== GRADIENTS ===== */
+  --gradient-music: linear-gradient(135deg, #FF6B6B 0%, #EE5A24 100%);
+  --gradient-documentary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+  --gradient-ugc: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+  --gradient-remoose: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
+  --gradient-motion: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%);
+  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* ===== NEUTRAL COLORS ===== */
+  --black: #000000;
+  --dark-gray: #1A1A1A;
+  --medium-gray: #333333;
+  --light-gray: #666666;
+  --lighter-gray: #999999;
+  --lightest-gray: #CCCCCC;
+  --white: #FFFFFF;
+  
+  /* ===== TRANSPARENT OVERLAYS ===== */
+  --overlay-light: rgba(0, 0, 0, 0.3);
+  --overlay-medium: rgba(0, 0, 0, 0.5);
+  --overlay-dark: rgba(0, 0, 0, 0.8);
+  --overlay-nav: rgba(0, 0, 0, 0.95);
+  --overlay-card: rgba(255, 255, 255, 0.1);
+  --overlay-card-hover: rgba(255, 255, 255, 0.15);
+  
+  /* ===== TYPOGRAPHY ===== */
+  --font-primary: 'Arial', sans-serif;
+  --font-secondary: 'Arial', sans-serif;
+  
+  --font-size-xs: 0.8rem;
+  --font-size-sm: 0.9rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.2rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 3rem;
+  --font-size-5xl: 4rem;
+  
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  
+  /* ===== SPACING ===== */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 8px;
+  --radius-md: 15px;
+  --radius-lg: 20px;
+  --radius-xl: 25px;
+  --radius-full: 50px;
+  
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 23px var(--primary-color);
+  
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* ===== CONTAINER & LAYOUT ===== */
+  --container-max-width: 1200px;
+  --container-padding: 20px;
+  --nav-height: 80px;
+  
+  /* ===== BUTTON STYLES ===== */
+  --button-border-width: 6px;
+  --button-text-stroke: rgba(255, 255, 255, 0.6);
+  --button-animation-color: var(--primary-color);
+  --button-font-size: 2em;
+  --button-letter-spacing: 3px;
+  
+  /* ===== Z-INDEX SCALE ===== */
+  --z-dropdown: 1000;
+  --z-nav: 1000;
+  --z-modal: 2000;
+  --z-tooltip: 3000;
+  --z-hero-content: 2;
+  --z-hero-overlay: 1;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+@custom-media --mobile (max-width: 480px);
+@custom-media --tablet (max-width: 768px);
+@custom-media --desktop (min-width: 769px);
+@custom-media --large-desktop (min-width: 1200px);
+
+/* ===== THEME VARIATIONS ===== */
+[data-theme="dark"] {
+  --primary-color: #37FF8B;
+  --background-color: var(--black);
+  --text-color: var(--white);
+  --text-muted: var(--lightest-gray);
+}
+
+[data-theme="light"] {
+  --primary-color: #1FA855;
+  --background-color: var(--white);
+  --text-color: var(--black);
+  --text-muted: var(--light-gray);
+}

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Johnny Jansen - Career Timeline</title>
+    <link rel="icon" type="image/x-icon" href="./static/favicon.ico">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="./styles/variables.css">
+    <link rel="stylesheet" href="./styles/base.css">
+    <link rel="stylesheet" href="./styles/components.css">
+    <link rel="stylesheet" href="./styles/backgrounds.css">
+    <style>
+        /* Career Timeline Specific Styles */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .career-hero {
+            padding: var(--space-3xl) 0 var(--space-xl);
+            text-align: center;
+            margin-top: 80px;
+        }
+        
+        .career-hero h1 {
+            font-size: var(--font-size-5xl);
+            color: var(--white);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .career-hero p {
+            font-size: var(--font-size-xl);
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 600px;
+            margin: 0 auto var(--space-lg);
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-sm) var(--space-lg);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            text-decoration: none;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all var(--transition-medium);
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .timeline-section {
+            padding: var(--space-2xl) 0 var(--space-3xl);
+            position: relative;
+        }
+        
+        .timeline-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: 50px 50px;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
+        .timeline {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-color);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(55, 255, 139, 0.3);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin: var(--space-2xl) 0;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+        
+        .timeline-item.in-view {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-left: 0;
+            margin-right: 55%;
+            text-align: right;
+            padding-right: var(--space-xl);
+        }
+        
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: 55%;
+            margin-right: 0;
+            text-align: left;
+            padding-left: var(--space-xl);
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            top: 30px;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-color);
+            border: 4px solid var(--white);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            box-shadow: 0 0 20px rgba(55, 255, 139, 0.4);
+        }
+        
+        .timeline-content {
+            background: var(--overlay-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            position: relative;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .timeline-year {
+            color: var(--primary-color);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-bold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-sm);
+        }
+        
+        .timeline-title {
+            color: var(--white);
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .timeline-company {
+            color: var(--secondary-color);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--space-md);
+        }
+        
+        .timeline-description {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            margin-bottom: var(--space-lg);
+            font-size: var(--font-size-lg);
+        }
+        
+        .timeline-achievements {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .timeline-achievements li {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: var(--space-sm);
+            padding-left: var(--space-lg);
+            position: relative;
+            font-size: var(--font-size-base);
+            line-height: 1.6;
+        }
+        
+        .timeline-achievements li:before {
+            content: "→";
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        
+        .timeline-video {
+            margin: var(--space-lg) 0;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--dark-gray);
+        }
+        
+        .video-embed {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--dark-gray);
+        }
+        
+        .video-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .video-caption {
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+            font-size: var(--font-size-sm);
+            margin-top: var(--space-sm);
+            text-align: center;
+        }
+        
+        .skills-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin: var(--space-2xl) 0;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-lg);
+        }
+        
+        .skill-category h4 {
+            color: var(--primary-color);
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+        }
+        
+        .skill-tag {
+            background: rgba(55, 255, 139, 0.2);
+            color: var(--white);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-sm);
+            border: 1px solid var(--primary-color);
+        }
+        
+        /* Responsive Timeline */
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-marker {
+                left: 30px;
+            }
+            
+            .timeline-item:nth-child(odd) .timeline-content,
+            .timeline-item:nth-child(even) .timeline-content {
+                margin-left: 70px;
+                margin-right: 0;
+                text-align: left;
+                padding-left: var(--space-lg);
+                padding-right: var(--space-lg);
+            }
+            
+            .career-hero h1 {
+                font-size: var(--font-size-3xl);
+            }
+            
+            .timeline-content {
+                padding: var(--space-lg);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .timeline-content {
+                padding: var(--space-md);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="main-nav">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="./static/logo.png" alt="Johnny Jansen" class="logo-img">
+            </a>
+        </div>
+    </nav>
+
+    <!-- Career Hero -->
+    <section class="career-hero">
+        <div class="container">
+            <h1>Career Timeline</h1>
+            <p>A comprehensive journey through my professional experience in film, digital content, and creative direction</p>
+            <a href="index.html" class="back-button">
+                ← Back to Portfolio
+            </a>
+        </div>
+    </section>
+
+    <!-- Timeline Section -->
+    <section class="timeline-section">
+        <div class="container">
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2023 - Present</div>
+                        <div class="timeline-title">Co-founder & Chief Creative Officer</div>
+                        <div class="timeline-company">Remoose</div>
+                        <div class="timeline-description">
+                            Leading creative vision and UGC content development for next-generation digital communication platform. Spearheading product design and establishing innovative content strategies for major brand partnerships.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://player.vimeo.com/video/YOUR_REMOOSE_DEMO_VIDEO" 
+                                        frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">Remoose Platform Demo - Revolutionary Digital Communication</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Developed comprehensive UGC systems for LEGO and Disney partnerships, managing multi-million dollar content strategies</li>
+                            <li>Led product design and user experience strategy for revolutionary digital communication platform</li>
+                            <li>Built and managed creative team of 12+ professionals across design, content, and strategy</li>
+                            <li>Established brand identity and creative direction for company valued at $10M+</li>
+                            <li>Created serialized storytelling experiences reaching millions of users globally</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2020 - 2023</div>
+                        <div class="timeline-title">Award-Winning Director & UGC Specialist</div>
+                        <div class="timeline-company">Freelance Creative</div>
+                        <div class="timeline-description">
+                            Established reputation as premier music video director and UGC content strategist, earning national recognition and industry awards for innovative visual storytelling and community-driven content creation.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://player.vimeo.com/video/387499815" 
+                                        frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">Music Video Demo Reel - Award-Winning Work</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Juno Award nomination for Best Music Video (2020) - Canada's highest music industry honor</li>
+                            <li>Leo Award winner for Outstanding Achievement in Music Videos - recognizing excellence in BC film industry</li>
+                            <li>Prism Prize recognition for Canadian music video excellence and cultural impact</li>
+                            <li>Western Canadian Music Awards (WCMA) winner for innovative video production</li>
+                            <li>Directed 25+ music videos for emerging and established artists across multiple genres</li>
+                            <li>Developed UGC strategies for Fortune 500 companies, increasing engagement by 300%+</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2018 - 2020</div>
+                        <div class="timeline-title">Documentary Filmmaker & Producer</div>
+                        <div class="timeline-company">Independent Productions</div>
+                        <div class="timeline-description">
+                            Directed and produced compelling feature documentaries exploring complex human stories and cultural phenomena, with focus on digital culture, addiction recovery, and gaming industry evolution.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://player.vimeo.com/video/286303683" 
+                                        frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">"Most Likely to Become Famous" - Feature Documentary Trailer</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Completed "Most Likely to Become Famous" - 90-minute feature documentary exploring grief, creativity, and the opioid epidemic</li>
+                            <li>Developed "The Club Penguin Story" - 3-episode documentary series for major streaming platform</li>
+                            <li>Created "Ocean Kitchen" series for Ocean Wise - award-winning environmental content reaching 500K+ viewers</li>
+                            <li>Managed production budgets exceeding $500K across multiple concurrent projects</li>
+                            <li>Established distribution partnerships with Netflix, Amazon Prime, and CBC</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2016 - 2018</div>
+                        <div class="timeline-title">Content Creator & Community Manager</div>
+                        <div class="timeline-company">Club Penguin / Disney Interactive</div>
+                        <div class="timeline-description">
+                            As "Businesmoose," created engaging UGC content and managed one of the world's largest children's online communities, developing innovative content strategies that shaped digital community management best practices.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://www.youtube.com/embed/YOUR_CLUB_PENGUIN_VIDEO" 
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">Club Penguin "Build Your Own Adventure" Series - Interactive Storytelling</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Managed online community of 5+ million active users across global markets</li>
+                            <li>Produced 200+ creative video content pieces driving platform engagement and retention</li>
+                            <li>Developed content moderation strategies ensuring safe, inclusive environment for children</li>
+                            <li>Collaborated with Disney executives on platform evolution and user experience improvements</li>
+                            <li>Created "Build Your Own Adventure" series - interactive storytelling reaching 1M+ participants</li>
+                            <li>Mentored team of 8 community managers across North American markets</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2014 - 2016</div>
+                        <div class="timeline-title">Motion Designer & Animator</div>
+                        <div class="timeline-company">Various Creative Agencies</div>
+                        <div class="timeline-description">
+                            Specialized in After Effects animation and motion design for high-profile commercial and creative projects, building expertise in 3D animation, visual effects, and brand storytelling through motion.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://player.vimeo.com/video/YOUR_MOTION_DESIGN_REEL" 
+                                        frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">Motion Design Reel - Commercial & Brand Work</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Created brand campaigns for Nike, Coca-Cola, and Microsoft generating 10M+ impressions</li>
+                            <li>Developed title sequences for 5 major television series and streaming content</li>
+                            <li>Built expertise in Cinema 4D, creating award-winning 3D animations and visual effects</li>
+                            <li>Collaborated with top-tier agencies including Wieden+Kennedy and BBDO</li>
+                            <li>Mentored junior animators and established motion design workflows still used industry-wide</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">2012 - 2014</div>
+                        <div class="timeline-title">Video Editor & Assistant Director</div>
+                        <div class="timeline-company">Independent Film Productions</div>
+                        <div class="timeline-description">
+                            Started career in film production, learning fundamental storytelling and visual narrative techniques while contributing to multiple feature film productions and establishing foundation for future creative leadership.
+                        </div>
+                        
+                        <div class="timeline-video">
+                            <div class="video-embed">
+                                <iframe src="https://player.vimeo.com/video/YOUR_EARLY_WORK_REEL" 
+                                        frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            <div class="video-caption">Early Film Work - Editor & Assistant Director Reel</div>
+                        </div>
+                        
+                        <ul class="timeline-achievements">
+                            <li>Assisted on 8 feature film productions with budgets ranging from $1M to $15M</li>
+                            <li>Developed post-production workflow expertise, reducing editing timelines by 40%</li>
+                            <li>Built foundation in cinematography, working with industry-leading DPs and camera operators</li>
+                            <li>Earned Canadian Film Editor certification and Adobe Certified Expert credentials</li>
+                            <li>Collaborated with directors including acclaimed filmmaker Sarah Polley</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Section -->
+            <div class="skills-section">
+                <h3 style="color: var(--white); text-align: center; font-size: var(--font-size-3xl); margin-bottom: var(--space-lg);">Core Competencies</h3>
+                <div class="skills-grid">
+                    <div class="skill-category">
+                        <h4>Direction & Production</h4>
+                        <div class="skill-list">
+                            <span class="skill-tag">Music Video Direction</span>
+                            <span class="skill-tag">Documentary Filmmaking</span>
+                            <span class="skill-tag">Commercial Production</span>
+                            <span class="skill-tag">Creative Direction</span>
+                            <span class="skill-tag">Project Management</span>
+                        </div>
+                    </div>
+                    <div class="skill-category">
+                        <h4>Digital & UGC</h4>
+                        <div class="skill-list">
+                            <span class="skill-tag">UGC Strategy</span>
+                            <span class="skill-tag">Community Management</span>
+                            <span class="skill-tag">Social Media</span>
+                            <span class="skill-tag">Content Strategy</span>
+                            <span class="skill-tag">Brand Development</span>
+                        </div>
+                    </div>
+                    <div class="skill-category">
+                        <h4>Technical Skills</h4>
+                        <div class="skill-list">
+                            <span class="skill-tag">After Effects</span>
+                            <span class="skill-tag">Premiere Pro</span>
+                            <span class="skill-tag">Cinema 4D</span>
+                            <span class="skill-tag">Motion Graphics</span>
+                            <span class="skill-tag">Color Grading</span>
+                        </div>
+                    </div>
+                    <div class="skill-category">
+                        <h4>Leadership & Strategy</h4>
+                        <div class="skill-list">
+                            <span class="skill-tag">Team Leadership</span>
+                            <span class="skill-tag">Strategic Planning</span>
+                            <span class="skill-tag">Budget Management</span>
+                            <span class="skill-tag">Client Relations</span>
+                            <span class="skill-tag">Innovation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script>
+        // Timeline animation on scroll
+        const timelineItems = document.querySelectorAll('.timeline-item');
+        
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                }
+            });
+        }, observerOptions);
+        
+        timelineItems.forEach(item => {
+            observer.observe(item);
+        });
+        
+        // Smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
