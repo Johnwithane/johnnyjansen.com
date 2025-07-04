@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="./styles/backgrounds.css">
     <link rel="stylesheet" href="./styles/responsive.css">
     
-    <style>
+<style>
         /* Enhanced Dropdown Navigation System */
 .nav-dropdown-system {
     display: flex;
@@ -155,6 +155,54 @@
             margin-right: var(--space-xs);
         }
         
+        @media (max-width: 1200px) {
+            .remix-item {
+                min-width: 160px;
+                width: 160px;
+                height: 160px;
+                flex-shrink: 0; /* Prevent items from shrinking */
+
+            }
+            
+            .remixes-grid {
+                grid-template-rows: repeat(4, 160px);
+                grid-auto-columns: 160px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .remix-item {
+                min-width: 150px;
+                width: 150px;
+                height: 150px;
+                flex-shrink: 0; /* Prevent items from shrinking */
+
+            }
+
+            .remixes-grid {
+                grid-template-rows: repeat(2, 150px); /* 2 rows on tablet */
+                grid-auto-columns: 150px;
+                gap: 1rem;
+                padding: 1.5rem 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .remix-item {
+                min-width: 130px;
+                width: 130px;
+                height: 130px;
+                flex-shrink: 0; /* Prevent items from shrinking */
+
+            }
+
+            .remixes-grid {
+                grid-template-rows: 130px; /* 1 row on mobile */
+                grid-auto-columns: 130px;
+                gap: 0.8rem;
+            }
+        }
+
         /* Mobile Navigation */
         @media (max-width: 768px) {
             .nav-dropdown-system {
@@ -194,16 +242,463 @@
                 background: rgba(55, 255, 139, 0.2);
             }
         }
+
+        /* ===== REMOOSE SECTION COMPLETE OVERHAUL ===== */
+        
+        /* Enhanced Background Grid */
+        .remoose-background-grid {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-rows: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1px;
+            z-index: -2;
+            opacity: 0.3;
+            overflow: hidden;
+        }
+
+        .remoose-bg-item {
+            display: block;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .remoose-bg-item:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+            z-index: 10;
+            position: relative;
+        }
+
+        .remoose-bg-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        /* Main Content Layout - Perfect Equal Heights */
+        .remoose-main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: stretch;
+            margin-bottom: 4rem;
+        }
+
+        .remoose-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 3rem;
+            width: 100%;
+        }
+
+        .remoose-logo img {
+            height: 120px;
+            width: auto;
+        }
+
+        /* Left Side Card - Equal Height Design */
+        .remoose-info-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 3rem;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .remoose-info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .remoose-info-card h3 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        .remoose-info-card p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .role-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: auto;
+            align-self: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Right Side Demo - Enhanced */
+        .remoose-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+        }
+
+        .demo-cta {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .demo-cta h4 {
+            color: white;
+            font-size: 2.2rem;
+            margin-bottom: 0.75rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-cta p {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.3rem;
+            font-weight: 300;
+        }
+
+        .scene-demo {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .scene-demo:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .scene-demo img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 500px;
+            transition: all 0.4s ease;
+        }
+
+        .scene-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .scene-demo:hover .scene-overlay {
+            opacity: 1;
+        }
+
+        .play-button {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #333;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+            background: white;
+        }
+
+        /* Children Grid Section - 4 Rows Enhanced */
+        .remixes-section {
+            margin-top: 5rem;
+        }
+
+        .remixes-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .remixes-header h3 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .remixes-header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.3rem;
+            font-weight: 300;
+        }
+
+        .remixes-grid {
+            display: grid;
+            grid-template-rows: repeat(4, 300px); /* FIXED: Explicit row height */
+            grid-auto-flow: column;
+            grid-auto-columns: 300px; /* FIXED: Explicit column width */
+            gap: 1.5rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 2rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .remixes-grid::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .remixes-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+
+        .remixes-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .remixes-grid::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .remix-item {
+            min-width: 300px;
+            width: 300px;
+            height: 300px; /* SAME as width for perfect 1x1 */
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0; /* Prevent items from shrinking */
+        }
+
+        .remix-item:hover {
+            transform: scale(1.08) translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+            z-index: 10;
+            position: relative;
+        }
+
+        .remix-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.4s ease;
+        }
+
+        .remix-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Enhanced Loading States */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced Responsive Design */
+        @media (max-width: 1200px) {
+            .remoose-main-content {
+                gap: 2rem;
+            }
+            
+            .remoose-info-card {
+                padding: 2.5rem;
+            }
+            
+            .demo-cta h4 {
+                font-size: 2rem;
+            }
+            
+            .scene-demo img {
+                max-width: 450px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .remoose-main-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                align-items: start;
+            }
+
+            .remoose-info-card {
+                padding: 2rem;
+                height: auto;
+            }
+
+            .remoose-info-card h3 {
+                font-size: 2rem;
+            }
+
+            .remoose-info-card p {
+                font-size: 1.1rem;
+            }
+
+            .demo-cta h4 {
+                font-size: 1.8rem;
+                letter-spacing: 2px;
+            }
+
+            .demo-cta p {
+                font-size: 1.1rem;
+            }
+
+            .scene-demo img {
+                max-width: 400px;
+            }
+
+            .remixes-grid {
+                grid-template-rows: repeat(2, 1fr);
+                gap: 1rem;
+                padding: 1.5rem 0;
+            }
+
+            .remix-item {
+                min-width: 160px;
+                height: 160px;
+                flex-shrink: 0; /* Prevent items from shrinking */
+
+            }
+
+            .remoose-background-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                grid-template-rows: repeat(auto-fill, minmax(80px, 1fr));
+                opacity: 0.2;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .remoose-logo img {
+                height: 70px;
+            }
+
+            .remoose-info-card {
+                padding: 1.5rem;
+            }
+
+            .remoose-info-card h3 {
+                font-size: 1.8rem;
+            }
+
+            .remoose-info-card p {
+                font-size: 1rem;
+            }
+
+            .demo-cta h4 {
+                font-size: 1.5rem;
+                letter-spacing: 1px;
+            }
+
+            .scene-demo img {
+                max-width: 420px;
+            }
+
+            .play-button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .remixes-grid {
+                grid-template-rows: 1fr;
+                gap: 0.8rem;
+            }
+
+            .remix-item {
+                min-width: 140px;
+                height: 140px;
+                flex-shrink: 0; /* Prevent items from shrinking */
+
+            }
+
+            .remixes-header h3 {
+                font-size: 2rem;
+            }
+
+            .remixes-header p {
+                font-size: 1.1rem;
+            }
+        }
     </style>
-</head>
-<body>
-    <!-- Navigation -->
-    <nav id="main-nav">
-        <div class="container">
-<a href="#" class="logo">
-    <img src="./static/logo.png" alt="Johnny Jansen" class="logo-img" id="face">
-    <span class="logo-text">Johnny Jansen</span>
-</a>
+        </head>
+        <body>
+            <!-- Navigation -->
+            <nav id="main-nav">
+                <div class="container">
+        <a href="#" class="logo">
+            <img src="./static/logo.png" alt="Johnny Jansen" class="logo-img" id="face">
+            <span class="logo-text">Johnny Jansen</span>
+        </a>
             
             <!-- Mobile Menu Toggle -->
             <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
@@ -304,45 +799,63 @@
         </div>
     </section>
 
-<!-- Remoose Section -->
-<section id="remoose" class="section remoose-section">
-    <!-- Dynamic Background Grid (will be populated by API) -->
-    <div class="remoose-background-grid" id="background-grid">
-        <!-- Background items will be inserted here -->
-    </div>
-    
-    <!-- Content overlay -->
-    <div class="remoose-overlay"></div>
-    
-    <div class="container">
-        <div class="section-header">
-            <img src="./static/logo-remoose.png" alt="Remoose" class="remoose-main-logo">
-            <!-- <p>Co-founder & Chief Creative Officer</p> -->
-        </div>
+    <!-- =========================== REMOOSE SECTION =========================== -->
+    <section id="remoose" class="remoose-section">
+        <!-- Background Grid -->
+        <div class="remoose-background-grid" id="background-grid"></div>
+        <div class="remoose-overlay"></div>
 
-        <div class="remoose-intro">
-            <h3>Crowd Sourced Storytelling</h3>
-            <p>As Chief Creative Officer and Head of Content at Remoose, I specialize in UGC content development, having created successful systems for both LEGO and Disney. Explore my latest interactive scenes and animations.</p>
-    <a href="#" class="cta-button" onclick="document.getElementById('remoose-grid').scrollIntoView({behavior: 'smooth'})">Click on a scene below to try Remoose</a>
-        </div>
+        <div class="container">
+            <!-- Logo Section -->
+            <div class="remoose-logo">
+                <img src="./static/logo-remoose.png" alt="Remoose Logo" id="remoose-logo">
+            </div>
 
-        <!-- Loading State -->
-        <div id="loading" class="loading">
-            <div class="loading-spinner"></div>
-            <p>Loading latest Remoose scenes...</p>
-        </div>
+            <!-- Main Content -->
+            <div class="remoose-main-content">
+                <!-- Left Side Card -->
+             <div class="remoose-info-card">
+                <p>Remoose is a collaborative animation platform that lets creators remix and build on each other's work. It's democratizing animation by making it accessible, social, and fun.</p>
+                <p>As Co-founder and Chief Creative Officer, I lead front-end development and design for the platform. The project emerged from my experience building UGC systems for Club Penguin and LEGO, where I partnered with Lance Priebe and Nicole Thompson to create this groundbreaking startup.</p>
+                
+                <div class="bottom-info">
+                    <span class="role-badge">Co-founder & Chief Creative Officer</span>
+                </div>
+            </div>
 
-        <!-- Error State -->
-        <div id="error" class="error" style="display: none;">
-            <p>Unable to load Remoose scenes. Please try again later.</p>
-        </div>
+                <!-- Right Side Demo -->
+                <div class="remoose-demo">
+                    <div class="demo-cta">
+                        <h4>Remix This Scene</h4>
+                        <p>Join the party and create your own version!</p>
+                    </div>
+                    <div class="scene-demo" id="demo-scene">
+                        <img id="scene-image" src="" alt="Remix this scene">
+                        <div class="scene-overlay">
+                            <div class="play-button">▶</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Main Content Grid (will be populated by API) -->
-        <div class="remoose-grid" id="remoose-grid" style="display: none;">
-            <!-- Dynamic content will be inserted here -->
+            <!-- Children Grid Section -->
+            <div class="remixes-section">
+                <div class="remixes-header">
+                    <h3>See Your Remix Here</h3>
+                    <p>Watch how the community builds on this scene</p>
+                </div>
+                
+                <div id="remixes-loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading remixes...</p>
+                </div>
+
+                <div class="remixes-grid" id="remixes-grid" style="display: none;">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <!-- Music Video Section -->
     <section id="music-video" class="section section-bg-image" data-bg="music-video">
@@ -387,46 +900,7 @@
             <div class="video-grid">
                 <div class="video-card">
                     <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/vYY0eZHvSGo" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        <h4>Unamerican</h4>
-                        <p>Description 1</p>
-                    </div>
-                </div>
-                <div class="video-card">
-                    <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/vyLOqxbj9uc" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        <h4>Record Shop</h4>
-                        <p>Description 2</p>
-                    </div>
-                </div>
-                <div class="video-card">
-                    <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/gaQ4vfuOmmY" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        <h4>AM Moonlight</h4>
-                        <p>Description 2</p>
-                    </div>
-                </div>
-                                <div class="video-card">
-                    <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/ywfGAy7On24" 
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
                                 frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                 allowfullscreen>
@@ -439,7 +913,7 @@
                 </div>
                 <div class="video-card">
                     <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/3XPOPNJzkLA" 
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
                                 frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                 allowfullscreen>
@@ -452,7 +926,46 @@
                 </div>
                 <div class="video-card">
                     <div class="video-embed">
-                        <iframe src="https://www.youtube.com/embed/-LHQtJsts-M" 
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Music Video 2</h4>
+                        <p>Description 2</p>
+                    </div>
+                </div>
+                                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://www.youtube.com/embed/vYY0eZHvSGo" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Record Shop</h4>
+                        <p>Description 1</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://www.youtube.com/embed/vyLOqxbj9uc" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        <h4>Music Video 2</h4>
+                        <p>Description 2</p>
+                    </div>
+                </div>
+                <div class="video-card">
+                    <div class="video-embed">
+                        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
                                 frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                 allowfullscreen>
@@ -934,139 +1447,171 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </script>
     <script>
-class RemooseSection {
+class RemooseOverhaul {
     constructor() {
-        this.apiUrl = 'https://remoose.com/api/scene/recent?filter_by_user=true&username=03beeeed-f188-4183-ae85-abc09e3cca9e&page=1';
+        this.sceneID = 'nYZTpZddGz2tSCtsocBBT4';
         this.baseUrl = 'https://remoose.com';
-        this.scenes = [];
+        this.sceneData = null;
+        this.childrenData = [];
+        this.backgroundApiUrl = 'https://remoose.com/api/scene/recent?filter_by_user=true&username=03beeeed-f188-4183-ae85-abc09e3cca9e&page=1';
+        this.backgroundScenes = [];
         
         this.init();
     }
 
     async init() {
         try {
-            await this.loadScenes();
-            this.renderBackgroundGrid();
-            this.renderMainGrid();
-            this.hideLoading();
+            await this.loadBackgroundScenes();
+            await this.loadMainScene();
+            await this.loadChildrenScenes();
+            this.setupEventListeners();
         } catch (error) {
+            console.error('Failed to load Remoose data:', error);
             this.showError();
-            console.error('Failed to load Remoose scenes:', error);
         }
     }
 
-    async loadScenes() {
-        const response = await fetch(this.apiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    async loadBackgroundScenes() {
+        try {
+            const response = await fetch(this.backgroundApiUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.backgroundScenes = await response.json();
+            this.renderBackgroundGrid();
+        } catch (error) {
+            console.error('Failed to load background scenes:', error);
         }
-        
-        this.scenes = await response.json();
-        this.validScenes = this.scenes.filter(scene => !scene.failedToRender);
-        this.backgroundScenes = this.scenes;
     }
 
-renderBackgroundGrid() {
-    const backgroundGrid = document.getElementById('background-grid');
-    backgroundGrid.innerHTML = '';
+    renderBackgroundGrid() {
+        const backgroundGrid = document.getElementById('background-grid');
+        if (!backgroundGrid || this.backgroundScenes.length === 0) return;
+        
+        backgroundGrid.innerHTML = '';
 
-    // Calculate how many items we need to fill the screen
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const itemSize = 150; // Size of each grid item
-    const itemsNeeded = Math.ceil((screenWidth / itemSize) * (screenHeight / itemSize)) + 20; // Extra for safety
-    
-    for (let i = 0; i < itemsNeeded; i++) {
-        const scene = this.backgroundScenes[i % this.backgroundScenes.length];
+        // Calculate how many items we need to fill the screen
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        const itemSize = 120; // Smaller items for better coverage
+        const itemsNeeded = Math.ceil((screenWidth / itemSize) * (screenHeight / itemSize)) + 50; // More items
         
-        const bgItem = document.createElement('a');
-        bgItem.className = 'remoose-bg-item';
-        bgItem.href = `${this.baseUrl}${scene.sceneURL}`;
-        bgItem.target = '_blank';
-        bgItem.rel = 'noopener noreferrer';
-        
-        const img = document.createElement('img');
-        img.src = scene.thumbnail; // Use thumbnail instead of webpURL
-        img.alt = `Remoose Scene ${scene.id}`;
-        img.loading = 'lazy';
-        
-        img.onerror = () => {
-            img.src = scene.webpURL || scene.pngURL; // Fallback to webp or png
-        };
-        
-        bgItem.appendChild(img);
-        backgroundGrid.appendChild(bgItem);
-    }
-}
-
-    renderMainGrid() {
-        const mainGrid = document.getElementById('remoose-grid');
-        mainGrid.innerHTML = '';
-
-        const displayScenes = this.validScenes.length > 0 ? this.validScenes : this.scenes.slice(0, 6);
-        
-        displayScenes.slice(0, 6).forEach(scene => {
-            const gridItem = this.createGridItem(scene);
-            mainGrid.appendChild(gridItem);
-        });
+        for (let i = 0; i < itemsNeeded; i++) {
+            const scene = this.backgroundScenes[i % this.backgroundScenes.length];
+            
+            const bgItem = document.createElement('a');
+            bgItem.className = 'remoose-bg-item';
+            bgItem.href = `${this.baseUrl}${scene.sceneURL}`;
+            bgItem.target = '_blank';
+            bgItem.rel = 'noopener noreferrer';
+            
+            const img = document.createElement('img');
+            img.src = scene.thumbnail || scene.webpURL || scene.pngURL;
+            img.alt = `Remoose Scene ${scene.id}`;
+            img.loading = 'lazy';
+            
+            img.onerror = () => {
+                img.src = scene.webpURL || scene.pngURL;
+            };
+            
+            bgItem.appendChild(img);
+            backgroundGrid.appendChild(bgItem);
+        }
     }
 
-    createGridItem(scene) {
-        const item = document.createElement('a');
-        item.className = 'remoose-embed';
-        item.href = `${this.baseUrl}${scene.sceneURL}`;
-        item.target = '_blank';
-        item.rel = 'noopener noreferrer';
-        
-        const img = document.createElement('img');
-        img.src = scene.webpURL;
-        img.alt = `Remoose Scene by ${scene.username}`;
-        img.loading = 'lazy';
-        
-        img.onerror = () => {
-            img.src = scene.thumbnail || scene.pngURL;
-        };
-        
-        const sceneInfo = document.createElement('div');
-        sceneInfo.className = 'scene-info';
-        
-        const tags = document.createElement('div');
-        tags.className = 'scene-tags';
-        tags.textContent = scene.tags.slice(0, 3).join(' ');
-        
-        const date = document.createElement('div');
-        date.className = 'scene-date';
-        date.textContent = this.formatDate(scene.date);
-        
-        sceneInfo.appendChild(tags);
-        sceneInfo.appendChild(date);
-        
-        item.appendChild(img);
-        item.appendChild(sceneInfo);
-        
-        return item;
+    async loadMainScene() {
+        try {
+            const response = await fetch(`https://remoose.com/api/scene/get/${this.sceneID}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.sceneData = await response.json();
+            
+            const sceneImage = document.getElementById('scene-image');
+            if (sceneImage && this.sceneData.webpURL) {
+                sceneImage.src = this.sceneData.webpURL;
+                sceneImage.alt = 'Remix this scene';
+            }
+        } catch (error) {
+            console.error('Failed to load main scene:', error);
+        }
     }
 
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-        });
+    async loadChildrenScenes() {
+        try {
+            const response = await fetch(`https://remoose.com/api/scene/children/${this.sceneID}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.childrenData = await response.json();
+            this.renderChildrenGrid();
+        } catch (error) {
+            console.error('Failed to load children scenes:', error);
+            this.showError();
+        }
     }
 
-    hideLoading() {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('remoose-grid').style.display = 'grid';
+    renderChildrenGrid() {
+        const loading = document.getElementById('remixes-loading');
+        const grid = document.getElementById('remixes-grid');
+        
+        if (loading) loading.style.display = 'none';
+        if (grid) {
+            grid.style.display = 'grid';
+            grid.innerHTML = '';
+
+            if (this.childrenData.length === 0) {
+                grid.innerHTML = '<p style="color: rgba(255,255,255,0.8); text-align: center; grid-column: 1/-1;">No remixes yet - be the first!</p>';
+                return;
+            }
+
+            this.childrenData.forEach(scene => {
+                const remixItem = document.createElement('a');
+                remixItem.className = 'remix-item';
+                remixItem.href = `${this.baseUrl}${scene.sceneURL}`;
+                remixItem.target = '_blank';
+                remixItem.rel = 'noopener noreferrer';
+                
+                const img = document.createElement('img');
+                img.src = scene.webpURL || scene.thumbnail || scene.pngURL;
+                img.alt = `Remix by ${scene.username || 'Unknown'}`;
+                img.loading = 'lazy';
+                
+                img.onerror = () => {
+                    img.src = scene.thumbnail || scene.pngURL;
+                };
+                
+                remixItem.appendChild(img);
+                grid.appendChild(remixItem);
+            });
+        }
+    }
+
+    setupEventListeners() {
+        const demoScene = document.getElementById('demo-scene');
+        if (demoScene) {
+            demoScene.addEventListener('click', () => {
+                // Updated to use the specific replies URL format
+                window.open(`${this.baseUrl}/${this.sceneID}/replies`, '_blank');
+            });
+        }
     }
 
     showError() {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'block';
+        const loading = document.getElementById('remixes-loading');
+        if (loading) {
+            loading.innerHTML = '<p style="color: #FF6B6B;">Failed to load remixes. Please try again later.</p>';
+        }
     }
 }
+
+// Initialize the new Remoose overhaul when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit to ensure other scripts are loaded
+    setTimeout(() => {
+        new RemooseOverhaul();
+    }, 1000);
+});
 
 // Initialize Remoose section when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
