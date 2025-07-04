@@ -1119,6 +1119,18 @@ $(document).ready(function() {
         updateFace("#face", e.pageX, e.pageY); // Navigation face
         updateFace("#hero-face", e.pageX, e.pageY); // Hero face
     });
+
+    // ADD THIS: Game trigger for face click
+    $("#face").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Face clicked!"); // Test this in console
+        if (window.openFlyingJohnnyGame) {
+            window.openFlyingJohnnyGame();
+        } else {
+            console.log("Game function not available");
+        }
+    });
 });
 </script>
 <div class="floating-contact">
@@ -1129,4 +1141,83 @@ $(document).ready(function() {
         <span class="contact-text">Contact</span>
     </a>
 </div>
+<div id="game-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="position: relative; max-width: 90vw; max-height: 90vh;">
+        <button onclick="closeGame()" style="position: absolute; top: -40px; right: 0; background: #FF6B6B; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px;">&times;</button>
+        <canvas id="game-canvas" style="border: 2px solid #37FF8B; border-radius: 8px;"></canvas>
+        <div style="position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); color: white; text-align: center; font-size: 14px;">
+            Click or tap to make Johnny fly! Avoid the obstacles!
+        </div>
+    </div>
+</div>
+
+<script>
+window.pandaConfig = {
+    sourceFolder: 'game', // Changed from 'game/engine' to just 'game'
+    mediaFolder: 'game/flying-johnny/',
+    sitelock: '',
+    storage: { id: 'com.johnnyjansen.flyingjohnny' }
+};
+
+function openGame() {
+    document.getElementById('game-modal').style.display = 'flex';
+    if (!window.gameInitialized) {
+        loadGameModules();
+        window.gameInitialized = true;
+    }
+}
+
+function closeGame() {
+    document.getElementById('game-modal').style.display = 'none';
+    if (window.game && window.game.audio) {
+        window.game.audio.stopAll();
+    }
+}
+
+function loadGameModules() {
+    const modules = [
+        'game/engine/core.js',
+        'game/flying-johnny/config.js',
+        'game/flying-johnny/assets.js', 
+        'game/flying-johnny/objects.js',
+        'game/flying-johnny/scenes.js',
+        'game/flying-johnny/main.js'
+    ];
+
+    let loadedCount = 0;
+    
+    function loadNext() {
+        if (loadedCount >= modules.length) {
+            setTimeout(() => {
+                if (window.game) {
+                    game.start('SceneGame', 768, 1024, null, 'game-canvas');
+                }
+            }, 100);
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = modules[loadedCount];
+        script.onload = () => {
+            loadedCount++;
+            loadNext();
+        };
+        script.onerror = () => {
+            console.error('Failed to load:', modules[loadedCount]);
+            loadedCount++;
+            loadNext();
+        };
+        document.head.appendChild(script);
+    }
+    loadNext();
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeGame();
+});
+
+window.openFlyingJohnnyGame = openGame;
+</script>
+<script src="./js/navigation.js"></script>
 </body>
+</html>
