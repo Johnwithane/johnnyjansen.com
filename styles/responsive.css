@@ -305,11 +305,28 @@
 }
 
 @media (max-width: 768px) {
-    .contact-info {
-        display: none; /* Hide the entire "Let's Collaborate" section on mobile */
+    .contact-content {
+        grid-template-columns: 1fr !important;
+        gap: var(--space-lg);
     }
     
-    .contact-content {
-        grid-template-columns: 1fr; /* Make contact form full width */
+    .contact-info {
+        display: none;
+    }
+    
+    .contact-form {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .contact-form-wrapper {
+        margin: 0;
+        padding: var(--space-lg);
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        box-sizing: border-box;
     }
 }
