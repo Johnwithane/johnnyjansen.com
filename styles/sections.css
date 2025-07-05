@@ -1,396 +1,3 @@
-/* ===== NEW REMOOSE SECTION REDESIGN ===== */
-
-.remoose-section {
-    background: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
-    position: relative;
-    overflow: hidden;
-    padding: 6rem 0;
-    min-height: 100vh;
-}
-
-/* Logo Section */
-.remoose-logo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    margin-bottom: 3rem;
-    width: 100%;
-}
-
-.remoose-logo img {
-    height: 120px;
-    width: auto;
-    transition: all 0.3s ease;
-    display: block;
-    margin: 0 auto;
-}
-
-.remoose-logo img:hover {
-    transform: scale(1.05);
-}
-
-/* Wide Description Card */
-.remoose-description-card {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    padding: 3rem;
-    margin: 0 auto 4rem;
-    max-width: 900px;
-    backdrop-filter: blur(15px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-.remoose-description-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-
-.remoose-description-card p {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1.2rem;
-    line-height: 1.7;
-    margin-bottom: 1.5rem;
-}
-
-.remoose-description-card p:last-of-type {
-    margin-bottom: 2rem;
-}
-
-.role-badge {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-    padding: 0.75rem 2rem;
-    border-radius: 25px;
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* Remix Interaction Section */
-.remix-interaction-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
-    align-items: center;
-    margin-bottom: 4rem;
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Left Side CTA */
-.remix-cta {
-    text-align: left;
-    padding: 2rem;
-}
-
-.remix-cta h3 {
-    color: white;
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    font-weight: 300;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    line-height: 1.2;
-}
-
-.remix-cta p {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1.4rem;
-    font-weight: 300;
-    line-height: 1.5;
-}
-
-/* Main Scene Container */
-.main-scene-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.scene-demo {
-    position: relative;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    max-width: 400px;
-}
-
-.scene-demo:hover {
-    transform: translateY(-10px) scale(1.03);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.scene-demo img {
-    width: 100%;
-    height: auto;
-    display: block;
-    transition: all 0.4s ease;
-}
-
-.scene-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.scene-demo:hover .scene-overlay {
-    opacity: 1;
-}
-
-.play-button {
-    width: 70px;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    color: #333;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.play-button:hover {
-    transform: scale(1.1);
-    background: white;
-}
-
-/* Children Grid Section */
-.remixes-section {
-    margin-top: 3rem;
-}
-
-.remixes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.remix-item {
-    border-radius: 15px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    aspect-ratio: 1;
-}
-
-.remix-item:hover {
-    transform: scale(1.05) translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.4);
-    z-index: 10;
-    position: relative;
-}
-
-.remix-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: all 0.4s ease;
-}
-
-.remix-item:hover img {
-    transform: scale(1.05);
-}
-
-/* Loading States */
-.loading {
-    text-align: center;
-    padding: 3rem;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Background Grid - Subtle */
-.remoose-background-grid {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 1px;
-    z-index: -2;
-    opacity: 0.2;
-    overflow: hidden;
-}
-
-.remoose-bg-item {
-    display: block;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    border-radius: 4px;
-}
-
-.remoose-bg-item:hover {
-    opacity: 0.6;
-    transform: scale(1.02);
-    z-index: 10;
-    position: relative;
-}
-
-.remoose-bg-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: all 0.3s ease;
-}
-
-.remoose-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, 
-        rgba(250, 112, 154, 0.3) 0%, 
-        rgba(254, 225, 64, 0.3) 100%);
-    z-index: -1;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .remoose-section {
-        padding: 4rem 0;
-    }
-
-    .remoose-logo img {
-        height: 80px;
-    }
-
-    .remoose-description-card {
-        padding: 2rem;
-        margin-bottom: 3rem;
-    }
-
-    .remoose-description-card p {
-        font-size: 1.1rem;
-    }
-
-    .remix-interaction-section {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        text-align: center;
-    }
-
-    .remix-cta {
-        text-align: center;
-        padding: 1rem;
-    }
-
-    .remix-cta h3 {
-        font-size: 2.2rem;
-    }
-
-    .remix-cta p {
-        font-size: 1.2rem;
-    }
-
-    .scene-demo {
-        max-width: 350px;
-    }
-
-    .remixes-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        padding: 1.5rem;
-    }
-
-    .remoose-background-grid {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        grid-template-rows: repeat(auto-fill, minmax(80px, 1fr));
-        opacity: 0.15;
-    }
-}
-
-@media (max-width: 480px) {
-    .remoose-logo img {
-        height: 60px;
-    }
-
-    .remoose-description-card {
-        padding: 1.5rem;
-    }
-
-    .remoose-description-card p {
-        font-size: 1rem;
-    }
-
-    .remix-cta h3 {
-        font-size: 1.8rem;
-    }
-
-    .remix-cta p {
-        font-size: 1.1rem;
-    }
-
-    .scene-demo {
-        max-width: 300px;
-    }
-
-    .play-button {
-        width: 60px;
-        height: 60px;
-        font-size: 1.5rem;
-    }
-
-    .remixes-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 0.8rem;
-        padding: 1rem;
-    }
-}/* ===================================
-   ENHANCED SECTION-SPECIFIC STYLES
-   ================================== */
 
 /* ===== HERO SECTION ===== */
 .hero {
@@ -570,7 +177,8 @@
 }
 
 /* ===== DYNAMIC REMOOSE SECTION ===== */
-.remoose-section {
+/* ===== DYNAMIC REMOOSE SECTION ===== */
+.section-bg-remoose {
     background: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
     position: relative;
     overflow: hidden;
@@ -578,19 +186,290 @@
     min-height: 100vh;
 }
 
+/* Main Content Layout - Perfect Equal Heights */
+.remoose-main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: stretch;
+    margin-bottom: 4rem;
+}
+
+.remoose-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 3rem;
+    width: 100%;
+}
+
+.remoose-logo img {
+    height: 120px;
+    width: auto;
+}
+
+/* Left Side Card - Equal Height Design */
+.remoose-info-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 3rem;
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.remoose-info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.remoose-info-card p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.role-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: auto;
+    align-self: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Right Side Demo - Enhanced */
+.remoose-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 2rem;
+}
+
+.demo-cta {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.demo-cta h4 {
+    color: white;
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.demo-cta p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.3rem;
+    font-weight: 300;
+}
+
+.scene-demo {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.scene-demo:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.scene-demo img {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-width: 500px;
+    transition: all 0.4s ease;
+}
+
+.scene-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.scene-demo:hover .scene-overlay {
+    opacity: 1;
+}
+
+.play-button {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #333;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.play-button:hover {
+    transform: scale(1.1);
+    background: white;
+}
+
+/* Children Grid Section - Enhanced */
+.remixes-section {
+    margin-top: 5rem;
+}
+
+.remixes-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.remixes-header h3 {
+    color: white;
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 300;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.remixes-header p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.3rem;
+    font-weight: 300;
+}
+
+.remixes-grid {
+    display: grid;
+    grid-template-rows: repeat(4, 300px);
+    grid-auto-flow: column;
+    grid-auto-columns: 300px;
+    gap: 1.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+.remix-item {
+    min-width: 300px;
+    width: 300px;
+    height: 300px;
+    border-radius: 15px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.remix-item:hover {
+    transform: scale(1.08) translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    z-index: 10;
+    position: relative;
+}
+
+.remix-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.4s ease;
+}
+
+.remix-item:hover img {
+    transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .remoose-main-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .remoose-info-card {
+        padding: 2rem;
+        height: auto;
+    }
+
+    .demo-cta h4 {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+
+    .demo-cta p {
+        font-size: 1.1rem;
+    }
+
+    .scene-demo img {
+        max-width: 400px;
+    }
+
+    .remixes-grid {
+        grid-template-rows: repeat(2, 1fr);
+        gap: 1rem;
+        padding: 1.5rem 0;
+    }
+
+    .remix-item {
+        min-width: 160px;
+        height: 160px;
+    }
+}
+
 /* Dynamic Background Grid - FULL COVERAGE */
-.remoose-background-grid {
+.section-bg-remoose .remoose-background-grid {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    grid-auto-rows: 150px;
-    gap: 1px;
-    z-index: -2;
-    opacity: 0.4;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-rows: repeat(auto-fit, 200px); /* Fixed row height */
+    gap: 2px;
+    z-index: -3;
+    opacity: 0.3;
+    overflow: hidden;
 }
 
 @media (max-width: 768px) {
