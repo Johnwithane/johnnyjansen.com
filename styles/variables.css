@@ -4,25 +4,29 @@
 
 :root {
   /* ===== BRAND COLORS ===== */
-  --primary-color: #37FF8B;
-  --primary-hover: #2EE078;
-  --primary-dark: #1FA855;
+  --primary-color: #3F9E43;
+  --primary-hover: #F3C04F;
+  --primary-dark: #3F9E43;
   
-  --secondary-color: #FF6B6B;
-  --secondary-hover: #FF5252;
-  --secondary-dark: #E53935;
+  --secondary-color: #F2784B;
+  --secondary-hover: #F3C04F;
+  --secondary-dark: #A84582;
   
-  --accent-color: #667EEA;
-  --accent-hover: #5A6FE8;
-  --accent-dark: #4F5DE4;
+  --accent-color: #4BB8A1;
+  --accent-hover: #4BB8A1;
+  --accent-dark: #4BB8A1;
   
   /* ===== GRADIENTS ===== */
-  --gradient-music: linear-gradient(135deg, #FF6B6B 0%, #EE5A24 100%);
-  --gradient-documentary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-  --gradient-ugc: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-  --gradient-remoose: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
-  --gradient-motion: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%);
   --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-about: linear-gradient(135deg, #3F9E43 0%, #F3C04F 100%);
+  --gradient-remoose: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
+  --gradient-music: linear-gradient(135deg, #3F9E43 0%, #F3C04F 100%);
+  --gradient-documentary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+  --gradient-motion: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%);
+  --gradient-contact: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+
+
+
   
   /* ===== NEUTRAL COLORS ===== */
   --black: #000000;

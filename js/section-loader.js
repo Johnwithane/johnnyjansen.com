@@ -22,11 +22,6 @@ class SectionLoader {
 
     loadAllSections() {
         // About section
-    const heroContainer = document.getElementById('hero-section');
-    if (heroContainer) {
-        heroContainer.innerHTML = this.getHeroSection();
-        this.loadedSections.add('hero');
-    }
 
     // About section  
     const aboutContainer = document.getElementById('about-section');
@@ -120,66 +115,64 @@ getHeroSection() {
         </section>`;
     }
 
-    getRemooseSection() {
-        const { remoose } = this.content;
-        const descriptionParts = remoose.description.split('\n\n');
-        return `<section id="remoose" class="section section-bg-remoose">
-            <div class="section-overlay"></div>
-            <!-- Background Grid -->
-            <div class="remoose-background-grid" id="background-grid"></div>
+getRemooseSection() {
+    const { remoose } = this.content;
+    const descriptionParts = remoose.description.split('\n\n');
+    return `<section id="remoose" class="section section-bg-remoose">
+        <div class="section-overlay"></div>
 
-            <div class="container">
-                <!-- Logo Section -->
-                <div class="remoose-logo">
-                    <img src="./static/logo-remoose.png" alt="Remoose Logo" id="remoose-logo">
-                </div>
+        <div class="container">
+            <!-- Logo Section -->
+            <div class="remoose-logo">
+                <img src="./static/logo-remoose.png" alt="Remoose Logo" id="remoose-logo">
+            </div>
 
-                <!-- Main Content -->
-                <div class="remoose-main-content">
-                    <!-- Left Side Card -->
-                    <div class="remoose-info-card">
-                        <p>${descriptionParts[0] || remoose.description}</p>
-                        ${descriptionParts[1] ? `<p>${descriptionParts[1]}</p>` : ''}
-                        
-                        <div class="bottom-info">
-                            <span class="role-badge">${remoose.role}</span>
-                        </div>
-                    </div>
-
-                    <!-- Right Side Demo -->
-                    <div class="remoose-demo">
-                        <div class="demo-cta">
-                            <h4>Remix This Scene</h4>
-                            <p>Join the party and create your own version!</p>
-                        </div>
-                        <div class="scene-demo" id="demo-scene">
-                            <img id="scene-image" src="" alt="Remix this scene">
-                            <div class="scene-overlay">
-                                <div class="play-button">▶</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Children Grid Section -->
-                <div class="remixes-section">
-                    <div class="remixes-header">
-                        <h3>See Your Remix Here</h3>
-                        <p>Watch how the community builds on this scene</p>
-                    </div>
+            <!-- Main Content -->
+            <div class="remoose-main-content">
+                <!-- Left Side Card -->
+                <div class="remoose-info-card">
+                    <p>${descriptionParts[0] || remoose.description}</p>
+                    ${descriptionParts[1] ? `<p>${descriptionParts[1]}</p>` : ''}
                     
-                    <div id="remixes-loading" class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>Loading community remixes...</p>
+                    <div class="bottom-info">
+                        <span class="role-badge">${remoose.role}</span>
                     </div>
+                </div>
 
-                    <div class="remixes-grid" id="remixes-grid" style="display: none;">
-                        <!-- Dynamic content will be inserted here -->
+                <!-- Right Side Demo -->
+                <div class="remoose-demo">
+                    <div class="demo-cta">
+                        <h4>Remix This Scene</h4>
+                        <p>Join the party and create your own version!</p>
+                    </div>
+                    <div class="scene-demo" id="demo-scene">
+                        <img id="scene-image" src="" alt="Remix this scene">
+                        <div class="scene-overlay">
+                            <div class="play-button">▶</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>`;
-    }
+
+            <!-- Children Grid Section -->
+            <div class="remixes-section">
+                <div class="remixes-header">
+                    <h3>See Your Remix Here</h3>
+                    <p>Watch how the community builds on this scene</p>
+                </div>
+                
+                <div id="remixes-loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading community remixes...</p>
+                </div>
+
+                <div class="remixes-grid" id="remixes-grid" style="display: none;">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </section>`;
+}
 
     getMusicVideoSection() {
         const { awards, videos } = this.content;

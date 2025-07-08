@@ -4,69 +4,18 @@ class RemooseOverhaul {
         this.baseUrl = 'https://remoose.com';
         this.sceneData = null;
         this.childrenData = [];
-        this.backgroundApiUrl = 'https://remoose.com/api/scene/recent?filter_by_user=true&username=03beeeed-f188-4183-ae85-abc09e3cca9e&page=1';
-        this.backgroundScenes = [];
         
         this.init();
     }
 
     async init() {
         try {
-            await this.loadBackgroundScenes();
             await this.loadMainScene();
             await this.loadChildrenScenes();
             this.setupEventListeners();
         } catch (error) {
             console.error('Failed to load Remoose data:', error);
             this.showError();
-        }
-    }
-
-    async loadBackgroundScenes() {
-        try {
-            const response = await fetch(this.backgroundApiUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            this.backgroundScenes = await response.json();
-            this.renderBackgroundGrid();
-        } catch (error) {
-            console.error('Failed to load background scenes:', error);
-        }
-    }
-
-    renderBackgroundGrid() {
-        const backgroundGrid = document.getElementById('background-grid');
-        if (!backgroundGrid || this.backgroundScenes.length === 0) return;
-        
-        backgroundGrid.innerHTML = '';
-
-        // Calculate how many items we need to fill the screen
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-        const itemSize = 120; // Smaller items for better coverage
-        const itemsNeeded = Math.ceil((screenWidth / itemSize) * (screenHeight / itemSize)) + 50; // More items
-        
-        for (let i = 0; i < itemsNeeded; i++) {
-            const scene = this.backgroundScenes[i % this.backgroundScenes.length];
-            
-            const bgItem = document.createElement('a');
-            bgItem.className = 'remoose-bg-item';
-            bgItem.href = `${this.baseUrl}${scene.sceneURL}`;
-            bgItem.target = '_blank';
-            bgItem.rel = 'noopener noreferrer';
-            
-            const img = document.createElement('img');
-            img.src = scene.thumbnail || scene.webpURL || scene.pngURL;
-            img.alt = `Remoose Scene ${scene.id}`;
-            img.loading = 'lazy';
-            
-            img.onerror = () => {
-                img.src = scene.webpURL || scene.pngURL;
-            };
-            
-            bgItem.appendChild(img);
-            backgroundGrid.appendChild(bgItem);
         }
     }
 
@@ -108,11 +57,11 @@ class RemooseOverhaul {
         
         if (loading) loading.style.display = 'none';
         if (grid) {
-            grid.style.display = 'grid';
+            grid.style.display = 'flex'; // Changed to flex for horizontal scroll
             grid.innerHTML = '';
 
             if (this.childrenData.length === 0) {
-                grid.innerHTML = '<p style="color: rgba(255,255,255,0.8); text-align: center; grid-column: 1/-1;">No remixes yet - be the first!</p>';
+                grid.innerHTML = '<p style="color: rgba(255,255,255,0.8); text-align: center; width: 100%;">No remixes yet - be the first!</p>';
                 return;
             }
 

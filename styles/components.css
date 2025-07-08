@@ -1023,7 +1023,7 @@ nav .container {
     align-items: center;
     gap: var(--space-xs);
     padding: var(--space-sm) var(--space-lg);
-    background: var(--secondary-color);
+    background: var(--secondary-dark);
     color: var(--white);
     text-decoration: none;
     border-radius: var(--radius-full);

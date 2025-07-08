@@ -1,8 +1,141 @@
+/* ===================================
+   VIDEO BACKGROUND SYSTEM
+   Add this to the TOP of sections.css
+   ================================== */
 
+/* ===== VIDEO BACKGROUNDS ===== */
+.section-bg-video {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -3;
+  overflow: hidden;
+}
+
+.section-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translateX(-50%) translateY(-50%);
+  object-fit: cover;
+  z-index: -3;
+}
+
+/* ===== HERO VIDEO BACKGROUND ===== */
+.hero.section-bg-video .hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -3;
+}
+
+.hero.section-bg-video .hero-webp {
+  display: none; /* Hide the webp when using video */
+}
+
+.hero.section-bg-video .section-video {
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  transform: none;
+  top: 0;
+  left: 0;
+}
+
+/* ===== RESPONSIVE VIDEO BACKGROUNDS ===== */
+@media (max-width: 768px) {
+  .section-video {
+    /* Optimize for mobile performance */
+    min-width: 120%;
+    min-height: 120%;
+  }
+}
+
+/* ===== VIDEO LOADING STATES ===== */
+.section-video-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--dark-gray);
+  z-index: -2;
+}
+
+.section-video-bg.loaded::before {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+@media (prefers-reduced-motion: reduce) {
+  .section-video {
+    display: none;
+  }
+  
+  .section-bg-video {
+    background: var(--dark-gray);
+  }
+}
+
+/* ===== FALLBACK FOR UNSUPPORTED BROWSERS ===== */
+@supports not (object-fit: cover) {
+  .section-video {
+    display: none;
+  }
+}
+
+/* ===== ENHANCED OVERLAY SYSTEM ===== */
+.section-bg-video .section-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  transition: all 0.3s ease;
+}
+
+/* ===== VIDEO CONTROLS (Hidden by default) ===== */
+.section-video::-webkit-media-controls {
+  display: none !important;
+}
+
+.section-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+
+/* ===== INTERSECTION OBSERVER FOR PERFORMANCE ===== */
+.section-video.paused {
+  opacity: 0.5;
+}
+
+.section-video.playing {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* ===== HERO SECTION ===== */
 /* ===== HERO SECTION ===== */
 .hero {
   height: 100vh;
-  background: var(--gradient-hero);
+  /* Remove this line: background: var(--gradient-hero); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,6 +143,11 @@
   color: var(--white);
   position: relative;
   overflow: hidden;
+}
+
+/* Add fallback background only when no video */
+.hero:not(.section-bg-video) {
+  background: var(--gradient-hero);
 }
 
 .hero-video {
@@ -21,12 +159,6 @@
   z-index: var(--z-hero-overlay);
 }
 
-.hero-webp {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  animation: pulse 8s ease-in-out infinite;
-}
 
 .hero::before {
   content: '';
@@ -35,8 +167,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9); /* Change this 0.4 value to adjust transparency */
-  z-index: var(--z-hero-overlay);
+  background: rgba(0, 0, 0, 0.4); /* This will be overridden by config */
+  z-index: -1; /* Changed from var(--z-hero-overlay) to -1 */
 }
 
 .hero-content {
@@ -369,10 +501,7 @@
 }
 
 .remixes-grid {
-    display: grid;
-    grid-template-rows: repeat(4, 300px);
-    grid-auto-flow: column;
-    grid-auto-columns: 300px;
+    display: flex;
     gap: 1.5rem;
     overflow-x: auto;
     overflow-y: hidden;
@@ -382,6 +511,25 @@
     border-radius: 15px;
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
+    scroll-behavior: smooth;
+}
+
+.remixes-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.remixes-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.remixes-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+}
+
+.remixes-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .remix-item {

@@ -3,6 +3,16 @@
 //   Update all your content here!
 // ===================================
 
+const VideoRandomizer = {
+  getRandomSource: (sources) => {
+    if (Array.isArray(sources)) {
+      const randomIndex = Math.floor(Math.random() * sources.length);
+      return sources[randomIndex];
+    }
+    return sources; // Return single source if not array
+  }
+};
+
 const SITE_CONTENT = {
   // Personal Info
   personal: {
@@ -15,6 +25,144 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
     email: "johnny@johnnyjansen.com",
     phone: "+1 (778) 833-2339",
     location: "Vancouver, BC"
+  },
+
+  
+
+  // BACKGROUND SYSTEM - Configure all section backgrounds here
+  backgrounds: {
+    hero: {
+      type: "video", // "video", "pattern", or "image"
+      sources: [ // Array instead of single source
+        "static/hero-bg-1.mp4"
+      ],
+      mobileSource: [ // Array instead of single source
+        "static/hero-bg-1.webp"
+      ],
+      overlay: {
+        color: "var(--gradient-hero)", // Use CSS variable directly
+        opacity: 0.0
+      }
+    },
+    about: {
+      type: "video", // "video", "pattern", or "image"
+      sources: [ // Array instead of single source
+        "static/about-bg-1.mp4",
+        "static/about-bg-2.mp4", 
+        "static/about-bg-3.mp4"
+      ],      
+      mobileSource: [ // Array instead of single source
+        "static/about-bg-1.webp",
+        "static/about-bg-2.webp", 
+        "static/about-bg-3.webp"
+      ], 
+      overlay: {
+        color: "var(--gradient-about)", // Use CSS variable directly
+        opacity: 0.2
+      }
+    },
+    musicVideo: {
+      type: "video",
+      sources: [ // Array instead of single source
+        "static/music-bg-1.mp4",
+        "static/music-bg-2.mp4", 
+        "static/music-bg-3.mp4"
+      ],      
+      mobileSource: [ // Array instead of single source
+        "static/music-bg-1.webp",
+        "static/music-bg-2.webp", 
+        "static/music-bg-3.webp"
+      ],   
+      overlay: {
+        color: "var(--gradient-music)",
+        opacity: 0.5
+      }
+    },
+    documentary: {
+      type: "video", 
+      sources: [ // Array instead of single source
+        "static/documentary-bg-1.mp4",
+        "static/documentary-bg-2.mp4", 
+        "static/documentary-bg-3.mp4"
+      ],      
+      mobileSource: [ // Array instead of single source
+        "static/documentary-bg-1.webp",
+        "static/documentary-bg-2.webp", 
+        "static/documentary-bg-3.webp"
+      ],      
+      overlay: {
+        color: "var(--gradient-documentary)",
+        opacity: 0.75
+      }
+    },
+    ugc: {
+      type: "video", 
+      source: [ // Array instead of single source
+        "static/ugc-bg-1.mp4",
+        "static/ugc-bg-2.mp4", 
+        "static/ugc-bg-3.mp4"
+      ],   
+      mobileSource: [ // Array instead of single source
+        "static/ugc-bg-1.webp",
+        "static/ugc-bg-2.webp", 
+        "static/ugc-bg-3.webp"
+      ],   
+      overlay: {
+        color: "var(--gradient-about)", // Use CSS variable directly
+        opacity: 0.75
+      }
+    },
+    motionDesign: {
+      type: "video",
+      source: [ // Array instead of single source
+        "static/motion-bg-1.mp4",
+        "static/motion-bg-2.mp4", 
+        "static/motion-bg-3.mp4"
+      ],    
+      mobileSource: [ // Array instead of single source
+        "static/motion-bg-1.webp",
+        "static/motion-bg-2.webp", 
+        "static/motion-bg-3.webp"
+      ],    
+      overlay: {
+        color: "var(--gradient-motion)",
+        opacity: 0.75
+      }
+    },
+    remoose: {
+      type: "video",
+      source: [ // Array instead of single source
+        "static/remoose-bg-1.mp4",
+        "static/remoose-bg-2.mp4", 
+        "static/remoose-bg-3.mp4"
+      ], 
+      mobileSource: [ // Array instead of single source
+        "static/remoose-bg-1.webp",
+        "static/remoose-bg-2.webp", 
+        "static/remoose-bg-3.webp"
+      ], 
+      overlay: {
+        color: "var(--gradient-remoose)",
+        opacity: 0.75
+      }
+    },
+    contact: {
+      type: "video",
+      source: [ // Array instead of single source
+        "static/contact-bg-1.mp4",
+        "static/contact-bg-2.mp4", 
+        "static/contact-bg-3.mp4"
+      ],
+      mobileSource: [ // Array instead of single source
+        "static/contact-bg-1.webp",
+        "static/contact-bg-2.webp", 
+        "static/contact-bg-3.webp"
+      ],
+      overlay: {
+        color: "var(--gradient-contact)",
+        opacity: 0.2
+      }
+    }
   },
 
   // Social Media Links
@@ -171,7 +319,103 @@ const VideoHelpers = {
   }
 };
 
+// Background System Helper
+const BackgroundHelpers = {
+  // Apply background configuration to a section
+  applyBackground: (sectionId, config) => {
+    const section = document.getElementById(sectionId);
+    if (!section || !config) return;
+
+    // Remove existing background classes
+    section.classList.remove('section-bg-video', 'section-bg-pattern', 'section-bg-image');
+    
+    // Apply new background type
+    switch (config.type) {
+      case 'video':
+        section.classList.add('section-bg-video');
+        BackgroundHelpers.setupVideoBackground(section, config);
+        break;
+      case 'pattern':
+        section.classList.add('section-bg-pattern');
+        section.setAttribute('data-pattern', config.pattern);
+        break;
+      case 'image':
+        section.classList.add('section-bg-image');
+        section.setAttribute('data-bg', config.source);
+        break;
+    }
+
+    // Apply overlay configuration
+    if (config.overlay) {
+      const overlay = section.querySelector('.section-overlay') || BackgroundHelpers.createOverlay(section);
+      overlay.style.background = config.overlay.color;
+      overlay.style.opacity = config.overlay.opacity;
+    }
+  },
+
+  // Setup video background
+  setupVideoBackground: (section, config) => {
+    let videoContainer = section.querySelector('.section-video-bg');
+    
+    if (!videoContainer) {
+      videoContainer = document.createElement('div');
+      videoContainer.className = 'section-video-bg';
+      section.insertBefore(videoContainer, section.firstChild);
+    }
+
+    videoContainer.innerHTML = `
+      <video 
+        autoplay 
+        muted 
+        loop 
+        playsinline
+        preload="metadata"
+        class="section-video">
+        <source src="${config.source}" type="video/mp4">
+      </video>
+    `;
+
+    // Handle video loading
+    const video = videoContainer.querySelector('video');
+    video.addEventListener('loadeddata', () => {
+      video.play().catch(e => console.log('Video autoplay prevented:', e));
+    });
+  },
+
+  // Create overlay element
+  createOverlay: (section) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'section-overlay';
+    section.appendChild(overlay);
+    return overlay;
+  },
+
+  // Initialize all backgrounds from config
+  initAllBackgrounds: () => {
+    const { backgrounds } = SITE_CONTENT;
+    
+    // Map config keys to section IDs
+    const sectionMap = {
+      hero: 'hero',
+      about: 'about', 
+      musicVideo: 'music-video',
+      documentary: 'documentary', 
+      ugc: 'ugc',
+      motionDesign: 'motion-design',
+      remoose: 'remoose',
+      contact: 'contact'
+    };
+
+    Object.entries(sectionMap).forEach(([configKey, sectionId]) => {
+      const config = backgrounds[configKey];
+      if (config) {
+        BackgroundHelpers.applyBackground(sectionId, config);
+      }
+    });
+  }
+};
+
 // Export for use in other files
 if (typeof module !== 'undefined') {
-  module.exports = { SITE_CONTENT, VideoHelpers };
+  module.exports = { SITE_CONTENT, VideoHelpers, BackgroundHelpers };
 }

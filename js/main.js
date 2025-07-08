@@ -12,7 +12,6 @@ class PortfolioApp {
   
   init() {
     this.setupEventListeners();
-    this.setupVideoEmbeds();
     this.setupPerformanceOptimizations();
     this.setupErrorHandling();
   }
