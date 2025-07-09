@@ -18,9 +18,9 @@
   
   /* ===== GRADIENTS ===== */
   --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-about: linear-gradient(135deg, #3F9E43 0%, #F3C04F 100%);
-  --gradient-remoose: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
-  --gradient-music: linear-gradient(135deg, #3F9E43 0%, #F3C04F 100%);
+  --gradient-about: linear-gradient(135deg, #efefef 0%, #b0b0b0 100%);
+  --gradient-remoose: linear-gradient(135deg, #E6A935 0%, #A73CE6 100%);
+  --gradient-music: linear-gradient(135deg, #1A1A1A 0%, #333333 100%);
   --gradient-documentary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
   --gradient-motion: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%);
   --gradient-contact: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);

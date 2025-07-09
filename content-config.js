@@ -58,7 +58,7 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
       ], 
       overlay: {
         color: "var(--gradient-about)", // Use CSS variable directly
-        opacity: 0.2
+        opacity: 0.5
       }
     },
     musicVideo: {
@@ -108,7 +108,7 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
         "static/ugc-bg-3.webp"
       ],   
       overlay: {
-        color: "var(--gradient-about)", // Use CSS variable directly
+        color: "var(--gradient-music)", // Use CSS variable directly
         opacity: 0.75
       }
     },
@@ -126,7 +126,7 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
       ],    
       overlay: {
         color: "var(--gradient-motion)",
-        opacity: 0.75
+        opacity: 0.90
       }
     },
     remoose: {
@@ -176,72 +176,100 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
 
   // Awards
   awards: [
-    { title: "Leo Award", description: "Outstanding Achievement in Music Videos", year: "2019" },
-    { title: "Prism Prize", description: "Canadian Music Video Recognition", year: "2020" },
-    { title: "WCMA", description: "Western Canadian Music Awards", year: "2019" },
-    { title: "Juno Nomination", description: "Best Music Video 2020", year: "2020" }
+    { title: "Juno Award Nomination", description: "Best Music Video - 'Record Shop'", year: "2020" },
+    { title: "Prism Prize Audience Choice", description: "Un-American by Said the Whale", year: "2019" },
+    { title: "Leo Award Winner", description: "Best Music Video - 'Un-American'", year: "2019" },
+    { title: "WCMA Video Director", description: "Video Director of the Year", year: "2019" }
   ],
+
+    services: {
+    primary: [
+      "UGC Strategy & Community Engagement Consulting",
+      "High-Concept Music Video Direction", 
+      "Motion Design & Explainer Videos",
+      "Chief Creative Officer Consulting",
+      "Front-End Development & Technical Direction"
+    ],
+    expertise: [
+      "Concept to completion execution",
+      "Team leadership & technical management", 
+      "Community-driven content systems",
+      "Award-winning creative direction",
+      "Cross-platform content strategy"
+    ]
+  },
 
   // Video Content - Just update the IDs here!
   videos: {
     demoReel: {
       platform: "vimeo",
-      id: "387499815",
-      title: "Demo Reel",
-      description: "A showcase of my best music video work featuring dynamic cinematography and creative storytelling"
+      id: "387499815", // UPDATE WITH YOUR ACTUAL DEMO REEL ID
+      title: "Director Demo Reel",
+      description: "Award-winning showcase featuring music videos, commercials, and creative direction across multiple platforms and brands"
     },
     
-    musicVideos: [
+
+        musicVideos: [
       {
-        platform: "youtube",
+        platform: "youtube", // UPDATE PLATFORM & ID
         id: "vYY0eZHvSGo",
         title: "Record Shop",
-        artist: "Artist Name"
+        artist: "Said the Whale",
+        description: "Juno Award nominated music video (2020)"
       },
       {
-        platform: "youtube", 
-        id: "vyLOqxbj9uc",
-        title: "Music Video 2",
-        artist: "Artist Name"
+        platform: "youtube", // UPDATE PLATFORM & ID
+        id: "vyLOqxbj9uc", 
+        title: "Un-American",
+        artist: "Said the Whale",
+        description: "Leo Award winner, WCMA Video Director of the Year, Prism Prize Audience Choice"
+      },
+      {
+        platform: "youtube", // ADD MORE AS NEEDED
+        id: "YOUR_VIDEO_ID_3",
+        title: "Music Video Title",
+        artist: "Artist Name",
+        description: "Video description"
       }
-      // Add more videos here
     ],
 
     documentaries: [
       {
         platform: "vimeo",
-        id: "286303683", 
+        id: "286303683", // UPDATE IF NEEDED
         title: "Most Likely to Become Famous",
-        status: "In Post-Production",
+        status: "Post-Production (On Creative Hold)", 
         runtime: "90 minutes",
-        description: "A meta-documentary about bringing our best friend Kyle Tubbs back to life after his tragic death from a fentanyl overdose at 27."
+        description: "Feature documentary funded by Blumhouse Productions. A meta-documentary exploring friendship, loss, and the creative process through the story of bringing our best friend back to life after his tragic death.",
+        role: "Director/Producer"
       },
       {
-        platform: "vimeo",
-        id: "880652226",
-        title: "The Club Penguin Story", 
-        status: "In Development",
-        runtime: "3 Episodes",
-        description: "A three-episode documentary series exploring how Club Penguin became the world's most popular children's computer game."
+        platform: "vimeo", 
+        id: "880652226", // UPDATE IF NEEDED
+        title: "The Club Penguin Story",
+        status: "Development/Seeking Investment",
+        runtime: "3 Episodes", 
+        description: "Documentary series exploring how Club Penguin became the world's most popular children's computer game. Co-directed with RocketSnail Games team.",
+        role: "Co-Director/Producer"
       }
     ],
 
     oceanKitchen: [
       {
         platform: "youtube",
-        id: "14a1nnW5jgY",
+        id: "14a1nnW5jgY", // UPDATE IF NEEDED
         title: "Sustainable Shrimp Farming",
         description: "Ocean Wise Executive Chef Ned Bell visits a sustainable shrimp farm in Vietnam."
       },
       {
         platform: "youtube", 
-        id: "KjebufqRQQg",
+        id: "KjebufqRQQg", // UPDATE IF NEEDED
         title: "Haida Gwaii Shore Lunch",
-        description: "What does sustainability look like for a recreational fisher?"
+        description: "Exploring sustainability practices for recreational fishing with Chef Ned Bell."
       },
       {
         platform: "youtube",
-        id: "Oe2xJZHGlIk", 
+        id: "Oe2xJZHGlIk", // UPDATE IF NEEDED
         title: "Geoduck Harvesting in Action",
         description: "Chef Ned Bell joins a Geoduck dive with the Underwater Harvesters Association"
       }
@@ -252,48 +280,158 @@ As Co-founder and Chief Creative Officer of Remoose, I'm building the future of 
   remoose: {
     sceneID: "nYZTpZddGz2tSCtsocBBT4",
     userID: "03beeeed-f188-4183-ae85-abc09e3cca9e",
-    description: `Remoose is a collaborative animation platform that lets creators remix and build on each other's work. It's democratizing animation by making it accessible, social, and fun.
+    description: `Remoose emerged from years of pioneering UGC work at Club Penguin and LEGO. Starting as a prototype in 2022, we officially launched as a company in March 2024 to solve a fundamental question: how can communities collaborate in the content creation and storytelling process?
 
-As Co-founder and Chief Creative Officer, I lead front-end development and design for the platform. The project emerged from my experience building UGC systems for Club Penguin and LEGO, where I partnered with Lance Priebe and Nicole Thompson to create this groundbreaking startup.`,
-    role: "Co-founder & Chief Creative Officer"
+Our revolutionary platform enables creators to build modular, remixable content that branches and evolves through community collaboration. Think modular storytelling where every piece can become the foundation for someone else's creative vision.
+
+As Co-founder and Chief Creative Officer, I lead both the creative vision and technical execution, handling front-end development while directing our development team. We've just soft-launched our first product after years of development.`,
+    role: "Co-founder & Chief Creative Officer",
+    timeline: "Prototype: 2022 | Company Founded: March 2024 | Soft Launch: 2024"
   },
-
   // UGC Projects
   ugcProjects: [
     {
-      title: "LEGO Life - Build Your Own Adventure",
-      description: "Created a serialized storytelling experience for LEGO Life community spanning 2 seasons. Each week, the community voted on which bricks to use and commented on story direction.",
-      videoId: "YOUR_LEGO_VIDEO", // Replace with actual ID
+      title: "LEGO Life - Build Your Own Adventure", 
+      description: "As UGC Specialist at LEGO Group, created a serialized storytelling experience spanning 2 seasons where the community voted on story direction and brick choices each week. Managed the entire content pipeline from concept to execution.",
+      achievement: "Successfully engaged millions in collaborative storytelling",
+      videoId: "YOUR_LEGO_VIDEO_ID", // ADD WHEN AVAILABLE
       platform: "vimeo"
     },
     {
-      title: "Club Penguin - Businesmoose", 
-      description: "As 'Businesmoose,' created engaging UGC content for the Club Penguin community, moderating the game environment while producing creative and interactive videos.",
-      videoId: "YOUR_CP_VIDEO", // Replace with actual ID
-      platform: "vimeo"
+      title: "Club Penguin - Businesmoose Era",
+      description: "Pioneer of influencer marketing in children's gaming. As 'Businesmoose,' generated over 14 million views through community engagement and UGC content creation, while moderating a platform of 5+ million users.",
+      achievement: "Generated 14M+ views across 61 videos"
     },
     {
-      title: "UGC Strategy Consulting",
-      description: "Developed comprehensive UGC content plans and systems for major brands including LEGO and Disney, focusing on community-driven storytelling and engagement strategies."
+      title: "UGC Systems Development", 
+      description: "Developed comprehensive UGC frameworks and community engagement strategies for major brands including Disney Interactive, LEGO Group, and RocketSnail Games. Specialized in creating systems that turn community participation into high-quality branded content.",
+      achievement: "Multi-million dollar content strategies"
     }
   ],
 
   // Career Timeline (for career.html)
-  timeline: [
-    {
-      year: "April 2024 - Present",
-      title: "Co-founder & Chief Creative Officer", 
-      company: "Remoose",
-      description: "Leading creative vision and product development for next-generation digital communication platform.",
-      achievements: [
-        "Built and launched revolutionary digital communication platform from concept to company",
-        "Lead front-end development and design architecture for complex interactive platform", 
-        "Manage development team and establish technical standards and workflows"
-      ],
-      videoId: "YOUR_REMOOSE_DEMO_VIDEO" // Add when available
-    }
-    // Add more timeline entries
-  ]
+  // Career Timeline
+timeline: [
+  {
+    year: "March 2024 - Present",
+    title: "Co-founder & Chief Creative Officer", 
+    company: "Remoose",
+    description: "Leading creative vision and technical execution for revolutionary collaborative content platform. Built from prototype to company launch, handling front-end development and team management.",
+    achievements: [
+      "Co-founded company with Nicole Thompson and Lance Priebe",
+      "Led front-end development and design architecture", 
+      "Managed development team through prototype to soft launch",
+      "Pioneered modular, remixable content creation system",
+      "Established product strategy and user experience design"
+    ]
+  },
+  {
+    year: "2021 - 2024",
+    title: "Senior Content Director", 
+    company: "RocketSnail Games",
+    description: "Oversaw all content strategy while incubating Remoose. Produced game trailers, managed content pipeline, and co-directed Club Penguin documentary series.",
+    achievements: [
+      "Directed comprehensive content strategy for gaming properties",
+      "Co-directed and produced 'The Club Penguin Story' documentary series",
+      "Managed all promotional and marketing content creation",
+      "Developed Remoose prototype within company incubator",
+      "Established content creation workflows and team management systems"
+    ]
+  },
+  {
+    year: "2021 - 2022", 
+    title: "UGC Consultant",
+    company: "LEGO Group", 
+    description: "Specialized consultant for user-generated content systems and community engagement strategies for LEGO Life platform.",
+    achievements: [
+      "Developed 'Build Your Own Adventure' serialized content series", 
+      "Created community voting systems for story direction",
+      "Managed multi-season interactive storytelling campaigns",
+      "Established UGC frameworks for millions of users",
+      "Consulted on community-driven content strategies"
+    ]
+  },
+  {
+    year: "2019 - 2021",
+    title: "Feature Film Director/Producer",
+    company: "Independent (Blumhouse Funded)",
+    description: "Directed and produced feature documentary 'Most Likely to Become Famous' with funding from Blumhouse Productions. Completed rough cut while maintaining freelance music video career.",
+    achievements: [
+      "Secured funding from Blumhouse Productions for feature documentary",
+      "Directed and produced 90-minute documentary film", 
+      "Delivered completed rough cut to production partners",
+      "Continued award-winning music video directing career",
+      "Managed full production pipeline from concept to post"
+    ]
+  },
+  {
+    year: "2017 - 2019",
+    title: "Senior Content Producer & Motion Designer",
+    company: "Ocean Wise / Vancouver Aquarium", 
+    description: "High-level creative director for environmental content. Created original series and managed all video content for interactive exhibits.",
+    achievements: [
+      "Created and directed 'Ocean Kitchen' series with Chef Ned Bell",
+      "Launched 'Brainwaves' science education series",
+      "Produced animated content for interactive aquarium exhibits", 
+      "Managed content strategy for 4D theater and digital displays",
+      "Developed sustainable storytelling content frameworks"
+    ]
+  },
+  {
+    year: "2014 - Present",
+    title: "Freelance Director & Motion Designer",
+    company: "Self-Employed",
+    description: "Award-winning freelance career spanning music videos, commercials, and motion design. Clients include CBC, Disney, and various music artists.",
+    achievements: [
+      "Juno Award nomination for Best Music Video (2020)",
+      "Leo Award winner for Best Music Video (2019)", 
+      "WCMA Video Director of the Year (2019)",
+      "Prism Prize Audience Choice Award (2019)",
+      "Directed content for CBC, Disney, and major music artists",
+      "Developed signature visual style in music video directing"
+    ]
+  },
+  {
+    year: "2013 - 2014", 
+    title: "Community Manager & Videographer",
+    company: "Hyper Hippo Entertainment",
+    description: "Managed community engagement and video content creation for game launches. Pioneered studio vlog format and community-driven marketing.",
+    achievements: [
+      "Successfully launched AdVenture Capitalist with video marketing campaign",
+      "Created game trailers and promotional content",
+      "Established studio vlog series (ahead of industry trend)", 
+      "Managed social media channels and community outreach",
+      "Developed community engagement strategies for game launches"
+    ]
+  },
+  {
+    year: "2010 - 2013",
+    title: "Online Community Videographer", 
+    company: "Disney Interactive (Club Penguin)",
+    description: "Pioneer of children's gaming content creation. As 'Businesmoose,' became early influencer while producing content for millions of users.",
+    achievements: [
+      "Generated over 14 million views across Club Penguin YouTube channel",
+      "Co-launched Club Penguin's social media presence (YouTube, Twitter)",
+      "Produced TV commercials that aired on Disney Channel and Nickelodeon",
+      "Established 'Businesmoose' brand as widely recognized gaming personality", 
+      "Created viral in-game content and community engagement videos",
+      "Managed online community of 5+ million active users"
+    ]
+  },
+  {
+    year: "2007 - 2010",
+    title: "Player Support Representative", 
+    company: "Disney Interactive (Club Penguin)",
+    description: "Community moderation and player support while developing content creation skills. Worked up from support to content creator role.",
+    achievements: [
+      "Excelled in community moderation for children's platform",
+      "Developed expertise in online safety and content moderation",
+      "Created internal training videos and company content",
+      "Built reputation for exceptional community engagement",
+      "Transitioned from support role to content creation through proven skills"
+    ]
+  }
+]
 };
 
 // Helper Functions
