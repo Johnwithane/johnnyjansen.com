@@ -402,6 +402,8 @@
             }
         }
 
+
+
         /* ADD this to the end of your <style> block */
         @media (max-width: 768px) {
             /* Hide all background videos on mobile */
@@ -589,8 +591,8 @@
             align-items: center;
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.0);
-            margin: 3rem 0;
-            padding: 2rem;
+            margin: 0rem 0;
+            padding: 1rem;
         }
 
         .bio-image {
@@ -602,6 +604,67 @@
             font-size: 1.1rem;
             line-height: 1.8;
             color: var(--text-gray);
+        }
+
+               /* Logo Carousel Styles */
+        .logos-section {
+        padding: 20px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .logo-carousel {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        }
+
+        /* Match the series-scroll style */
+        .logo-scroll {
+        display: flex;
+        gap: 2rem;
+        overflow-x: auto;
+        padding: 1rem 2rem;
+        scroll-behavior: smooth;
+        }
+
+        /* Scrollbar styling */
+        .logo-scroll::-webkit-scrollbar {
+        height: 8px;
+        }
+
+        .logo-scroll::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        }
+
+        .logo-scroll::-webkit-scrollbar-thumb {
+        background: var(--text-dark);
+        border-radius: 4px;
+        }
+
+
+        .logo-item {
+        height: 40px;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+        filter: grayscale(100%) brightness(0.9);
+        }
+
+        .logo-item:hover {
+        opacity: 1;
+        filter: grayscale(0%) brightness(1);
+        }
+
+        /* Smooth looping animation (optional) */
+        @keyframes scroll-logos {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+        }
+
+        /* Optional: pause animation on hover */
+        .logo-carousel:hover .logo-scroll {
+        animation-play-state: paused;
         }
 
         /* Contact Section */
@@ -707,6 +770,7 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            /* Existing mobile styles */
             .mobile-menu-toggle {
                 display: flex;
             }
@@ -743,6 +807,7 @@
                 padding: 1rem 0;
             }
 
+            /* Modified dropdown styles for mobile */
             .dropdown {
                 position: static;
                 opacity: 1;
@@ -750,14 +815,21 @@
                 transform: none;
                 background: rgba(255, 255, 255, 0.05);
                 margin: 0;
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s ease;
+                max-height: none; /* Remove max-height restriction */
+                overflow: visible; /* Ensure content is not clipped */
+                transition: none; /* Remove transition for instant display */
             }
 
+            /* Remove hover and active state for dropdowns in mobile */
             .nav-item:hover .dropdown,
             .nav-item.active .dropdown {
-                max-height: 500px;
+                max-height: none; /* Ensure no max-height restriction */
+            }
+
+            /* Optional: Adjust dropdown item styling for better mobile appearance */
+            .dropdown a {
+                padding: 0.75rem 1.5rem 0.75rem 2rem; /* Indent dropdown items slightly */
+                font-size: 0.9rem; /* Slightly smaller font for hierarchy */
             }
 
             .hero h1 {
@@ -868,21 +940,43 @@
         </div>
     </section>
 
-    <!-- Biography Section -->
-    <section id="bio" class="section">
-        <div class="container">
-            <!-- <h2 class="section-title">Biography</h2> -->
-            <div class="bio-content">
-                <img src="./static/johnny-about.jpg" alt="Johnny Jansen" class="bio-image">
-                <div class="bio-text">
-                                <h2 class="section-title">About Me</h2>
-                    <p>Over a decade of storytelling evolution, from film production assistant to award-winning director. My work spans music videos, documentaries, motion design, and pioneering UGC strategies for global brands.</p>
-                    <p>As Co-founder and Chief Creative Officer of Remoose, I'm building the future of digital communication while continuing to direct compelling narratives that resonate with audiences worldwide.</p>
-                    <p>Recognition includes Leo Award, Prism Prize, WCMA, and Juno Award nomination.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<section id="bio" class="section">
+  <div class="container">
+    <div class="bio-content">
+      <img src="./static/johnny-about.jpg" alt="Johnny Jansen" class="bio-image">
+      <div class="bio-text">
+        <h2 class="section-title">About Me</h2>
+        <p>My journey blends storytelling and technology—from creating community content at Disney to shaping digital experiences for LEGO and RocketSnail Games. Every chapter has focused on connecting people through creativity.</p>
+        <p>Now, as Co-founder and Chief Creative Officer at Remoose, I lead product vision, design, and front-end development, building tools that make communication more expressive and human.</p>
+        <p>Recognized with Leo, WCMA, and Juno nominations, my work continues to explore how creativity and technology tell stories that move people.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Logo Carousel Section -->
+<section id="logos" class="section logos-section">
+  <div class="container">
+    <div class="logo-carousel">
+      <div class="logo-scroll">
+        <img src="./static/logos/logo-disney.png" alt="Disney" class="logo-item">
+        <img src="./static/logos/logo-hippo.png" alt="Hyper Hippo" class="logo-item">
+        <img src="./static/logos/logo-lego.png" alt="LEGO Group" class="logo-item">
+        <img src="./static/logos/logo-rocketsnail.png" alt="Rocketsnail Games" class="logo-item">
+        <img src="./static/logos/logo-oceanwise.png" alt="Ocean Wise" class="logo-item">
+        <img src="./static/logos/logo-vanaqua.png" alt="Vancouver Aquarium" class="logo-item">
+        <img src="./static/logos/logo-blumhouse.png" alt="Blumhouse Productions" class="logo-item">
+        <img src="./static/logos/logo-prism.png" alt="Prism Prize" class="logo-item">
+        <img src="./static/logos/logo-juno.png" alt="Juno Awards" class="logo-item">
+        <img src="./static/logos/logo-604.png" alt="604 Records" class="logo-item">
+            <img src="./static/logos/logo-lightorgan.png" alt="Light Organ Records" class="logo-item">
+        <img src="./static/logos/logo-remoose.png" alt="Remoose" class="logo-item">
+      </div>
+    </div>
+  </div>
+</section>
+
+
 
 <!-- Visual Direction Section -->
 <section id="visual-direction" class="section">
@@ -918,13 +1012,13 @@
                 <div class="video-embed">
                     <iframe src="https://player.vimeo.com/video/443937034" loading="lazy" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
                 </div>
-                <p class="video-description">LFM AM Moonlight</p>
+                <p class="video-description">LFM - AM Moonlight</p>
             </div>
             <div class="sample-video-item">
                 <div class="video-embed">
                     <iframe src="https://player.vimeo.com/video/391380474" loading="lazy" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
                 </div>
-                <p class="video-description">Wake Up</p>
+                <p class="video-description">Rake Shark - Wake Up</p>
             </div>
         </div>
 
@@ -2149,5 +2243,5 @@
         });
 
     </script>
-    </body>
+</body>
 </html>
