@@ -6,10 +6,9 @@
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isMobile = window.innerWidth <= 768;
     
-    // Disable on iOS or drastically reduce
+    // Disable on iOS or mobile - static grid only
     if (isIOS || isMobile) {
-        // Show only static grid on mobile
-        const MOBILE_GRID_SIZE = 12; // Reduced from 20
+        const MOBILE_GRID_SIZE = 12;
         const GRID_FOLDER = 'videos/grid/';
         const GRID_PREFIX = 'grid ';
         
@@ -22,10 +21,10 @@
             img.style.opacity = '0.4';
             heroGrid.appendChild(img);
         }
-        return; // Exit - no animation on mobile
+        return; // EXIT COMPLETELY - no animation, no intervals
     }
 
-    // Desktop code (your existing animation logic)
+    // Desktop code only below this line
     const GRID_FOLDER = 'videos/grid/';
     const GRID_PREFIX = 'grid ';
     const NUM_IMAGES = 32;

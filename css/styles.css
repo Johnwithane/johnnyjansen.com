@@ -871,14 +871,14 @@
         }
 
         /* Hide orbs on mobile devices */
-    @media (max-width: 768px) {
+    /* @media (max-width: 768px) {
         .orb {
             display: none;
         }
         .noise-overlay {
             display: none;
         }
-    }
+    } */
  
 
     /* ============================================
