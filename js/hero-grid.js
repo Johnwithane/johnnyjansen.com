@@ -102,12 +102,19 @@
     setInterval(cycleRandomCells, CYCLE_INTERVAL);
 })();
 
-// Parallax (desktop only)
-function handleParallax() {
+// Parallax (desktop only) - MOVED INSIDE IIFE TO PREVENT iOS EXECUTION
+(function() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isMobile = window.innerWidth <= 768;
+    
+    // Skip parallax ONLY on actual iOS devices OR if mobile AND touch-enabled
+    if (isIOS || (isMobile && ('ontouchstart' in window))) return;
+    
     const heroGrid = document.getElementById('hero-grid');
-    if (!heroGrid || window.innerWidth <= 768) return;
+    if (!heroGrid) return;
 
     const parallaxSpeed = 0.3;
+    let ticking = false;
 
     function updateParallax() {
         const scrollY = window.scrollY;
@@ -115,9 +122,7 @@ function handleParallax() {
         heroGrid.style.transform = `translateY(${translateY}px)`;
     }
 
-    let ticking = false;
     window.addEventListener('scroll', () => {
-        if (window.innerWidth <= 768) return;
         if (!ticking) {
             window.requestAnimationFrame(() => {
                 updateParallax();
@@ -125,9 +130,7 @@ function handleParallax() {
             });
             ticking = true;
         }
-    });
+    }, { passive: true });
 
     updateParallax();
-}
-
-document.addEventListener('DOMContentLoaded', handleParallax);
+})();

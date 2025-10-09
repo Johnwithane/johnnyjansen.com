@@ -403,38 +403,33 @@
 
         /* ADD this to the end of your <style> block */
         @media (max-width: 768px) {
-            /* Hide all background videos on mobile */
-            .section-video-bg {
-                display: none !important;
-                /* Adding height/width 0 may further prevent rendering/processing */
-                width: 0 !important;
-                height: 0 !important;
-            }
+            /* Your existing mobile styles... */
 
             /* Apply a WebP fallback image to the parent section */
             #visual-direction {
-                background-image: url('videos/visual-bg-1.jpg'); /* Replace with your WebP path */
+                background-image: url('videos/visual-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
 
             #product-development {
-                background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
+                background-image: url('videos/remoose-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
-
 
             #documentary {
-                background-image: url('videos/documentary-bg-1.jpg'); /* Replace with your WebP path */
+                background-image: url('videos/documentary-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
 
-                /* .hero-grid {
-                display: none;
-            } */
-
+            /* Lighten the overlay so background images are visible */
+            #visual-direction::before,
+            #product-development::before,
+            #documentary::before {
+                background: rgba(0, 0, 0, 0.4); /* Reduced from 0.7 to 0.4 */
+            }
         }
         /* Section Styles */
         .section {
