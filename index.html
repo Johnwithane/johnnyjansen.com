@@ -52,6 +52,8 @@
             opacity: 0.4;
             width: 600px;
             height: 600px;
+            will-change: transform, opacity; 
+
         }
 
         .orb.green {
@@ -76,24 +78,24 @@
         }
 
         @keyframes moveOrb1 {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(100px, 50px); }
-            50% { transform: translate(-50px, 100px); }
-            75% { transform: translate(-100px, -50px); }
+            0%, 100% { transform: translate3d(0, 0, 0); } /* Added 3d */
+            25% { transform: translate3d(100px, 50px, 0); } /* Added 3d */
+            50% { transform: translate3d(-50px, 100px, 0); } /* Added 3d */
+            75% { transform: translate3d(-100px, -50px, 0); } /* Added 3d */
         }
 
         @keyframes moveOrb2 {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(-80px, 60px); }
-            50% { transform: translate(60px, -40px); }
-            75% { transform: translate(80px, 80px); }
+            0%, 100% { transform: translate3d(0, 0, 0); } /* Added 3d */
+            25% { transform: translate3d(-80px, 60px, 0); } /* Added 3d */
+            50% { transform: translate3d(60px, -40px, 0); } /* Added 3d */
+            75% { transform: translate3d(80px, 80px, 0); } /* Added 3d */
         }
 
         @keyframes moveOrb3 {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(120px, -30px); }
-            50% { transform: translate(-60px, -80px); }
-            75% { transform: translate(-90px, 60px); }
+            0%, 100% { transform: translate3d(0, 0, 0); } /* Added 3d */
+            25% { transform: translate3d(120px, -30px, 0); } /* Added 3d */
+            50% { transform: translate3d(-60px, -80px, 0); } /* Added 3d */
+            75% { transform: translate3d(-90px, 60px, 0); } /* Added 3d */
         }
 
 
@@ -110,6 +112,7 @@
             background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="2" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
             background-repeat: repeat;
             animation: grain 0.5s steps(20) infinite;
+            will-change: transform, background-position; 
         }
 
         @keyframes grain {
@@ -366,13 +369,39 @@
                 grid-auto-rows: 100px;
             }
         }
+/* ADD this to the end of your <style> block */
+@media (max-width: 768px) {
+    /* Hide all background videos on mobile */
+    .section-video-bg {
+        display: none !important;
+    }
 
-        @media only screen and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 1) {
-            video.section-video-bg {
-                display: none; /* Hide background videos on iOS */
-            }
-        }
+    /* Apply a WebP fallback image to the parent section */
+    #visual-direction {
+        background-image: url('videos/music-bg-1.jpg'); /* Replace with your WebP path */
+        background-size: cover;
+        background-position: center;
+    }
 
+    #product-development {
+        background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
+        background-size: cover;
+        background-position: center;
+    }
+
+    #brand-storytelling {
+        background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
+        background-size: cover;
+        background-position: center;
+    }
+
+     #documentary {
+        background-image: url('videos/documentary-bg-1.jpg'); /* Replace with your WebP path */
+        background-size: cover;
+        background-position: center;
+    }
+
+}
         /* Section Styles */
         .section {
             padding: 4rem 1rem;
@@ -811,7 +840,7 @@
 
 <!-- Visual Direction Section -->
 <section id="visual-direction" class="section">
-    <video autoplay muted loop class="section-video-bg">
+    <video autoplay muted loop class="section-video-bg" preload="none">
         <source src="videos/music-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
@@ -910,7 +939,7 @@
 
 <!-- Product Development Section -->
 <section id="product-development" class="section">
-    <video autoplay muted loop class="section-video-bg">
+    <video autoplay muted loop class="section-video-bg" preload="none">
         <source src="videos/remoose-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
@@ -1198,7 +1227,7 @@
 
 <!-- Documentary Section -->
 <section id="documentary" class="section">
-    <video autoplay muted loop class="section-video-bg">
+    <video autoplay muted loop class="section-video-bg" preload="none">
         <source src="videos/documentary-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
