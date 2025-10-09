@@ -588,6 +588,28 @@
             opacity: 0.8;
         }
 
+        .remoose-btn {
+            display: block;
+            margin: 1.5rem auto 3rem; /* Centers horizontally and adds spacing */
+            padding: 1rem 2rem;
+            background: var(--primary-color);
+            color: #000;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            width: fit-content; /* Ensures button width fits content, not full container */
+            transition: background 0.3s ease, transform 0.2s ease;
+            text-align: center;
+        }
+        .remoose-btn:hover {
+            background: #2ecc71; /* Darkened --primary-color (#37FF8B) by ~10% */
+            transform: translateY(-2px);
+        }
+        .remoose-btn:active {
+            transform: translateY(0);
+        }
+
         /* Footer */
         footer {
             background: #000;
@@ -736,8 +758,10 @@
                     <div class="dropdown">
                         <a href="#visual-direction">Visual Direction</a>
                         <a href="#product-development">Product Development</a>
-                        <a href="#documentary">Documentary</a>
                         <a href="#brand-storytelling">Brand Storytelling</a>
+                        <a href="#documentary">Documentary</a>
+                        <a href="https://remoose.com" target="_blank">Remoose</a>
+
                     </div>
                 </li>
                 <li class="nav-item">
@@ -746,9 +770,6 @@
                         <a href="#bio">Bio</a>
                         <a href="#career" class="nav-dropdown-item">Career Timeline</a>
                     </div>
-                </li>
-                <li class="nav-item">
-                    <a href="https://remoose.com" target="_blank">Remoose</a>
                 </li>
                 <li class="nav-item">
                     <a href="#contact">Contact</a>
@@ -884,24 +905,24 @@
 <!-- Product Development Section -->
 <section id="product-development" class="section">
     <video autoplay muted loop class="section-video-bg">
-        <source src="videos/product-bg.mp4" type="video/mp4">
+        <source src="videos/remoose-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
         <h2 class="section-title">Product Development</h2>
         <p class="section-text">
             Building creative tools and ecosystems that empower expression at scale. At <strong>Remoose</strong>, I’ve led branding, UX design, and front-end development — crafting a platform for interactive storytelling and community creation. My past work includes UGC innovation with <strong>LEGO</strong> and experimental prototypes exploring AI collaboration and remix culture.
         </p>
-
+        <a href="https://remoose.com" class="remoose-btn">Try Remoose</a>
         <div class="sample-videos">
             <div class="sample-video-item">
                 <div class="video-embed">
-                    <iframe src="https://player.vimeo.com/video/880652226" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                    <iframe src="https://player.vimeo.com/video/1102400408" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
                 </div>
                 <p class="video-description">Remoose — The Creative Conversation Platform</p>
             </div>
             <div class="sample-video-item">
                 <div class="video-embed">
-                    <iframe src="https://player.vimeo.com/video/387499815" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                    <iframe src="https://player.vimeo.com/video/708561443" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
                 </div>
                 <p class="video-description">LEGO Group — UGC Systems & Story Prototypes</p>
             </div>
@@ -1254,6 +1275,7 @@
                     <textarea id="message" name="message" required placeholder="Tell me about your project..."></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Send Message</button>
+                <div id="form-message" style="display: none; margin-top: 1rem; text-align: center; color: var(--text-light);"></div>
             </form>
         </div>
     </section>
@@ -1274,7 +1296,7 @@
                     Leading creative vision and product development for next-generation digital communication platform. Started prototyping in September 2022, built first prototype in May 2023, and officially became a company in April 2024. Serving as Lead Front End Developer and Designer while directing the development team.
                 </p>
                 <ul class="career-achievements">
-                    <li>Built and launched revolutionary digital communication platform from concept to company</li>
+                    <li>Built and launched digital communication platform from concept to company</li>
                     <li>Lead front-end development and design architecture for complex interactive platform</li>
                     <li>Manage development team and establish technical standards and workflows</li>
                     <li>Co-founded company with Nicole Thompson and Lance Priebe (Club Penguin co-creator)</li>
@@ -1755,10 +1777,10 @@
     <!-- Footer -->
     <footer>
         <div class="social-links">
-            <a href="https://instagram.com/johnnyjansen" target="_blank">Instagram</a>
-            <a href="https://twitter.com/johnnyjansen" target="_blank">Twitter</a>
-            <a href="https://youtube.com/@johnnyjansen" target="_blank">YouTube</a>
-            <a href="https://linkedin.com/in/johnnyjansen" target="_blank">LinkedIn</a>
+            <a href="https://instagram.com/johnnyajansen" target="_blank">Instagram</a>
+            <a href="https://twitter.com/johnnyajansen" target="_blank">Twitter</a>
+            <a href="https://youtube.com/@johnnyajansen" target="_blank">YouTube</a>
+            <a href="https://linkedin.com/in/johnnyjansen22" target="_blank">LinkedIn</a>
         </div>
         <p>&copy; 2025 Johnny Jansen. All rights reserved.</p>
     </footer>
@@ -1949,7 +1971,42 @@
         }
 
         document.addEventListener('DOMContentLoaded', handleParallax);
-    </script>
+   
+        // Formspree AJAX Submission
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            const form = this;
+            const formMessage = document.getElementById('form-message');
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    formMessage.style.display = 'block';
+                    formMessage.style.color = 'var(--primary-color)';
+                    formMessage.textContent = 'Thank you for your message! I’ll get back to you soon.';
+                    form.reset();
+                    setTimeout(() => {
+                        formMessage.style.display = 'none';
+                    }, 5000); // Hide message after 5 seconds
+                } else {
+                    throw new Error('Form submission failed');
+                }
+            })
+            .catch(error => {
+                formMessage.style.display = 'block';
+                formMessage.style.color = '#ff4d4d';
+                formMessage.textContent = 'Oops! Something went wrong. Please try again.';
+                console.error('Error:', error);
+            });
+        });
+        </script>
 
     </body>
 </html>
