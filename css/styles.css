@@ -401,25 +401,22 @@
 
 
 
-        /* ADD this to the end of your <style> block */
         @media (max-width: 768px) {
-            /* Your existing mobile styles... */
-
-            /* Apply a WebP fallback image to the parent section */
+            /* Apply fallback images - using grid images as backgrounds */
             #visual-direction {
-                background-image: url('videos/visual-bg-1.jpg');
+                background-image: url('../videos/visual-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
 
             #product-development {
-                background-image: url('videos/remoose-bg-1.jpg');
+                background-image: url('../videos/remoose-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
 
             #documentary {
-                background-image: url('videos/documentary-bg-1.jpg');
+                background-image: url('../videos/documentary-bg-1.jpg');
                 background-size: cover;
                 background-position: center;
             }
@@ -428,7 +425,7 @@
             #visual-direction::before,
             #product-development::before,
             #documentary::before {
-                background: rgba(0, 0, 0, 0.4); /* Reduced from 0.7 to 0.4 */
+                background: rgba(0, 0, 0, 0.5);
             }
         }
         /* Section Styles */
