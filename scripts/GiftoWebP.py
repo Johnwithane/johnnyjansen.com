@@ -209,7 +209,7 @@ def get_user_settings():
 
 if __name__ == "__main__":
     # Hardcoded folder path
-    folder_to_process = "C:/Users/Johnny/JohnnyJansen.com/scripts/source"
+    folder_to_process = "C:/Users/Johnny/johnnyjansen.com/scripts/source"
 
     # Prompt the user for the file format
     print("Select the file format to convert:")
