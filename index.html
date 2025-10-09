@@ -358,15 +358,27 @@
 
         @media (max-width: 768px) {
             .hero-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                grid-auto-rows: 150px;
+                /* Hide completely if you want a clean background */
+                /* display: none; */ 
+                
+                /* OR, keep it simple and reduce its size and opacity */
+                opacity: 0.3; /* Reduce the visual intensity */
+                /* Change the fixed position to absolute to prevent it from blocking elements when scrolling */
+                position: absolute; 
+                
+                /* Reduce grid complexity */
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                grid-auto-rows: 200px;
             }
-        }
+
+            .hero-grid-item {
+                opacity: 0.2; /* Reduce opacity of individual images for subtlety */
+            }
 
         @media (max-width: 480px) {
             .hero-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                grid-auto-rows: 100px;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                grid-auto-rows: 150px;
             }
         }
 /* ADD this to the end of your <style> block */
@@ -401,9 +413,9 @@
         background-position: center;
     }
 
-        .hero-grid {
+        /* .hero-grid {
         display: none;
-    }
+    } */
 
 }
         /* Section Styles */
@@ -819,8 +831,9 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero">
-        <div class="hero-grid" id="hero-grid"></div>
-        <div class="hero-content">
+        <div class="hero-grid" id="hero-grid">
+            </div>
+        <div class="hero-content" id="hero-content">
             <h1>Johnny Jansen</h1>
             <p>Award-Winning Director & Creative Visionary</p>
         </div>
@@ -2045,7 +2058,67 @@
                 console.error('Error:', error);
             });
         });
-        </script>
 
+        </script>
+    <script>
+        const mobileToggle = document.getElementById('mobile-toggle');
+        const navMenu = document.getElementById('nav-menu');
+        const heroGrid = document.getElementById('hero-grid');
+        
+        // --- Hero Grid Optimization ---
+        const MAX_GRID_ITEMS_MOBILE = 20;
+        const MAX_GRID_ITEMS_DESKTOP = 100; // Choose a sensible maximum for desktop
+        const MOBILE_BREAKPOINT = 768;
+
+        // Function to create and append a single grid item (assuming all images are named 'grid-*.jpg')
+        function createGridItem(index) {
+            const item = document.createElement('img');
+            item.classList.add('hero-grid-item');
+            // Use a low-res placeholder/smaller image for initial load if possible
+            item.src = `./static/grid-image-${(index % 10) + 1}.webp`; // Example: Cycle through 10 static WebP images
+            item.alt = "Background visual element";
+            item.loading = 'lazy'; // Important for all images
+            return item;
+        }
+
+        function renderHeroGrid() {
+            heroGrid.innerHTML = ''; // Clear existing content
+
+            const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+            const limit = isMobile ? MAX_GRID_ITEMS_MOBILE : MAX_GRID_ITEMS_DESKTOP;
+            
+            for (let i = 0; i < limit; i++) {
+                heroGrid.appendChild(createGridItem(i));
+            }
+        }
+
+        // Run on load and on resize
+        window.addEventListener('load', renderHeroGrid);
+        window.addEventListener('resize', renderHeroGrid);
+
+
+        // --- Mobile Menu Toggle (Existing functionality) ---
+        mobileToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            mobileToggle.classList.toggle('active');
+        });
+
+        // Close menu on link click (important for mobile UX)
+        navMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                mobileToggle.classList.remove('active');
+            });
+        });
+
+        // Mobile dropdown toggles
+        document.querySelectorAll('.nav-item > button').forEach(button => {
+            button.addEventListener('click', function() {
+                // Toggle active class on the parent nav-item
+                this.parentNode.classList.toggle('active');
+            });
+        });
+
+    </script>
     </body>
 </html>
