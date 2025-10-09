@@ -296,17 +296,17 @@
         }
 
         .hero-content {
-        position: relative;
-        z-index: var(--z-hero-content);
-        animation: fadeInUp 1s ease-out;
-        background: rgba(0, 0, 0, 0);
-        backdrop-filter: blur(0px);
-        padding: 20px 100px;
-        border-radius: var(--radius-lg);
-        z-index: 10; /* Ensure content is above grid */
-        /* box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); */
-        /* border: 1px solid rgba(255, 255, 255, 0.1); */
-        }
+            position: relative;
+            z-index: var(--z-hero-content);
+            animation: fadeInUp 1s ease-out;
+            background: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+            padding: 20px 40px;
+            border-radius: var(--radius-lg);
+            z-index: 10; /* Ensure content is above grid */
+            /* box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); */
+            /* border: 1px solid rgba(255, 255, 255, 0.1); */
+            }
 
         .hero h1 {
             font-size: 4rem;
@@ -318,8 +318,18 @@
         .hero p {
             font-size: 1.5rem;
             color: var(--text-dark);
-            border-radius: 2px;
+            border-radius: 10px;
             background: var(--primary-color);
+            padding: 10px 10px;
+
+        }
+
+        .hero p:hover {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            border-radius: 10px;
+            background: var(--text-dark);
+            padding: 10px 10px;
 
         }
 
@@ -331,8 +341,8 @@
             width: 100%;
             height: 100%;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            grid-auto-rows: 200px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-auto-rows: 340px;
             gap: 0px;
             z-index: -10;
             will-change: transform; /* Optimize for performance */
@@ -357,12 +367,20 @@
         }
 
         @media (max-width: 768px) {
+            /* ... (your previous video/image fallback and other mobile styles) ... */
+
             .hero-grid {
-                /* Hide completely if you want a clean background */
-                /* display: none; */ 
+                position: fixed; /* 👈 ENSURE it's fixed */
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
                 
-                /* OR, keep it simple and reduce its size and opacity */
-                opacity: 0.3; /* Reduce the visual intensity */
+                /* Remove or ensure 'transform' is set to 0 for static behavior */
+                transform: translateY(0); 
+
+                /* You can adjust these values for the optimized mobile grid appearance */
+                opacity: 0.5; 
                 /* Change the fixed position to absolute to prevent it from blocking elements when scrolling */
                 position: absolute; 
                 
@@ -372,58 +390,56 @@
             }
 
             .hero-grid-item {
-                opacity: 0.2; /* Reduce opacity of individual images for subtlety */
+                opacity: 0.5; /* Reduce opacity of individual images for subtlety */
+            }
             }
 
         @media (max-width: 480px) {
             .hero-grid {
+                position: fixed; /* 👈 ENSURE it's fixed */
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 grid-auto-rows: 150px;
             }
         }
-/* ADD this to the end of your <style> block */
-@media (max-width: 768px) {
-    /* Hide all background videos on mobile */
-    .section-video-bg {
-        display: none !important;
-    }
 
-    /* Apply a WebP fallback image to the parent section */
-    #visual-direction {
-        background-image: url('videos/visual-bg-1.jpg'); /* Replace with your WebP path */
-        background-size: cover;
-        background-position: center;
-    }
+        /* ADD this to the end of your <style> block */
+        @media (max-width: 768px) {
+            /* Hide all background videos on mobile */
+            .section-video-bg {
+                display: none !important;
+            }
 
-    #product-development {
-        background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
-        background-size: cover;
-        background-position: center;
-    }
+            /* Apply a WebP fallback image to the parent section */
+            #visual-direction {
+                background-image: url('videos/visual-bg-1.jpg'); /* Replace with your WebP path */
+                background-size: cover;
+                background-position: center;
+            }
 
-    #brand-storytelling {
-        background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
-        background-size: cover;
-        background-position: center;
-    }
+            #product-development {
+                background-image: url('videos/remoose-bg-1.jpg'); /* Replace with your WebP path */
+                background-size: cover;
+                background-position: center;
+            }
 
-     #documentary {
-        background-image: url('videos/documentary-bg-1.jpg'); /* Replace with your WebP path */
-        background-size: cover;
-        background-position: center;
-    }
 
-        /* .hero-grid {
-        display: none;
-    } */
+            #documentary {
+                background-image: url('videos/documentary-bg-1.jpg'); /* Replace with your WebP path */
+                background-size: cover;
+                background-position: center;
+            }
 
-}
+                /* .hero-grid {
+                display: none;
+            } */
+
+        }
         /* Section Styles */
         .section {
             padding: 4rem 1rem;
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(15px);
             }
 
         .section-video-bg {
@@ -858,7 +874,7 @@
 <!-- Visual Direction Section -->
 <section id="visual-direction" class="section">
     <video autoplay muted loop class="section-video-bg" preload="none">
-        <source src="videos/music-bg-1.mp4" type="video/mp4">
+        <source src="videos/visual-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
         <h2 class="section-title">Visual Direction</h2>
@@ -2067,7 +2083,7 @@
         
         // --- Hero Grid Optimization ---
         const MAX_GRID_ITEMS_MOBILE = 20;
-        const MAX_GRID_ITEMS_DESKTOP = 100; // Choose a sensible maximum for desktop
+        const MAX_GRID_ITEMS_DESKTOP = 200; // Choose a sensible maximum for desktop
         const MOBILE_BREAKPOINT = 768;
 
         // Function to create and append a single grid item (assuming all images are named 'grid-*.jpg')
