@@ -38,15 +38,38 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 document.addEventListener('DOMContentLoaded', function() {
     const careerSection = document.getElementById('career');
     
-    function showCareerOnly() {
-        document.querySelectorAll('.section:not(#career)').forEach(section => {
-            section.style.display = 'none';
-        });
-        document.querySelector('.hero').style.display = 'none';
-        document.querySelector('footer').style.display = 'none';
-        careerSection.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+function showCareerOnly() {
+    const sections = document.querySelectorAll('.section:not(#career)');
+    const hero = document.querySelector('.hero');
+    const footer = document.querySelector('footer');
+    
+    if (sections) sections.forEach(section => section.style.display = 'none');
+    if (hero) hero.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    if (careerSection) careerSection.style.display = 'block';
+    
+    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to 'auto' for mobile
+}
+
+function showAllSections(targetHash) {
+    const sections = document.querySelectorAll('.section:not(#career)');
+    const hero = document.querySelector('.hero');
+    const footer = document.querySelector('footer');
+    
+    if (sections) sections.forEach(section => section.style.display = 'block');
+    if (hero) hero.style.display = 'flex';
+    if (footer) footer.style.display = 'block';
+    if (careerSection) careerSection.style.display = 'none';
+    
+    if (targetHash) {
+        setTimeout(() => {
+            const target = document.querySelector(targetHash);
+            if (target) {
+                target.scrollIntoView({ behavior: 'auto', block: 'start' }); // Changed to 'auto'
+            }
+        }, 50); // Reduced timeout
     }
+}
     
     function showAllSections(targetHash) {
         document.querySelectorAll('.section:not(#career)').forEach(section => {
