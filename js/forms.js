@@ -16,7 +16,7 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
         if (response.ok) {
             formMessage.style.display = 'block';
             formMessage.style.color = 'var(--primary-color)';
-            formMessage.textContent = 'Thank you for your message! I'll get back to you soon.';
+            formMessage.textContent = 'Thank you for your message! I\'ll get back to you soon.';
             form.reset();
             setTimeout(() => {
                 formMessage.style.display = 'none';

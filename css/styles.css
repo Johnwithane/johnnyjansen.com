@@ -607,7 +607,7 @@
         .logos-section {
         padding: 20px 0;
         background: rgba(255, 255, 255, 0.03);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: 1px solid rgba(0, 0, 0, 0.5);
         }
 
         .logo-carousel {
@@ -636,7 +636,7 @@
         }
 
         .logo-scroll::-webkit-scrollbar-thumb {
-        background: var(--text-dark);
+        background: rgba(255, 255, 255, 0.251);
         border-radius: 4px;
         }
 

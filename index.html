@@ -1,12 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Johnny Jansen - Director & Creative</title>
+    <title>Johnny Jansen - Award-Winning Director & Creative Visionary</title>
     
-    <!-- Add this favicon link -->
-    <link rel="icon" href="static/favicon.ico" type="image/x-icon">
+    <!-- Favicon -->
+    <link rel="icon" href="https://johnnyjansen.com/static/favicon.ico" type="image/x-icon">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- SEO & Keywords -->
+    <meta name="description" content="Johnny Jansen - Award-winning Film Director, Music Video Director, and Creative Director based in Kelowna BC and Vancouver BC. Specializing in documentary filmmaking, brand storytelling, UGC content creation, motion design, and product development. Leo Award, WCMA winner, and Juno Award nominee.">
+    <meta name="keywords" content="film director, music video director, creative director, documentary filmmaker, UGC content creator, motion designer, brand storytelling, Kelowna BC, Vancouver BC, British Columbia, Canada, Leo Award winner, Juno Award nominee, Remoose, LEGO, Disney, video production, commercial director, content strategist">
+    <meta name="author" content="Johnny Jansen">
+    <meta name="geo.region" content="CA-BC">
+    <meta name="geo.placename" content="Kelowna, Vancouver">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://johnnyjansen.com/">
+    <meta property="og:title" content="Johnny Jansen - Film Director | Music Video Director | Kelowna BC">
+    <meta property="og:description" content="Award-winning Film Director and Creative Director specializing in music videos, documentaries, and brand storytelling in Kelowna and Vancouver BC.">
+    <meta property="og:image" content="https://johnnyjansen.com/static/johnny-about.jpg">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@johnnyajansen">
+    <meta name="twitter:title" content="Johnny Jansen - Film Director | Music Video Director">
+    <meta name="twitter:description" content="Award-winning director specializing in music videos, documentaries, and creative direction">
+    <meta name="twitter:image" content="https://johnnyjansen.com/static/johnny-about.jpg">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Johnny Jansen",
+      "url": "https://johnnyjansen.com",
+      "image": "https://johnnyjansen.com/static/johnny-about.jpg",
+      "jobTitle": ["Film Director", "Music Video Director", "Creative Director", "Documentary Filmmaker"],
+      "worksFor": {
+        "@type": "Organization",
+        "name": "Remoose"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Kelowna",
+        "addressRegion": "BC",
+        "addressCountry": "CA"
+      },
+      "alumniOf": [
+        {"@type": "Organization", "name": "Disney Interactive"},
+        {"@type": "Organization", "name": "LEGO Group"},
+        {"@type": "Organization", "name": "Ocean Wise"},
+        {"@type": "Organization", "name": "RocketSnail Games"}
+      ],
+      "award": [
+        "Leo Award - Outstanding Achievement in Music Videos",
+        "WCMA Video Director of the Year",
+        "Prism Prize Winner",
+        "Juno Award Nominee"
+      ],
+      "knowsAbout": [
+        "Film Direction",
+        "Music Video Production",
+        "Documentary Filmmaking",
+        "Creative Direction",
+        "UGC Content Creation",
+        "Brand Storytelling",
+        "Motion Design",
+        "Product Development",
+        "Video Production",
+        "Content Strategy"
+      ],
+      "sameAs": [
+        "https://instagram.com/johnnyajansen",
+        "https://twitter.com/johnnyajansen",
+        "https://youtube.com/@johnnyajansen",
+        "https://linkedin.com/in/johnnyjansen22"
+      ]
+    }
+    </script>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
@@ -71,12 +147,12 @@
   <div class="container">
     <div class="bio-content">
       <img src="./static/johnny-about.jpg" alt="Johnny Jansen" class="bio-image">
-      <div class="bio-text">
+        <div class="bio-text">
         <h2 class="section-title">About Me</h2>
-        <p>My journey blends storytelling and technology—from creating community content at Disney to shaping digital experiences for LEGO and RocketSnail Games. Every chapter has focused on connecting people through creativity.</p>
-        <p>Now, as Co-founder and Chief Creative Officer at Remoose, I lead product vision, design, and front-end development, building tools that make communication more expressive and human.</p>
-        <p>Recognized with Leo, WCMA, and Juno nominations, my work continues to explore how creativity and technology tell stories that move people.</p>
-      </div>
+        <p>My work blends storytelling and technology to build communities through innovative content—from award-winning music videos to digital experiences that connect people.</p>
+        <p>Recognized with Leo and WCMA awards, a Prism Prize, and a Juno nomination, I've created visual direction for Disney, LEGO, and Ocean Wise while pioneering UGC systems and interactive storytelling that bring people together through shared creative experiences.</p>
+        <p>Now, as Co-founder and Chief Creative Officer at Remoose, I lead product vision, design, and development—building tools that make communication more expressive and human.</p>
+        </div>
     </div>
   </div>
     </section>
@@ -105,7 +181,7 @@
 
     <!-- Visual Direction Section -->
     <section id="visual-direction" class="section">
-    <video autoplay muted loop class="section-video-bg" preload="none" data-desktop-only>
+    <video autoplay muted loop playsinline class="section-video-bg" preload="none" data-desktop-only>
         <source src="videos/visual-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
@@ -204,7 +280,7 @@
 
     <!-- Product Development Section -->
     <section id="product-development" class="section">
-    <video autoplay muted loop class="section-video-bg" preload="none" data-desktop-only>
+    <video autoplay muted loop playsinline class="section-video-bg" preload="none" data-desktop-only>
         <source src="videos/remoose-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
@@ -492,7 +568,7 @@
 
     <!-- Documentary Section -->
     <section id="documentary" class="section">
-    <video autoplay muted loop class="section-video-bg" preload="none" data-desktop-only>
+    <video autoplay muted loop playsinline class="section-video-bg" preload="none" data-desktop-only>
         <source src="videos/documentary-bg-1.mp4" type="video/mp4">
     </video>
     <div class="container">
