@@ -1,89 +1,71 @@
-// js/mobile-optimize.js - Add this new file and include it FIRST in index.html
+// js/mobile-optimize.js - Aggressive iframe lazy loading for mobile
 
 (function() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
     
-    if (!isMobile) return; // Skip all optimizations on desktop
+    if (!isMobile) return; // Desktop doesn't need this optimization
     
-    // 1. AGGRESSIVE IFRAME LAZY LOADING
-    const iframeObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const iframe = entry.target;
-                const src = iframe.getAttribute('data-src');
-                
-                if (src && !iframe.src) {
-                    iframe.src = src;
-                }
-            } else {
-                // Unload iframes that scroll out of view to free memory
-                const iframe = entry.target;
-                if (iframe.src) {
-                    iframe.setAttribute('data-src', iframe.src);
-                    iframe.src = '';
-                }
-            }
-        });
-    }, {
-        rootMargin: '200px', // Load slightly before visible
-        threshold: 0.1
-    });
-    
-    // Convert all iframes to lazy load on mobile
+    // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', () => {
-        const iframes = document.querySelectorAll('iframe');
+        
+        // 1. CONVERT ALL IFRAMES TO LAZY LOAD
+        const iframes = document.querySelectorAll('iframe[src]');
         iframes.forEach(iframe => {
-            const src = iframe.src;
-            if (src) {
-                iframe.setAttribute('data-src', src);
-                iframe.removeAttribute('src'); // Remove src completely
-                iframeObserver.observe(iframe);
-            }
+            const src = iframe.getAttribute('src');
+            iframe.setAttribute('data-src', src);
+            iframe.removeAttribute('src'); // Critical: remove src completely
         });
         
-        // 2. DISABLE ANIMATIONS ON MOBILE
-        const style = document.createElement('style');
-        style.textContent = `
-            @media (max-width: 768px) {
-                .orb { display: none !important; }
-                .noise-overlay { display: none !important; }
-                .hero-grid { display: none !important; }
-                * { animation: none !important; transition: none !important; }
-            }
-        `;
-        document.head.appendChild(style);
+        // 2. INTERSECTION OBSERVER - only load when scrolling near
+        const iframeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const iframe = entry.target;
+                
+                if (entry.isIntersecting) {
+                    // Load iframe when it comes into view
+                    const src = iframe.getAttribute('data-src');
+                    if (src && !iframe.src) {
+                        iframe.src = src;
+                    }
+                } else {
+                    // CRITICAL FOR MEMORY: Unload iframe when it scrolls far away
+                    if (iframe.src && entry.intersectionRatio === 0) {
+                        // Only unload if completely out of view
+                        const rect = iframe.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        
+                        // If more than 2 viewports away, unload it
+                        if (Math.abs(rect.top) > viewportHeight * 2) {
+                            iframe.setAttribute('data-src', iframe.src);
+                            iframe.src = '';
+                        }
+                    }
+                }
+            });
+        }, {
+            rootMargin: '300px', // Start loading 300px before visible
+            threshold: 0
+        });
         
-        // 3. REDUCE VIDEO SERIES TO SHOW FEWER ITEMS
+        // Observe all iframes
+        document.querySelectorAll('iframe').forEach(iframe => {
+            iframeObserver.observe(iframe);
+        });
+        
+        // 3. REDUCE VIDEO SERIES TO 3 ITEMS ON MOBILE (optional but recommended)
         const seriesScrolls = document.querySelectorAll('.series-scroll');
         seriesScrolls.forEach(scroll => {
             const items = scroll.querySelectorAll('.series-video-item');
-            // Only keep first 3 videos visible, remove rest from DOM
-            items.forEach((item, index) => {
-                if (index > 2) {
-                    item.remove();
-                }
-            });
+            if (items.length > 3) {
+                items.forEach((item, index) => {
+                    if (index > 2) {
+                        item.remove(); // Remove excess items from DOM completely
+                    }
+                });
+            }
         });
         
-        // 4. SIMPLIFY GRID RENDERING
-        const sampleVideos = document.querySelectorAll('.sample-videos');
-        sampleVideos.forEach(grid => {
-            grid.style.gridTemplateColumns = '1fr'; // Force single column
-        });
-        
-        // 5. DISABLE PARALLAX AND TRANSFORMS
-        window.addEventListener('scroll', (e) => {
-            e.stopPropagation();
-        }, { passive: true, capture: true });
+        console.log('Mobile optimizations applied - iframes will lazy load');
     });
-    
-    // 6. MEMORY CLEANUP
-    let cleanupInterval = setInterval(() => {
-        const iframes = document.querySelectorAll('iframe[src=""]');
-        if (iframes.length > 5) {
-            // Force garbage collection hint
-            if (window.gc) window.gc();
-        }
-    }, 10000); // Every 10 seconds
     
 })();
