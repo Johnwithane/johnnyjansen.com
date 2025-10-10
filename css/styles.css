@@ -363,37 +363,40 @@
             opacity: 0.6;
         }
 
-        @media (max-width: 768px) {
-            /* ... (your previous video/image fallback and other mobile styles) ... */
 
+        @media (max-width: 768px) {
             .hero-grid {
-                position: fixed; /* 👈 ENSURE it's fixed */
+                position: absolute !important; /* Changed from fixed to absolute */
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                
-                /* Remove or ensure 'transform' is set to 0 for static behavior */
-                transform: translateY(0); 
-
-                /* You can adjust these values for the optimized mobile grid appearance */
+                transform: none !important; /* Remove any transforms */
+                will-change: auto !important; /* Turn off GPU acceleration */
                 opacity: 0.5; 
-                /* Change the fixed position to absolute to prevent it from blocking elements when scrolling */
-                position: absolute; 
                 
-                /* Reduce grid complexity */
+                /* Reduce grid complexity for performance */
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 grid-auto-rows: 200px;
             }
 
             .hero-grid-item {
-                opacity: 0.5; /* Reduce opacity of individual images for subtlety */
+                opacity: 0.5;
             }
+            
+            .hero {
+                position: relative !important;
             }
+            
+            /* Hide performance-heavy elements */
+            /* .orb,
+            .noise-overlay {
+                display: none !important;
+            } */
+        }
 
         @media (max-width: 480px) {
             .hero-grid {
-                position: fixed; /* 👈 ENSURE it's fixed */
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 grid-auto-rows: 150px;
             }

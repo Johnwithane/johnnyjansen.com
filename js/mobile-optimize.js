@@ -8,7 +8,21 @@
     // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', () => {
         
-        // 1. CONVERT ALL IFRAMES TO LAZY LOAD
+        // 1. MAKE HERO GRID SCROLL NORMALLY (not fixed position)
+        const heroGrid = document.getElementById('hero-grid');
+        if (heroGrid) {
+            heroGrid.style.position = 'absolute';
+            heroGrid.style.transform = 'none';
+            heroGrid.style.willChange = 'auto';
+        }
+        
+        // Make hero section normal height so grid scrolls away
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            hero.style.position = 'relative';
+        }
+        
+        // 2. CONVERT ALL IFRAMES TO LAZY LOAD
         const iframes = document.querySelectorAll('iframe[src]');
         iframes.forEach(iframe => {
             const src = iframe.getAttribute('src');
