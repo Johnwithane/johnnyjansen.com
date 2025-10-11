@@ -66,19 +66,6 @@
             iframeObserver.observe(iframe);
         });
         
-        // 3. REDUCE VIDEO SERIES TO 3 ITEMS ON MOBILE (optional but recommended)
-        const seriesScrolls = document.querySelectorAll('.series-scroll');
-        seriesScrolls.forEach(scroll => {
-            const items = scroll.querySelectorAll('.series-video-item');
-            if (items.length > 3) {
-                items.forEach((item, index) => {
-                    if (index > 2) {
-                        item.remove(); // Remove excess items from DOM completely
-                    }
-                });
-            }
-        });
-        
         console.log('Mobile optimizations applied - iframes will lazy load');
     });
     
