@@ -598,17 +598,19 @@
             color: var(--text-gray);
         }
 
-               /* Logo Carousel Styles */
+        /* Logo Carousel Styles */
         .logos-section {
         padding: 20px 0;
         background: rgba(255, 255, 255, 0.03);
-        border-top: 1px solid rgba(0, 0, 0, 0.5);
+        border-top: 10px solid rgba(0, 0, 0, 0.5);
         }
 
         .logo-carousel {
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        padding-top: 2rem;
+        border-top: 0px solid rgba(255, 255, 255, 0.2);
         }
 
         /* Match the series-scroll style */
@@ -616,7 +618,7 @@
         display: flex;
         gap: 2rem;
         overflow-x: auto;
-        padding: 1rem 2rem;
+        padding: 2rem 2rem;
         scroll-behavior: smooth;
         }
 
@@ -1050,5 +1052,196 @@
             gap: 2rem;
             padding-left: 50px;
         }
+        }
+
+
+        /* ============================================
+   BRAND STORY CARDS - MUST BE OUTSIDE MEDIA QUERIES
+   ============================================ */
+
+/* Brand Story Cards */
+.brand-story-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.brand-story-card {
+    position: relative;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.brand-story-card:hover {
+    transform: scale(1.02);
+}
+
+.brand-story-card-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.brand-story-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+}
+
+.brand-story-card-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+ .brand-story-card-logo {
+    height: 40px;
+    margin-bottom: 1rem;
+    filter: grayscale(100%) brightness(0.9);
+}
+
+/* Brand Story Modal/Popup */
+.brand-story-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.60);
+    backdrop-filter: blur(20px);
+    z-index: 9999;
+    overflow: hidden; /* Changed from overflow-y: auto */
+    padding: 0; /* Removed padding from modal itself */
+}
+
+.brand-story-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.brand-story-modal-content {
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    max-width: 1000px;
+    width: 90%; /* Responsive width */
+    max-height: 85vh; /* Slightly smaller to ensure it fits */
+    overflow-y: auto; /* Scrolling happens INSIDE the content box */
+    padding: 3rem;
+    position: relative;
+    margin: 2rem; /* Add margin for spacing */
+}
+
+.brand-story-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 2rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.brand-story-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.brand-story-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-story-modal-logo {
+    height: 60px;
+    filter: grayscale(100%) brightness(0.9);
+}
+
+.brand-story-modal-title {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.brand-story-modal-description {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-gray);
+    margin-bottom: 2rem;
+}
+
+.brand-story-modal-video {
+    margin-bottom: 2rem;
+}
+
+.brand-story-modal-video-series {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+    scroll-behavior: smooth;
+}
+
+.brand-story-modal-video-series::-webkit-scrollbar {
+    height: 8px;
+}
+
+.brand-story-modal-video-series::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.brand-story-modal-video-series::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.brand-story-modal-video-item {
+    min-width: 600px;
+    flex-shrink: 0;
+}
+
+/* Mobile responsive for brand cards */
+@media (max-width: 768px) {
+    .brand-story-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .brand-story-modal {
+        padding: 0rem;
+    }
+    
+    .brand-story-modal-content {
+        padding: 2rem 1rem;
+    }
+    
+    .brand-story-modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .brand-story-modal-video-item {
+        min-width: 300px;
+    }
+}
 
 
