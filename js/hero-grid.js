@@ -27,7 +27,7 @@
     // Desktop code only below this line
     const GRID_FOLDER = 'videos/grid/';
     const GRID_PREFIX = 'grid ';
-    const NUM_IMAGES = 57;
+    const NUM_IMAGES = 52;
     const CYCLE_INTERVAL = 4000;
     
     function calculateGridSize() {
