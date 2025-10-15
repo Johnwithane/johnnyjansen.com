@@ -98,8 +98,10 @@
                 'https://www.youtube.com/embed/Ho12PaeLcRI',
                 'https://www.youtube.com/embed/e7z6fpcI-1w',
                 'https://www.youtube.com/embed/z6981TrLFd0',
+                'https://www.youtube.com/embed/VhLlFF17GA0',
                 'https://www.youtube.com/embed/JStdx_NO0-g',
-                'https://www.youtube.com/embed/FejHJ9IUubU'
+                'https://www.youtube.com/embed/FejHJ9IUubU',
+                'https://www.youtube.com/embed/xcQj69PRhlw'
                 // 'https://player.vimeo.com/video/906944926'
             ]
         }
