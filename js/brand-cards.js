@@ -6,7 +6,7 @@
     const stories = {
         lego: {
             logo: './static/logos/logo-lego.png',
-            title: 'LEGO: Build Your Own Adventure',
+            title: 'Build Your Own Adventure Series',
             description: 'Created and produced 2 seasons of interactive UGC storytelling on LEGO Life, where users voted on curated LEGO brick piles and submitted ideas to build characters and advance the story. This pioneering series prototyped custom UGC features for the platform, establishing community-driven narrative experiences.',
             type: 'series',
             videos: [
@@ -18,7 +18,7 @@
         },
         brainwaves: {
             logo: './static/logos/logo-oceanwise.png',
-            title: 'Ocean Wise: Brain Waves',
+            title: 'Brain Waves',
             description: 'Created, produced, and directed an educational YouTube series for Ocean Wise and the Vancouver Aquarium. Coordinated directly with marine scientists and the marketing team to develop engaging content that teaches children about marine science topics, ocean conservation, and environmental stewardship.',
             type: 'series',
             videos: [
@@ -30,16 +30,26 @@
         },
         oceankitchen: {
             logo: './static/logos/logo-oceanwise.png',
-            title: 'Ocean Wise: Ocean Kitchen',
+            title: 'Ocean Kitchen',
             description: 'Coordinated with Ocean Wise Seafood to align brand objectives and produce a cooking show series featuring celebrity chef Ned Bell. The series promoted sustainable seafood practices while reaching over 500K viewers, combining culinary entertainment with ocean conservation messaging.',
             type: 'series',
             videos: [
                 'https://www.youtube.com/embed/yGwrGkqxmBo',
                 'https://www.youtube.com/embed/Ajuydxqjc1c',
                 'https://www.youtube.com/embed/TkRNrZTxYcc',
-                'https://www.youtube.com/embed/W8VUC_1kW0Y',
-                'https://www.youtube.com/embed/wB9ywJHeFtw'
+                'https://www.youtube.com/embed/W8VUC_1kW0Y'
+                // 'https://www.youtube.com/embed/wB9ywJHeFtw'
             ]
+        },
+        oceanexplainers: {
+            logo: './static/logos/logo-oceanwise.png',
+            title: 'Ocean Explainers',
+            description: 'Developed a series of short explainer videos for Ocean Wise, focusing on key marine conservation topics. These videos aimed to educate the public about ocean health and the importance of sustainable practices.',
+            type: 'series',
+            videos: [
+                'https://www.youtube.com/embed/nkXthUsnRz4',
+                'https://www.youtube.com/embed/MIMuPW4Lebg',
+                'https://www.youtube.com/embed/K1enBZghnoA'            ]
         },
         clubpenguin: {
             logo: './static/logos/logo-disney.png',
