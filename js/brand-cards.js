@@ -31,7 +31,7 @@
         oceankitchen: {
             logo: './static/logos/logo-oceanwise.png',
             title: 'Ocean Kitchen',
-            description: 'Coordinated with Ocean Wise Seafood to align brand objectives and produce a cooking show series featuring celebrity chef Ned Bell. The series promoted sustainable seafood practices while reaching over 500K viewers, combining culinary entertainment with ocean conservation messaging.',
+            description: 'Coordinated with Ocean Wise Seafood to align brand objectives and produce a cooking show series featuring celebrity chef Ned Bell. The series promoted sustainable seafood practices, combining culinary entertainment with ocean conservation messaging.',
             type: 'series',
             videos: [
                 'https://www.youtube.com/embed/yGwrGkqxmBo',
