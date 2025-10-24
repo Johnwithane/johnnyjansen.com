@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Libs Math Worksheet Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .math-type-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px solid #667eea;
+        }
+
+        .math-type-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .math-type-dropdown {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1.1em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .math-type-dropdown:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .story-preview {
+            background: #fff4e6;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px solid #ff9800;
+        }
+
+        .story-preview h3 {
+            color: #ff9800;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.4em;
+        }
+
+        .story-description {
+            text-align: center;
+            color: #666;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .refresh-button {
+            width: 100%;
+            padding: 12px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 25px;
+        }
+
+        .refresh-button:hover {
+            transform: scale(1.02);
+            background: #f57c00;
+        }
+
+        .refresh-button:active {
+            transform: scale(0.98);
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        /* Worksheet styles */
+        .worksheet {
+            display: none;
+        }
+
+        .worksheet.active {
+            display: block;
+        }
+
+        .worksheet-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .worksheet-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .worksheet-info {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .story-problem {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+
+        .problem-number {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .problem-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .answer-line {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px dashed #ccc;
+        }
+
+        .answer-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .answer-space {
+            display: inline-block;
+            min-width: 100px;
+            border-bottom: 2px solid #333;
+            margin-left: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .button-secondary {
+            background: #6c757d;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+                max-width: 100%;
+            }
+
+            .button-group {
+                display: none;
+            }
+
+            .input-section {
+                display: none;
+            }
+
+            .worksheet-header {
+                page-break-after: avoid;
+            }
+
+            .story-problem {
+                page-break-inside: avoid;
+                background: white;
+                border: 1px solid #ccc;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h1>🎉 Mad Libs Math Worksheet 🎉</h1>
+            <p class="subtitle">Fill in the blanks to create your own silly math story!</p>
+            
+            <div class="story-preview" id="storyPreview">
+                <h3 id="storyTitle">Loading...</h3>
+                <p class="story-description" id="storyDescription">Loading description...</p>
+            </div>
+
+            <button class="refresh-button" onclick="refreshStory()">🔄 Get a Different Story</button>
+            
+            <div class="math-type-section">
+                <h3>Choose Your Math Type:</h3>
+                <select class="math-type-dropdown" id="mathTypeSelect">
+                    <option value="random">Random Mix 🎲</option>
+                    <option value="addition">Addition ➕</option>
+                    <option value="subtraction">Subtraction ➖</option>
+                    <option value="multiplication">Multiplication ✖️</option>
+                    <option value="division">Division ➗</option>
+                </select>
+            </div>
+
+            <div id="madLibsForm"></div>
+            
+            <button class="button" onclick="generateWorksheet()">Create My Worksheet! 📝</button>
+        </div>
+
+        <div class="worksheet" id="worksheet">
+            <div class="worksheet-header">
+                <div class="worksheet-title">My Math Adventure!</div>
+                <div class="worksheet-info">Name: _________________ Date: _________________</div>
+            </div>
+            
+            <div id="worksheetContent"></div>
+
+            <div class="button-group">
+                <button class="button" onclick="printWorksheet()">Print Worksheet 🖨️</button>
+                <button class="button button-secondary" onclick="startOver()">Start Over 🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Story templates that tell one cohesive silly story
+        const storyTemplates = [
+            {
+                title: "The Great Pet Parade",
+                description: "Join a wacky parade full of colorful animals, silly sounds, and tasty treats!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Type of Animal (plural)", type: "text" },
+                    { label: "Silly Color", type: "text" },
+                    { label: "Type of Food", type: "text" },
+                    { label: "Funny Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(5, 15);
+                            const num2 = random(3, 10);
+                            return `${name} was organizing the town's first ever ${animal} parade! In the morning, ${num1} ${color} ${animal} arrived saying "${sound}!" In the afternoon, ${num2} more ${animal} joined the parade. How many ${animal} were in the parade altogether?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(15, 30);
+                            const num2 = random(5, 12);
+                            return `${name} prepared ${num1} boxes of ${food} for the ${animal} to eat during the parade. The ${animal} were so excited they went "${sound}!" and ate ${num2} boxes right away! How many boxes of ${food} were left for later?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(4, 8);
+                            const num2 = random(3, 6);
+                            return `Each ${animal.slice(0, -1)} in the parade wore ${num2} ${color} ribbons. There were ${num1} ${animal} marching and saying "${sound}!" How many ${color} ribbons were there in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const divisor = random(2, 5);
+                            const quotient = random(4, 8);
+                            const num1 = divisor * quotient;
+                            return `After the parade, ${name} had ${num1} pieces of ${food} to share equally among ${divisor} groups of ${animal}. Each group would say "${sound}!" when they got their share. How many pieces of ${food} did each group get?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(8, 18);
+                            const num2 = random(6, 14);
+                            return `The parade was such a success! ${num1} people came to watch in the morning, and ${num2} more arrived in the afternoon, all cheering as the ${color} ${animal} went "${sound}!" How many people watched the parade in total?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(20, 35);
+                            const num2 = random(8, 15);
+                            return `${name} gave out ${num1} ${color} balloons at the parade. The ${animal} popped ${num2} balloons by accident while saying "${sound}!" How many balloons were still floating?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(5, 9);
+                            const num2 = random(3, 7);
+                            return `At the end of the parade, ${name} took ${num1} photos of groups of ${animal}. Each photo had ${num2} ${color} ${animal} saying "${sound}!" How many ${animal} were in all the photos combined?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const divisor = random(3, 6);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `The ${animal} collected ${num1} pieces of ${food} during the parade. They wanted to put them into ${divisor} ${color} boxes, with the same amount in each box. Every time they filled a box, they'd say "${sound}!" How many pieces of ${food} went in each box?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Space Adventure with Captain [Name]",
+                description: "Blast off to outer space and meet friendly aliens on a faraway planet!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Alien Creature (plural)", type: "text" },
+                    { label: "Weird Color", type: "text" },
+                    { label: "Space Food", type: "text" },
+                    { label: "Planet Name", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(7, 16);
+                            const num2 = random(4, 11);
+                            return `Captain ${name} landed the spaceship on planet ${planet} and discovered ${num1} friendly ${color} ${alien}. Then ${num2} more ${alien} came out from behind a crater to say hello! How many ${alien} did Captain ${name} meet?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(18, 32);
+                            const num2 = random(6, 14);
+                            return `Captain ${name} brought ${num1} containers of ${food} to share with the ${alien} on planet ${planet}. The ${alien} were so hungry they ate ${num2} containers! How many containers of ${food} were left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(3, 7);
+                            const num2 = random(4, 8);
+                            return `Each ${alien.slice(0, -1)} on planet ${planet} had ${num2} ${color} antennae on their head. Captain ${name} counted ${num1} ${alien}. How many antennae were there in all?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const divisor = random(2, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `The ${alien} gave Captain ${name} ${num1} ${color} space crystals from planet ${planet} to take home. Captain ${name} wanted to put them equally into ${divisor} boxes. How many crystals went in each box?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(9, 17);
+                            const num2 = random(5, 13);
+                            return `Before leaving planet ${planet}, Captain ${name} collected ${num1} samples of ${food} from the north crater and ${num2} samples from the south crater. The ${alien} waved goodbye! How many samples of ${food} did Captain ${name} collect?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(22, 38);
+                            const num2 = random(9, 16);
+                            return `Captain ${name} took ${num1} photos of the ${color} ${alien} on planet ${planet}. When returning to Earth, ${num2} photos got deleted by accident. How many photos did Captain ${name} still have?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const num1 = random(4, 8);
+                            const num2 = random(3, 6);
+                            return `Captain ${name} visited ${num1} different caves on planet ${planet}. In each cave, there were ${num2} ${alien} families enjoying ${food}. How many ${alien} families did Captain ${name} see altogether?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, alien, color, food, planet] = words;
+                            const divisor = random(3, 6);
+                            const quotient = random(4, 7);
+                            const num1 = divisor * quotient;
+                            return `The ${alien} on planet ${planet} gave Captain ${name} ${num1} pieces of ${color} ${food} as a farewell gift. Captain ${name} divided them equally among ${divisor} crew members on the spaceship. How many pieces did each crew member get?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "The Magical Bakery Mix-Up",
+                description: "Help run a magical bakery where desserts appear with a magic word and creatures help bake!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Magical Creature (plural)", type: "text" },
+                    { label: "Type of Dessert", type: "text" },
+                    { label: "Silly Ingredient", type: "text" },
+                    { label: "Magic Word", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(6, 14);
+                            const num2 = random(4, 12);
+                            return `${name} opened a magical bakery with help from ${creature}. On Monday, they baked ${num1} magical ${dessert}. When ${name} said the magic word "${magic}!", ${num2} more ${dessert} appeared! How many ${dessert} did they have?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(16, 28);
+                            const num2 = random(7, 13);
+                            return `${name} sprinkled ${ingredient} on ${num1} batches of ${dessert}. Some ${creature} got too excited hearing "${magic}!" and accidentally ate ${num2} batches. How many batches of ${dessert} were left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(5, 9);
+                            const num2 = random(3, 7);
+                            return `Each ${creature.slice(0, -1)} helper made ${num2} trays of ${dessert} with ${ingredient} on top. There were ${num1} ${creature} working in ${name}'s bakery, all chanting "${magic}!" How many trays of ${dessert} did they make in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `${name} made ${num1} special ${dessert} using secret ${ingredient}. The ${creature} said "${magic}!" and the ${dessert} needed to be packed equally into ${divisor} magical boxes. How many ${dessert} went in each box?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(8, 16);
+                            const num2 = random(5, 12);
+                            return `The grand opening was a huge success! ${num1} customers came in the morning to buy ${dessert}, and ${num2} more arrived in the afternoon after hearing the ${creature} shout "${magic}!" How many customers visited ${name}'s bakery?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(20, 34);
+                            const num2 = random(8, 15);
+                            return `${name} decorated ${num1} ${dessert} with sparkly ${ingredient}. When a ${creature.slice(0, -1)} sneezed and said "${magic}!", the sparkles flew off of ${num2} ${dessert}. How many ${dessert} still had their decorations?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 8);
+                            return `${name} hosted ${num1} birthday parties at the bakery. Each party got ${num2} ${dessert} with ${ingredient} and a song where everyone sang "${magic}!" How many ${dessert} did ${name} serve at all the parties?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, creature, dessert, ingredient, magic] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `At the end of the day, the ${creature} made ${num1} leftover ${dessert} with ${ingredient}. ${name} said "${magic}!" and divided them equally among ${divisor} ${creature} to take home. How many ${dessert} did each ${creature.slice(0, -1)} get?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "The Wild Carnival Adventure",
+                description: "Play games, win prizes, and have fun with silly animals at the most exciting carnival ever!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Funny Animal (plural)", type: "text" },
+                    { label: "Carnival Game", type: "text" },
+                    { label: "Prize Item (plural)", type: "text" },
+                    { label: "Excitement Word", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(8, 15);
+                            const num2 = random(5, 11);
+                            return `${name} arrived at the carnival and saw ${num1} ${animal} playing ${game}. The ${animal} were shouting "${exclaim}!" Then ${num2} more ${animal} ran over to join the fun. How many ${animal} were playing ${game}?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(17, 29);
+                            const num2 = random(6, 13);
+                            return `${name} won ${num1} ${prize} playing ${game} at the carnival! The ${animal} yelled "${exclaim}!" and ${name} gave ${num2} ${prize} to them as gifts. How many ${prize} did ${name} have left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(4, 8);
+                            const num2 = random(3, 6);
+                            return `At the ${game} booth, there were ${num1} rounds. In each round, ${num2} ${animal} won ${prize} and celebrated by saying "${exclaim}!" How many ${animal} won ${prize} altogether?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const divisor = random(2, 5);
+                            const quotient = random(4, 9);
+                            const num1 = divisor * quotient;
+                            return `${name} and the ${animal} won ${num1} ${prize} at the ${game} booth. They said "${exclaim}!" and decided to share them equally among ${divisor} groups. How many ${prize} did each group get?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 13);
+                            return `During the afternoon, ${num1} ${animal} rode the ferris wheel, all shouting "${exclaim}!" Later, ${num2} more ${animal} joined them for a second ride with ${name}. How many ${animal} went on rides in total?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(21, 35);
+                            const num2 = random(8, 16);
+                            return `${name} bought ${num1} tickets to play ${game}. After using ${num2} tickets (with ${animal} cheering "${exclaim}!" each time), how many tickets did ${name} have remaining?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const num1 = random(5, 9);
+                            const num2 = random(3, 7);
+                            return `${name} played ${game} ${num1} times. Each time, ${name} won ${num2} ${prize}, and the ${animal} yelled "${exclaim}!" every single time! How many ${prize} did ${name} win in all?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, game, prize, exclaim] = words;
+                            const divisor = random(3, 6);
+                            const quotient = random(4, 7);
+                            const num1 = divisor * quotient;
+                            return `Before leaving the carnival, the ${animal} collected ${num1} ${prize} from playing ${game}. They said "${exclaim}!" one last time and split them equally into ${divisor} bags. How many ${prize} went in each bag?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Pirate Treasure Hunt",
+                description: "Sail the seven seas with your crew and search for hidden treasure on mysterious islands!",
+                prompts: [
+                    { label: "Your Pirate Name", type: "text" },
+                    { label: "Type of Sea Creature (plural)", type: "text" },
+                    { label: "Treasure Item (plural)", type: "text" },
+                    { label: "Island Name", type: "text" },
+                    { label: "Pirate Saying", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(10, 18);
+                            const num2 = random(6, 14);
+                            return `Captain ${name} spotted ${num1} ${creature} near ${island} Island. After shouting "${saying}!", the crew discovered ${num2} more ${creature} swimming by. How many ${creature} did they see altogether?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(19, 33);
+                            const num2 = random(7, 15);
+                            return `Captain ${name} found a chest with ${num1} ${treasure} on ${island} Island! "${saying}!" yelled the crew. They gave ${num2} ${treasure} to the ${creature} they met. How many ${treasure} does Captain ${name} have left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(5, 9);
+                            return `On ${island} Island, Captain ${name} found ${num1} treasure chests. Each chest had ${num2} ${treasure} inside. Every time they opened a chest, the crew shouted "${saying}!" How many ${treasure} did they find in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `Captain ${name} and the crew collected ${num1} ${treasure} from ${island} Island. "${saying}!" they cheered as they split them equally among ${divisor} ships. How many ${treasure} did each ship get?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(12, 20);
+                            const num2 = random(8, 16);
+                            return `While sailing away from ${island} Island, Captain ${name} saw ${num1} friendly ${creature}. Then ${num2} more ${creature} joined them, all singing "${saying}!" How many ${creature} were swimming with the ship?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(24, 40);
+                            const num2 = random(10, 18);
+                            return `Captain ${name} started with ${num1} pieces of treasure map. After solving riddles near ${island} Island, ${num2} pieces were used up. The ${creature} cried "${saying}!" How many map pieces remain?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const num1 = random(6, 10);
+                            const num2 = random(3, 6);
+                            return `Captain ${name} visited ${num1} caves on ${island} Island. In each cave, there were ${num2} ${treasure} guarded by ${creature}. Every cave echoed with "${saying}!" How many ${treasure} were there in all the caves?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, creature, treasure, island, saying] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `The ${creature} helped Captain ${name} find ${num1} ${treasure} on ${island} Island. "${saying}!" they celebrated, dividing the treasure equally into ${divisor} pouches. How many ${treasure} went in each pouch?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Dinosaur Discovery",
+                description: "Travel back in time to meet amazing dinosaurs and explore the prehistoric world!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Type of Dinosaur (plural)", type: "text" },
+                    { label: "Prehistoric Plant (plural)", type: "text" },
+                    { label: "Dinosaur Sound", type: "text" },
+                    { label: "Color", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(7, 15);
+                            const num2 = random(4, 11);
+                            return `${name} traveled back in time and spotted ${num1} ${color} ${dino} munching on ${plant}. They went "${sound}!" Then ${num2} more ${dino} stomped over to join them. How many ${dino} were there in all?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(18, 30);
+                            const num2 = random(6, 13);
+                            return `${name} found ${num1} delicious ${plant} growing near the ${dino}. The ${dino} went "${sound}!" and ate ${num2} of the ${plant}. How many ${plant} were left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(3, 7);
+                            const num2 = random(4, 8);
+                            return `${name} watched ${num1} groups of ${color} ${dino}. Each group had ${num2} ${dino} that roared "${sound}!" as they ate ${plant}. How many ${dino} did ${name} see altogether?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const divisor = random(2, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `${name} collected ${num1} ${plant} for the ${dino}. The ${dino} said "${sound}!" as ${name} divided the ${plant} equally among ${divisor} nests. How many ${plant} went in each nest?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(9, 17);
+                            const num2 = random(5, 12);
+                            return `In the morning, ${name} saw ${num1} baby ${dino} hatching from ${color} eggs. They chirped "${sound}!" By afternoon, ${num2} more babies hatched. How many baby ${dino} hatched in total?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(22, 36);
+                            const num2 = random(9, 16);
+                            return `${name} counted ${num1} ${color} footprints left by the ${dino} near the ${plant}. After it rained, ${num2} footprints were washed away. The ${dino} roared "${sound}!" How many footprints remained?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const num1 = random(5, 9);
+                            const num2 = random(3, 6);
+                            return `${name} discovered ${num1} ${color} ${dino}. Each ${dino.slice(0, -1)} ate ${num2} bunches of ${plant} per day, making a "${sound}!" sound with each bite. How many bunches of ${plant} did they eat altogether?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, dino, plant, sound, color] = words;
+                            const divisor = random(3, 6);
+                            const quotient = random(4, 7);
+                            const num1 = divisor * quotient;
+                            return `The ${dino} helped ${name} gather ${num1} ${color} ${plant}. With a loud "${sound}!", they organized them into ${divisor} equal piles. How many ${plant} were in each pile?`;
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Superhero Training Academy",
+                description: "Join the superhero academy and use your powers to complete amazing training missions!",
+                prompts: [
+                    { label: "Your Superhero Name", type: "text" },
+                    { label: "Superpower", type: "text" },
+                    { label: "Training Object (plural)", type: "text" },
+                    { label: "Superhero Catchphrase", type: "text" },
+                    { label: "Villain Type (plural)", type: "text" }
+                ],
+                problemTemplates: [
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(8, 16);
+                            const num2 = random(5, 12);
+                            return `${name} used their ${power} to save ${num1} ${object} from the ${villain}. "${phrase}!" shouted ${name}. Then ${num2} more ${object} needed saving. How many ${object} did ${name} save in total?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(17, 29);
+                            const num2 = random(6, 13);
+                            return `At the training academy, ${name} had ${num1} ${object} to practice their ${power}. After training and yelling "${phrase}!", ${num2} ${object} were used up stopping the ${villain}. How many ${object} are left?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(4, 8);
+                            const num2 = random(3, 7);
+                            return `${name} completed ${num1} training missions using ${power}. In each mission, ${name} collected ${num2} ${object} while fighting ${villain}. Every time, ${name} said "${phrase}!" How many ${object} did ${name} collect?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const divisor = random(2, 5);
+                            const quotient = random(5, 10);
+                            const num1 = divisor * quotient;
+                            return `${name} defeated ${villain} and rescued ${num1} ${object} using ${power}. "${phrase}!" ${name} exclaimed, then divided the ${object} equally among ${divisor} superhero teams. How many ${object} did each team get?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(10, 18);
+                            const num2 = random(7, 14);
+                            return `${name} trained ${num1} new superheroes in the art of ${power} in the morning. In the afternoon, ${num2} more heroes joined to learn how to stop ${villain}. Everyone cheered "${phrase}!" How many superheroes trained that day?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(20, 34);
+                            const num2 = random(8, 15);
+                            return `The academy gave ${name} ${num1} ${object} to upgrade their ${power}. During a battle with ${villain}, ${num2} ${object} were destroyed. ${name} yelled "${phrase}!" How many ${object} does ${name} still have?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const num1 = random(5, 9);
+                            const num2 = random(4, 7);
+                            return `${name} faced ${num1} waves of ${villain} attacks. In each wave, ${name} used ${power} to protect ${num2} ${object}. After each wave, ${name} shouted "${phrase}!" How many ${object} were protected in all?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, power, object, phrase, villain] = words;
+                            const divisor = random(3, 6);
+                            const quotient = random(4, 8);
+                            const num1 = divisor * quotient;
+                            return `Using ${power}, ${name} recovered ${num1} stolen ${object} from the ${villain}. "${phrase}!" ${name} declared victoriously, organizing them into ${divisor} safe vaults. How many ${object} went in each vault?`;
+                        }
+                    }
+                ]
+            },
+        ];
+
+        let currentTemplate;
+        let userWords = [];
+        let selectedMathType = 'random';
+
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function initializeMadLibs() {
+            // Pick a random template
+            currentTemplate = storyTemplates[Math.floor(Math.random() * storyTemplates.length)];
+            
+            // Update story preview
+            updateStoryPreview();
+            
+            // Create form inputs
+            const form = document.getElementById('madLibsForm');
+            form.innerHTML = '';
+            
+            currentTemplate.prompts.forEach((prompt, index) => {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.innerHTML = `
+                    <label for="word${index}">${prompt.label}:</label>
+                    <input type="text" id="word${index}" required>
+                `;
+                form.appendChild(div);
+            });
+        }
+
+        function updateStoryPreview() {
+            document.getElementById('storyTitle').textContent = currentTemplate.title;
+            document.getElementById('storyDescription').textContent = currentTemplate.description;
+        }
+
+        function refreshStory() {
+            // Pick a different random template
+            const oldTemplate = currentTemplate;
+            do {
+                currentTemplate = storyTemplates[Math.floor(Math.random() * storyTemplates.length)];
+            } while (storyTemplates.length > 1 && currentTemplate === oldTemplate);
+            
+            // Update the preview and form
+            updateStoryPreview();
+            
+            // Recreate form inputs
+            const form = document.getElementById('madLibsForm');
+            form.innerHTML = '';
+            
+            currentTemplate.prompts.forEach((prompt, index) => {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.innerHTML = `
+                    <label for="word${index}">${prompt.label}:</label>
+                    <input type="text" id="word${index}" required>
+                `;
+                form.appendChild(div);
+            });
+        }
+
+        function generateWorksheet() {
+            // Get selected math type from dropdown
+            selectedMathType = document.getElementById('mathTypeSelect').value;
+            
+            // Collect user inputs
+            userWords = [];
+            let allFilled = true;
+            
+            currentTemplate.prompts.forEach((prompt, index) => {
+                const input = document.getElementById(`word${index}`);
+                const value = input.value.trim();
+                if (value === '') {
+                    allFilled = false;
+                }
+                userWords.push(value || 'blank');
+            });
+
+            if (!allFilled) {
+                alert('Please fill in all the blanks! 😊');
+                return;
+            }
+
+            // Generate 5 problems based on math type selection
+            let selectedProblems = [];
+            
+            if (selectedMathType === 'random') {
+                // For random: pick 5 problems ensuring variety
+                // Strategy: 2 addition, 2 subtraction, 1 multiplication/division
+                const additionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'addition');
+                const subtractionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'subtraction');
+                const multiplicationTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'multiplication');
+                const divisionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'division');
+                
+                // Pick problems ensuring variety
+                if (additionTemplates.length >= 1) {
+                    const template = additionTemplates[random(0, additionTemplates.length - 1)];
+                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                }
+                if (subtractionTemplates.length >= 1) {
+                    const template = subtractionTemplates[random(0, subtractionTemplates.length - 1)];
+                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                }
+                if (multiplicationTemplates.length >= 1) {
+                    const template = multiplicationTemplates[random(0, multiplicationTemplates.length - 1)];
+                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                }
+                if (divisionTemplates.length >= 1) {
+                    const template = divisionTemplates[random(0, divisionTemplates.length - 1)];
+                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                }
+                
+                // Add one more random problem to make 5
+                const allTemplates = currentTemplate.problemTemplates;
+                const template = allTemplates[random(0, allTemplates.length - 1)];
+                selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                
+                // Shuffle so they're not always in the same order
+                selectedProblems = shuffleArray(selectedProblems);
+            } else {
+                // For specific type: pick 5 problems of that type
+                const typeTemplates = currentTemplate.problemTemplates.filter(t => t.type === selectedMathType);
+                
+                // Generate 5 problems (with replacement if needed)
+                for (let i = 0; i < 5; i++) {
+                    const template = typeTemplates[i % typeTemplates.length];
+                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                }
+            }
+
+            // Render worksheet
+            const content = document.getElementById('worksheetContent');
+            content.innerHTML = '';
+
+            selectedProblems.forEach((problem, index) => {
+                const div = document.createElement('div');
+                div.className = 'story-problem';
+                div.innerHTML = `
+                    <div class="problem-number">Problem ${index + 1}:</div>
+                    <div class="problem-text">${problem.text}</div>
+                    <div class="answer-line">
+                        <span class="answer-label">Answer:</span>
+                        <span class="answer-space"></span>
+                    </div>
+                `;
+                content.appendChild(div);
+            });
+
+            // Update worksheet title with the story title
+            const storyTitle = currentTemplate.title.replace('[Name]', userWords[0]);
+            document.querySelector('.worksheet-title').textContent = storyTitle;
+
+            // Show worksheet, hide form
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('worksheet').classList.add('active');
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function printWorksheet() {
+            window.print();
+        }
+
+        function startOver() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('worksheet').classList.remove('active');
+            initializeMadLibs();
+            
+            // Clear previous inputs
+            currentTemplate.prompts.forEach((prompt, index) => {
+                document.getElementById(`word${index}`).value = '';
+            });
+        }
+
+        // Initialize on page load
+        window.onload = initializeMadLibs;
+    </script>
+</body>
+</html>
