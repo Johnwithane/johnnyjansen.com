@@ -216,6 +216,31 @@
             margin-bottom: 15px;
         }
 
+        .problem-image {
+            display: block;
+            margin: 15px auto;
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            padding: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            object-fit: contain;
+        }
+        
+        .problem-image-error {
+            display: block;
+            margin: 15px auto;
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+
         .answer-line {
             margin-top: 15px;
             padding-top: 10px;
@@ -355,7 +380,8 @@
                             const num1 = random(5, 15);
                             const num2 = random(3, 10);
                             return `${name} was organizing the town's first ever ${animal} parade! In the morning, ${num1} ${color} ${animal} arrived saying "${sound}!" In the afternoon, ${num2} more ${animal} joined the parade. How many ${animal} were in the parade altogether?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${words[1]}-parade`
                     },
                     {
                         type: 'subtraction',
@@ -364,7 +390,8 @@
                             const num1 = random(15, 30);
                             const num2 = random(5, 12);
                             return `${name} prepared ${num1} boxes of ${food} for the ${animal} to eat during the parade. The ${animal} were so excited they went "${sound}!" and ate ${num2} boxes right away! How many boxes of ${food} were left for later?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/bottts/svg?seed=${words[3]}-food`
                     },
                     {
                         type: 'multiplication',
@@ -373,7 +400,8 @@
                             const num1 = random(4, 8);
                             const num2 = random(3, 6);
                             return `Each ${animal.slice(0, -1)} in the parade wore ${num2} ${color} ribbons. There were ${num1} ${animal} marching and saying "${sound}!" How many ${color} ribbons were there in total?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/shapes/svg?seed=${words[2]}-ribbon`
                     },
                     {
                         type: 'division',
@@ -383,7 +411,8 @@
                             const quotient = random(4, 8);
                             const num1 = divisor * quotient;
                             return `After the parade, ${name} had ${num1} pieces of ${food} to share equally among ${divisor} groups of ${animal}. Each group would say "${sound}!" when they got their share. How many pieces of ${food} did each group get?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/icons/svg?seed=${words[3]}-share`
                     },
                     {
                         type: 'addition',
@@ -392,7 +421,8 @@
                             const num1 = random(8, 18);
                             const num2 = random(6, 14);
                             return `The parade was such a success! ${num1} people came to watch in the morning, and ${num2} more arrived in the afternoon, all cheering as the ${color} ${animal} went "${sound}!" How many people watched the parade in total?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/adventurer/svg?seed=crowd-${words[0]}`
                     },
                     {
                         type: 'subtraction',
@@ -401,7 +431,8 @@
                             const num1 = random(20, 35);
                             const num2 = random(8, 15);
                             return `${name} gave out ${num1} ${color} balloons at the parade. The ${animal} popped ${num2} balloons by accident while saying "${sound}!" How many balloons were still floating?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=balloon-${words[2]}`
                     },
                     {
                         type: 'multiplication',
@@ -410,7 +441,8 @@
                             const num1 = random(5, 9);
                             const num2 = random(3, 7);
                             return `At the end of the parade, ${name} took ${num1} photos of groups of ${animal}. Each photo had ${num2} ${color} ${animal} saying "${sound}!" How many ${animal} were in all the photos combined?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/bottts/svg?seed=photo-${words[1]}`
                     },
                     {
                         type: 'division',
@@ -420,7 +452,8 @@
                             const quotient = random(5, 8);
                             const num1 = divisor * quotient;
                             return `The ${animal} collected ${num1} pieces of ${food} during the parade. They wanted to put them into ${divisor} ${color} boxes, with the same amount in each box. Every time they filled a box, they'd say "${sound}!" How many pieces of ${food} went in each box?`;
-                        }
+                        },
+                        getImageUrl: (words) => `https://api.dicebear.com/7.x/shapes/svg?seed=box-${words[2]}`
                     }
                 ]
             },
@@ -956,6 +989,259 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
+        // Smart emoji selector based on keywords
+        function getEmojiForWord(word) {
+            const lowerWord = word.toLowerCase();
+            
+            // Animal emojis
+            const animals = {
+                'dog': '🐕', 'dogs': '🐕', 'puppy': '🐶', 'puppies': '🐶',
+                'cat': '🐱', 'cats': '🐱', 'kitten': '🐱', 'kittens': '🐱',
+                'bird': '🐦', 'birds': '🐦',
+                'fish': '🐟', 'fishes': '🐟',
+                'bear': '🐻', 'bears': '🐻',
+                'lion': '🦁', 'lions': '🦁',
+                'tiger': '🐯', 'tigers': '🐯',
+                'elephant': '🐘', 'elephants': '🐘',
+                'monkey': '🐵', 'monkeys': '🐵',
+                'panda': '🐼', 'pandas': '🐼',
+                'koala': '🐨', 'koalas': '🐨',
+                'frog': '🐸', 'frogs': '🐸',
+                'pig': '🐷', 'pigs': '🐷',
+                'cow': '🐮', 'cows': '🐮',
+                'horse': '🐴', 'horses': '🐴',
+                'unicorn': '🦄', 'unicorns': '🦄',
+                'dragon': '🐉', 'dragons': '🐉',
+                'dinosaur': '🦕', 'dinosaurs': '🦕', 'dino': '🦖', 'dinos': '🦖',
+                'rabbit': '🐰', 'rabbits': '🐰', 'bunny': '🐰', 'bunnies': '🐰',
+                'mouse': '🐭', 'mice': '🐭',
+                'hamster': '🐹', 'hamsters': '🐹',
+                'fox': '🦊', 'foxes': '🦊',
+                'wolf': '🐺', 'wolves': '🐺',
+                'koala': '🐨', 'koalas': '🐨',
+                'penguin': '🐧', 'penguins': '🐧',
+                'chicken': '🐔', 'chickens': '🐔',
+                'duck': '🦆', 'ducks': '🦆',
+                'owl': '🦉', 'owls': '🦉',
+                'bee': '🐝', 'bees': '🐝',
+                'butterfly': '🦋', 'butterflies': '🦋',
+                'snail': '🐌', 'snails': '🐌',
+                'bug': '🐛', 'bugs': '🐛',
+                'ant': '🐜', 'ants': '🐜',
+                'spider': '🕷️', 'spiders': '🕷️',
+                'turtle': '🐢', 'turtles': '🐢',
+                'snake': '🐍', 'snakes': '🐍',
+                'lizard': '🦎', 'lizards': '🦎',
+                'octopus': '🐙', 'octopi': '🐙',
+                'squid': '🦑', 'squids': '🦑',
+                'shrimp': '🦐', 'shrimps': '🦐',
+                'crab': '🦀', 'crabs': '🦀',
+                'lobster': '🦞', 'lobsters': '🦞',
+                'dolphin': '🐬', 'dolphins': '🐬',
+                'whale': '🐋', 'whales': '🐋',
+                'shark': '🦈', 'sharks': '🦈',
+                'seal': '🦭', 'seals': '🦭',
+                'alien': '👽', 'aliens': '👽',
+                'robot': '🤖', 'robots': '🤖',
+                'monster': '👹', 'monsters': '👻',
+                'zombie': '🧟', 'zombies': '🧟',
+                'vampire': '🧛', 'vampires': '🧛',
+                'fairy': '🧚', 'fairies': '🧚',
+                'mermaid': '🧜', 'mermaids': '🧜',
+                'elf': '🧝', 'elves': '🧝',
+                'genie': '🧞', 'genies': '🧞'
+            };
+            
+            // Food emojis
+            const foods = {
+                'pizza': '🍕', 'burger': '🍔', 'hamburger': '🍔',
+                'hotdog': '🌭', 'hot dog': '🌭',
+                'taco': '🌮', 'tacos': '🌮',
+                'burrito': '🌯', 'burritos': '🌯',
+                'sandwich': '🥪', 'sandwiches': '🥪',
+                'cookie': '🍪', 'cookies': '🍪',
+                'cake': '🎂', 'cakes': '🎂',
+                'cupcake': '🧁', 'cupcakes': '🧁',
+                'donut': '🍩', 'donuts': '🍩', 'doughnut': '🍩',
+                'candy': '🍬', 'candies': '🍬',
+                'lollipop': '🍭', 'lollipops': '🍭',
+                'chocolate': '🍫',
+                'ice cream': '🍦', 'icecream': '🍦',
+                'apple': '🍎', 'apples': '🍎',
+                'banana': '🍌', 'bananas': '🍌',
+                'orange': '🍊', 'oranges': '🍊',
+                'strawberry': '🍓', 'strawberries': '🍓',
+                'watermelon': '🍉',
+                'grape': '🍇', 'grapes': '🍇',
+                'cherry': '🍒', 'cherries': '🍒',
+                'peach': '🍑', 'peaches': '🍑',
+                'pineapple': '🍍', 'pineapples': '🍍',
+                'carrot': '🥕', 'carrots': '🥕',
+                'corn': '🌽',
+                'bread': '🍞',
+                'pretzel': '🥨', 'pretzels': '🥨',
+                'popcorn': '🍿',
+                'french fries': '🍟', 'fries': '🍟',
+                'sushi': '🍣',
+                'egg': '🥚', 'eggs': '🥚',
+                'bacon': '🥓',
+                'cheese': '🧀',
+                'milk': '🥛',
+                'coffee': '☕',
+                'tea': '🍵',
+                'juice': '🧃',
+                'soda': '🥤',
+                'pie': '🥧', 'pies': '🥧'
+            };
+            
+            // Objects & things
+            const objects = {
+                'star': '⭐', 'stars': '⭐',
+                'heart': '❤️', 'hearts': '❤️',
+                'flower': '🌸', 'flowers': '🌸',
+                'rose': '🌹', 'roses': '🌹',
+                'tree': '🌳', 'trees': '🌳',
+                'plant': '🌱', 'plants': '🌱',
+                'ball': '⚽', 'balls': '⚽',
+                'balloon': '🎈', 'balloons': '🎈',
+                'gift': '🎁', 'gifts': '🎁', 'present': '🎁', 'presents': '🎁',
+                'trophy': '🏆', 'trophies': '🏆',
+                'medal': '🏅', 'medals': '🏅',
+                'crown': '👑', 'crowns': '👑',
+                'gem': '💎', 'gems': '💎', 'diamond': '💎', 'diamonds': '💎',
+                'crystal': '🔮', 'crystals': '🔮',
+                'key': '🔑', 'keys': '🔑',
+                'coin': '🪙', 'coins': '🪙',
+                'money': '💰', 'gold': '💰', 'treasure': '💰',
+                'book': '�책', 'books': '📚',
+                'pencil': '✏️', 'pencils': '✏️',
+                'crayon': '🖍️', 'crayons': '🖍️',
+                'paint': '🎨',
+                'music': '🎵', 'note': '🎵', 'notes': '🎵',
+                'guitar': '🎸', 'guitars': '🎸',
+                'drum': '🥁', 'drums': '🥁',
+                'trumpet': '🎺', 'trumpets': '🎺',
+                'microphone': '🎤', 'mic': '🎤',
+                'camera': '📷', 'cameras': '📷',
+                'phone': '📱', 'phones': '📱',
+                'computer': '💻', 'computers': '💻',
+                'watch': '⌚', 'watches': '⌚',
+                'clock': '🕐', 'clocks': '🕐',
+                'bell': '🔔', 'bells': '🔔',
+                'lightbulb': '💡', 'light': '💡',
+                'candle': '🕯️', 'candles': '🕯️',
+                'fire': '🔥',
+                'sun': '☀️',
+                'moon': '🌙',
+                'cloud': '☁️', 'clouds': '☁️',
+                'rainbow': '🌈', 'rainbows': '🌈',
+                'snowflake': '❄️', 'snow': '❄️',
+                'umbrella': '☂️', 'umbrellas': '☂️',
+                'rocket': '🚀', 'rockets': '🚀',
+                'airplane': '✈️', 'plane': '✈️', 'planes': '✈️',
+                'car': '🚗', 'cars': '🚗',
+                'bus': '🚌', 'buses': '🚌',
+                'train': '🚂', 'trains': '🚂',
+                'bike': '🚲', 'bicycle': '🚲', 'bikes': '🚲',
+                'scooter': '🛴', 'scooters': '🛴',
+                'skateboard': '🛹', 'skateboards': '🛹',
+                'boat': '⛵', 'boats': '⛵', 'ship': '🚢', 'ships': '🚢',
+                'helicopter': '🚁', 'helicopters': '🚁',
+                'house': '🏠', 'houses': '🏠', 'home': '🏠',
+                'castle': '🏰', 'castles': '🏰',
+                'tent': '⛺', 'tents': '⛺',
+                'mountain': '⛰️', 'mountains': '⛰️',
+                'volcano': '🌋', 'volcanoes': '🌋',
+                'island': '🏝️', 'islands': '🏝️',
+                'beach': '🏖️',
+                'desert': '🏜️',
+                'forest': '🌲',
+                'cactus': '🌵',
+                'mushroom': '🍄', 'mushrooms': '🍄',
+                'map': '🗺️', 'maps': '🗺️',
+                'compass': '🧭',
+                'backpack': '🎒', 'backpacks': '🎒',
+                'tent': '⛺', 'tents': '⛺'
+            };
+            
+            // Activities & places
+            const activities = {
+                'soccer': '⚽', 'football': '🏈',
+                'basketball': '🏀',
+                'baseball': '⚾',
+                'tennis': '🎾',
+                'volleyball': '🏐',
+                'bowling': '🎳',
+                'game': '🎮', 'games': '🎮', 'gaming': '🎮',
+                'puzzle': '🧩', 'puzzles': '🧩',
+                'magic': '✨', 'magical': '✨', 'sparkle': '✨',
+                'party': '🎉', 'parties': '🎉', 'celebration': '🎊',
+                'birthday': '🎂',
+                'carnival': '🎪', 'circus': '🎪',
+                'ferris wheel': '🎡',
+                'roller coaster': '🎢',
+                'carousel': '🎠',
+                'ticket': '🎫', 'tickets': '🎫',
+                'art': '🎨', 'painting': '🎨',
+                'school': '🏫', 'academy': '🏫',
+                'park': '🌳',
+                'playground': '🎠',
+                'zoo': '🦁',
+                'farm': '🚜',
+                'space': '🌌', 'galaxy': '🌌',
+                'planet': '🪐', 'planets': '🪐',
+                'earth': '🌍',
+                'mars': '🔴',
+                'jupiter': '🪐',
+                'pirate': '🏴‍☠️', 'pirates': '🏴‍☠️',
+                'superhero': '🦸', 'superheroes': '🦸', 'hero': '🦸', 'heroes': '🦸',
+                'villain': '🦹', 'villains': '🦹',
+                'power': '⚡', 'powers': '⚡', 'lightning': '⚡',
+                'shield': '🛡️', 'shields': '🛡️'
+            };
+            
+            // Check all categories
+            if (animals[lowerWord]) return animals[lowerWord];
+            if (foods[lowerWord]) return foods[lowerWord];
+            if (objects[lowerWord]) return objects[lowerWord];
+            if (activities[lowerWord]) return activities[lowerWord];
+            
+            // Fallback to generic emojis
+            return '✨';
+        }
+
+        // Helper function to generate thematic images
+        function generateImageUrl(storyTitle, words, problemIndex) {
+            const styles = ['fun-emoji', 'bottts', 'shapes', 'icons', 'adventurer'];
+            const style = styles[problemIndex % styles.length];
+            const seed = `${storyTitle}-${words.join('-')}-${problemIndex}`;
+            const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+            console.log(`Generated image URL: ${url}`);
+            return url;
+        }
+
+        // Get the most relevant emoji from user's words
+        function getRelevantEmoji(words, storyTitle) {
+            // Try each word to find a matching emoji
+            for (let word of words) {
+                const emoji = getEmojiForWord(word);
+                if (emoji !== '✨') { // If we found a specific emoji (not fallback)
+                    return emoji;
+                }
+            }
+            
+            // Story-specific fallbacks
+            if (storyTitle.includes('Parade')) return '🎪';
+            if (storyTitle.includes('Space')) return '🚀';
+            if (storyTitle.includes('Bakery')) return '🧁';
+            if (storyTitle.includes('Carnival')) return '🎡';
+            if (storyTitle.includes('Pirate')) return '🏴‍☠️';
+            if (storyTitle.includes('Dinosaur')) return '🦕';
+            if (storyTitle.includes('Superhero')) return '🦸';
+            
+            return '✨'; // Final fallback
+        }
+
         function initializeMadLibs() {
             // Pick a random template
             currentTemplate = storyTemplates[Math.floor(Math.random() * storyTemplates.length)];
@@ -1034,46 +1320,50 @@
             let selectedProblems = [];
             
             if (selectedMathType === 'random') {
-                // For random: pick 5 problems ensuring variety
-                // Strategy: 2 addition, 2 subtraction, 1 multiplication/division
-                const additionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'addition');
-                const subtractionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'subtraction');
-                const multiplicationTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'multiplication');
-                const divisionTemplates = currentTemplate.problemTemplates.filter(t => t.type === 'division');
+                // For random mix: ensure we get good variety by using different templates
+                const allTemplates = [...currentTemplate.problemTemplates];
                 
-                // Pick problems ensuring variety
-                if (additionTemplates.length >= 1) {
-                    const template = additionTemplates[random(0, additionTemplates.length - 1)];
-                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
-                }
-                if (subtractionTemplates.length >= 1) {
-                    const template = subtractionTemplates[random(0, subtractionTemplates.length - 1)];
-                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
-                }
-                if (multiplicationTemplates.length >= 1) {
-                    const template = multiplicationTemplates[random(0, multiplicationTemplates.length - 1)];
-                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
-                }
-                if (divisionTemplates.length >= 1) {
-                    const template = divisionTemplates[random(0, divisionTemplates.length - 1)];
-                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                // Shuffle and pick 5 different templates
+                const shuffledTemplates = shuffleArray(allTemplates);
+                
+                for (let i = 0; i < 5 && i < shuffledTemplates.length; i++) {
+                    const template = shuffledTemplates[i];
+                    selectedProblems.push({ 
+                        text: template.generate(userWords), 
+                        type: template.type,
+                        imageUrl: template.getImageUrl ? template.getImageUrl(userWords) : generateImageUrl(currentTemplate.title, userWords, i)
+                    });
                 }
                 
-                // Add one more random problem to make 5
-                const allTemplates = currentTemplate.problemTemplates;
-                const template = allTemplates[random(0, allTemplates.length - 1)];
-                selectedProblems.push({ text: template.generate(userWords), type: template.type });
-                
-                // Shuffle so they're not always in the same order
-                selectedProblems = shuffleArray(selectedProblems);
+                // If we need more problems (shouldn't happen with 8 templates per story)
+                while (selectedProblems.length < 5) {
+                    const template = allTemplates[random(0, allTemplates.length - 1)];
+                    selectedProblems.push({ 
+                        text: template.generate(userWords), 
+                        type: template.type,
+                        imageUrl: template.getImageUrl ? template.getImageUrl(userWords) : generateImageUrl(currentTemplate.title, userWords, selectedProblems.length)
+                    });
+                }
             } else {
-                // For specific type: pick 5 problems of that type
+                // For specific type: get all templates of that type and use different ones
                 const typeTemplates = currentTemplate.problemTemplates.filter(t => t.type === selectedMathType);
                 
-                // Generate 5 problems (with replacement if needed)
+                if (typeTemplates.length === 0) {
+                    alert(`No ${selectedMathType} problems available for this story. Try selecting "Random Mix"!`);
+                    return;
+                }
+                
+                // Shuffle the templates so we get variety
+                const shuffledTemplates = shuffleArray([...typeTemplates]);
+                
+                // Generate 5 problems using different templates when possible
                 for (let i = 0; i < 5; i++) {
-                    const template = typeTemplates[i % typeTemplates.length];
-                    selectedProblems.push({ text: template.generate(userWords), type: template.type });
+                    const template = shuffledTemplates[i % shuffledTemplates.length];
+                    selectedProblems.push({ 
+                        text: template.generate(userWords), 
+                        type: template.type,
+                        imageUrl: template.getImageUrl ? template.getImageUrl(userWords) : generateImageUrl(currentTemplate.title, userWords, i)
+                    });
                 }
             }
 
@@ -1084,8 +1374,26 @@
             selectedProblems.forEach((problem, index) => {
                 const div = document.createElement('div');
                 div.className = 'story-problem';
+                
+                // Get a relevant emoji from the user's words
+                const relevantEmoji = getRelevantEmoji(userWords, currentTemplate.title);
+                
+                let imageHtml = '';
+                if (problem.imageUrl) {
+                    imageHtml = `
+                        <img 
+                            src="${problem.imageUrl}" 
+                            alt="Problem illustration" 
+                            class="problem-image"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        >
+                        <div class="problem-image-error" style="display: none;">${relevantEmoji}</div>
+                    `;
+                }
+                
                 div.innerHTML = `
                     <div class="problem-number">Problem ${index + 1}:</div>
+                    ${imageHtml}
                     <div class="problem-text">${problem.text}</div>
                     <div class="answer-line">
                         <span class="answer-label">Answer:</span>
