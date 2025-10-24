@@ -1210,14 +1210,243 @@
             return '✨';
         }
 
-        // Helper function to generate thematic images
-        function generateImageUrl(storyTitle, words, problemIndex) {
-            const styles = ['fun-emoji', 'bottts', 'shapes', 'icons', 'adventurer'];
-            const style = styles[problemIndex % styles.length];
-            const seed = `${storyTitle}-${words.join('-')}-${problemIndex}`;
-            const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
-            console.log(`Generated image URL: ${url}`);
-            return url;
+        // Custom image generator using Canvas API
+        function generateCustomImage(words, problemIndex, problemText) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            // Get relevant emoji from user's words
+            const emoji = getRelevantEmoji(words, currentTemplate.title);
+            
+            // Create gradient backgrounds with different colors
+            const gradients = [
+                ['#667eea', '#764ba2'], // Purple
+                ['#f093fb', '#f5576c'], // Pink
+                ['#4facfe', '#00f2fe'], // Blue
+                ['#43e97b', '#38f9d7'], // Green
+                ['#fa709a', '#fee140'], // Orange/Pink
+                ['#30cfd0', '#330867'], // Teal/Purple
+                ['#a8edea', '#fed6e3'], // Pastel
+                ['#ff9a9e', '#fecfef'], // Light Pink
+            ];
+            
+            const colorPair = gradients[problemIndex % gradients.length];
+            const gradient = ctx.createLinearGradient(0, 0, 300, 300);
+            gradient.addColorStop(0, colorPair[0]);
+            gradient.addColorStop(1, colorPair[1]);
+            
+            // Fill background with gradient
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 300, 300);
+            
+            // Add subtle pattern/shapes in background
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 5; i++) {
+                const x = Math.random() * 300;
+                const y = Math.random() * 300;
+                const size = Math.random() * 100 + 50;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+            
+            // Draw main emoji (large)
+            ctx.font = '120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Add shadow for emoji
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 3;
+            ctx.shadowOffsetY = 3;
+            
+            ctx.fillText(emoji, 150, 150);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Add decorative smaller emojis
+            ctx.font = '40px Arial';
+            const corners = [
+                {x: 40, y: 40},
+                {x: 260, y: 40},
+                {x: 40, y: 260},
+                {x: 260, y: 260}
+            ];
+            
+            corners.forEach((corner, i) => {
+                ctx.globalAlpha = 0.4;
+                ctx.fillText(emoji, corner.x, corner.y);
+            });
+            ctx.globalAlpha = 1.0;
+            
+            // Add problem number badge at top
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(110, 10, 80, 35, 17.5);
+            ctx.fill();
+            
+            ctx.fillStyle = colorPair[0];
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText(`#${problemIndex + 1}`, 150, 30);
+            
+            // Convert canvas to data URL
+            return canvas.toDataURL('image/png');
+        }
+
+        // Alternative: Simpler design with just emoji and clean background
+        function generateSimpleImage(words, problemIndex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 250;
+            canvas.height = 250;
+            const ctx = canvas.getContext('2d');
+            
+            // Get relevant emoji
+            const emoji = getRelevantEmoji(words, currentTemplate.title);
+            
+            // Solid pastel backgrounds
+            const backgrounds = [
+                '#E3F2FD', // Light Blue
+                '#F3E5F5', // Light Purple
+                '#FFF3E0', // Light Orange
+                '#E8F5E9', // Light Green
+                '#FCE4EC', // Light Pink
+                '#F1F8E9', // Light Lime
+                '#FFF9C4', // Light Yellow
+                '#FFEBEE'  // Light Red
+            ];
+            
+            const bgColor = backgrounds[problemIndex % backgrounds.length];
+            
+            // Fill background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 250, 250);
+            
+            // Draw circular background for emoji
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(125, 125, 90, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add subtle shadow to circle
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw emoji
+            ctx.font = '100px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 125, 135);
+            
+            return canvas.toDataURL('image/png');
+        }
+
+        // Fun meme-style with caption
+        function generateMemeStyleImage(words, problemIndex, caption) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+            
+            // Get relevant emoji
+            const emoji = getRelevantEmoji(words, currentTemplate.title);
+            
+            // Bright, fun colors
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'
+            ];
+            
+            const bgColor = colors[problemIndex % colors.length];
+            
+            // Fill background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 400, 400);
+            
+            // Add border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(0, 0, 400, 400);
+            
+            // Draw emoji
+            ctx.font = '150px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // White outline for emoji
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 8;
+            ctx.strokeText(emoji, 200, 200);
+            
+            ctx.fillText(emoji, 200, 200);
+            
+            // Add caption at bottom if provided
+            if (caption) {
+                // White background for text
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fillRect(0, 320, 400, 80);
+                
+                // Caption text
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 24px Impact, Arial';
+                ctx.textAlign = 'center';
+                
+                // Word wrap caption
+                const maxWidth = 360;
+                const words = caption.split(' ');
+                let line = '';
+                let y = 345;
+                
+                words.forEach(word => {
+                    const testLine = line + word + ' ';
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxWidth && line !== '') {
+                        ctx.fillText(line.trim(), 200, y);
+                        line = word + ' ';
+                        y += 30;
+                    } else {
+                        line = testLine;
+                    }
+                });
+                ctx.fillText(line.trim(), 200, y);
+            }
+            
+            return canvas.toDataURL('image/png');
+        }
+
+        // Helper function to generate thematic images based on user's words
+        function generateImageUrl(storyTitle, words, problemIndex, problemText = '') {
+            // Try to use our custom generator
+            try {
+                // Choose which style to use
+                // You can change this to use different styles:
+                // - generateCustomImage (gradient with emojis)
+                // - generateSimpleImage (clean, minimal)
+                // - generateMemeStyleImage (bold, fun)
+                
+                return generateSimpleImage(words, problemIndex);
+            } catch (e) {
+                console.error('Error generating custom image:', e);
+                
+                // Fallback to DiceBear if canvas fails
+                const styles = ['fun-emoji', 'bottts', 'shapes', 'icons', 'adventurer'];
+                const style = styles[problemIndex % styles.length];
+                const relevantWord = words[problemIndex % words.length] || 'default';
+                const varietySeed = Math.floor(problemIndex / 2);
+                const seed = `${relevantWord}-${style}-${varietySeed}`;
+                const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+                console.log(`Fallback to DiceBear - Generated image URL (Problem ${problemIndex + 1}): ${url}`);
+                return url;
+            }
         }
 
         // Get the most relevant emoji from user's words
