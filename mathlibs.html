@@ -360,625 +360,1112 @@
     </div>
 
     <script>
-        // Story templates that tell one cohesive silly story
+        // 12 COMPLETE STORY TEMPLATES - Ready to Copy/Paste!
+        // Each has unique prompts and a clear beginning → middle → end narrative arc
+
         const storyTemplates = [
+            // STORY 1: THE GREAT PET PARADE
             {
                 title: "The Great Pet Parade",
-                description: "Join a wacky parade full of colorful animals, silly sounds, and tasty treats!",
+                description: "Organize an amazing parade full of quirky animals and exciting surprises!",
                 prompts: [
                     { label: "Your Name", type: "text" },
                     { label: "Type of Animal (plural)", type: "text" },
-                    { label: "Silly Color", type: "text" },
-                    { label: "Type of Food", type: "text" },
-                    { label: "Funny Sound", type: "text" }
+                    { label: "Bright Color", type: "text" },
+                    { label: "Favorite Snack", type: "text" },
+                    { label: "Excited Sound", type: "text" }
                 ],
                 problemTemplates: [
+                    // BEGINNING: Setting up the parade
                     {
                         type: 'addition',
                         generate: (words) => {
                             const [name, animal, color, food, sound] = words;
-                            const num1 = random(5, 15);
-                            const num2 = random(3, 10);
-                            return `${name} was organizing the town's first ever ${animal} parade! In the morning, ${num1} ${color} ${animal} arrived saying "${sound}!" In the afternoon, ${num2} more ${animal} joined the parade. How many ${animal} were in the parade altogether?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${words[1]}-parade`
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const num1 = random(15, 30);
-                            const num2 = random(5, 12);
-                            return `${name} prepared ${num1} boxes of ${food} for the ${animal} to eat during the parade. The ${animal} were so excited they went "${sound}!" and ate ${num2} boxes right away! How many boxes of ${food} were left for later?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/bottts/svg?seed=${words[3]}-food`
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const num1 = random(4, 8);
-                            const num2 = random(3, 6);
-                            return `Each ${animal.slice(0, -1)} in the parade wore ${num2} ${color} ribbons. There were ${num1} ${animal} marching and saying "${sound}!" How many ${color} ribbons were there in total?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/shapes/svg?seed=${words[2]}-ribbon`
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const divisor = random(2, 5);
-                            const quotient = random(4, 8);
-                            const num1 = divisor * quotient;
-                            return `After the parade, ${name} had ${num1} pieces of ${food} to share equally among ${divisor} groups of ${animal}. Each group would say "${sound}!" when they got their share. How many pieces of ${food} did each group get?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/icons/svg?seed=${words[3]}-share`
-                    },
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const num1 = random(8, 18);
-                            const num2 = random(6, 14);
-                            return `The parade was such a success! ${num1} people came to watch in the morning, and ${num2} more arrived in the afternoon, all cheering as the ${color} ${animal} went "${sound}!" How many people watched the parade in total?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/adventurer/svg?seed=crowd-${words[0]}`
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const num1 = random(20, 35);
-                            const num2 = random(8, 15);
-                            return `${name} gave out ${num1} ${color} balloons at the parade. The ${animal} popped ${num2} balloons by accident while saying "${sound}!" How many balloons were still floating?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=balloon-${words[2]}`
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const num1 = random(5, 9);
-                            const num2 = random(3, 7);
-                            return `At the end of the parade, ${name} took ${num1} photos of groups of ${animal}. Each photo had ${num2} ${color} ${animal} saying "${sound}!" How many ${animal} were in all the photos combined?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/bottts/svg?seed=photo-${words[1]}`
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, animal, color, food, sound] = words;
-                            const divisor = random(3, 6);
-                            const quotient = random(5, 8);
-                            const num1 = divisor * quotient;
-                            return `The ${animal} collected ${num1} pieces of ${food} during the parade. They wanted to put them into ${divisor} ${color} boxes, with the same amount in each box. Every time they filled a box, they'd say "${sound}!" How many pieces of ${food} went in each box?`;
-                        },
-                        getImageUrl: (words) => `https://api.dicebear.com/7.x/shapes/svg?seed=box-${words[2]}`
-                    }
-                ]
-            },
-            {
-                title: "Space Adventure with Captain [Name]",
-                description: "Blast off to outer space and meet friendly aliens on a faraway planet!",
-                prompts: [
-                    { label: "Your Name", type: "text" },
-                    { label: "Alien Creature (plural)", type: "text" },
-                    { label: "Weird Color", type: "text" },
-                    { label: "Space Food", type: "text" },
-                    { label: "Planet Name", type: "text" }
-                ],
-                problemTemplates: [
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(7, 16);
-                            const num2 = random(4, 11);
-                            return `Captain ${name} landed the spaceship on planet ${planet} and discovered ${num1} friendly ${color} ${alien}. Then ${num2} more ${alien} came out from behind a crater to say hello! How many ${alien} did Captain ${name} meet?`;
-                        }
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(18, 32);
-                            const num2 = random(6, 14);
-                            return `Captain ${name} brought ${num1} containers of ${food} to share with the ${alien} on planet ${planet}. The ${alien} were so hungry they ate ${num2} containers! How many containers of ${food} were left?`;
-                        }
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(3, 7);
-                            const num2 = random(4, 8);
-                            return `Each ${alien.slice(0, -1)} on planet ${planet} had ${num2} ${color} antennae on their head. Captain ${name} counted ${num1} ${alien}. How many antennae were there in all?`;
-                        }
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const divisor = random(2, 5);
-                            const quotient = random(5, 9);
-                            const num1 = divisor * quotient;
-                            return `The ${alien} gave Captain ${name} ${num1} ${color} space crystals from planet ${planet} to take home. Captain ${name} wanted to put them equally into ${divisor} boxes. How many crystals went in each box?`;
-                        }
-                    },
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(9, 17);
-                            const num2 = random(5, 13);
-                            return `Before leaving planet ${planet}, Captain ${name} collected ${num1} samples of ${food} from the north crater and ${num2} samples from the south crater. The ${alien} waved goodbye! How many samples of ${food} did Captain ${name} collect?`;
-                        }
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(22, 38);
-                            const num2 = random(9, 16);
-                            return `Captain ${name} took ${num1} photos of the ${color} ${alien} on planet ${planet}. When returning to Earth, ${num2} photos got deleted by accident. How many photos did Captain ${name} still have?`;
-                        }
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const num1 = random(4, 8);
-                            const num2 = random(3, 6);
-                            return `Captain ${name} visited ${num1} different caves on planet ${planet}. In each cave, there were ${num2} ${alien} families enjoying ${food}. How many ${alien} families did Captain ${name} see altogether?`;
-                        }
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, alien, color, food, planet] = words;
-                            const divisor = random(3, 6);
-                            const quotient = random(4, 7);
-                            const num1 = divisor * quotient;
-                            return `The ${alien} on planet ${planet} gave Captain ${name} ${num1} pieces of ${color} ${food} as a farewell gift. Captain ${name} divided them equally among ${divisor} crew members on the spaceship. How many pieces did each crew member get?`;
-                        }
-                    }
-                ]
-            },
-            {
-                title: "The Magical Bakery Mix-Up",
-                description: "Help run a magical bakery where desserts appear with a magic word and creatures help bake!",
-                prompts: [
-                    { label: "Your Name", type: "text" },
-                    { label: "Magical Creature (plural)", type: "text" },
-                    { label: "Type of Dessert", type: "text" },
-                    { label: "Silly Ingredient", type: "text" },
-                    { label: "Magic Word", type: "text" }
-                ],
-                problemTemplates: [
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(6, 14);
-                            const num2 = random(4, 12);
-                            return `${name} opened a magical bakery with help from ${creature}. On Monday, they baked ${num1} magical ${dessert}. When ${name} said the magic word "${magic}!", ${num2} more ${dessert} appeared! How many ${dessert} did they have?`;
-                        }
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(16, 28);
-                            const num2 = random(7, 13);
-                            return `${name} sprinkled ${ingredient} on ${num1} batches of ${dessert}. Some ${creature} got too excited hearing "${magic}!" and accidentally ate ${num2} batches. How many batches of ${dessert} were left?`;
-                        }
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(5, 9);
-                            const num2 = random(3, 7);
-                            return `Each ${creature.slice(0, -1)} helper made ${num2} trays of ${dessert} with ${ingredient} on top. There were ${num1} ${creature} working in ${name}'s bakery, all chanting "${magic}!" How many trays of ${dessert} did they make in total?`;
-                        }
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const divisor = random(2, 4);
-                            const quotient = random(6, 10);
-                            const num1 = divisor * quotient;
-                            return `${name} made ${num1} special ${dessert} using secret ${ingredient}. The ${creature} said "${magic}!" and the ${dessert} needed to be packed equally into ${divisor} magical boxes. How many ${dessert} went in each box?`;
-                        }
-                    },
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(8, 16);
-                            const num2 = random(5, 12);
-                            return `The grand opening was a huge success! ${num1} customers came in the morning to buy ${dessert}, and ${num2} more arrived in the afternoon after hearing the ${creature} shout "${magic}!" How many customers visited ${name}'s bakery?`;
-                        }
-                    },
-                    {
-                        type: 'subtraction',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(20, 34);
-                            const num2 = random(8, 15);
-                            return `${name} decorated ${num1} ${dessert} with sparkly ${ingredient}. When a ${creature.slice(0, -1)} sneezed and said "${magic}!", the sparkles flew off of ${num2} ${dessert}. How many ${dessert} still had their decorations?`;
-                        }
-                    },
-                    {
-                        type: 'multiplication',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const num1 = random(4, 7);
-                            const num2 = random(4, 8);
-                            return `${name} hosted ${num1} birthday parties at the bakery. Each party got ${num2} ${dessert} with ${ingredient} and a song where everyone sang "${magic}!" How many ${dessert} did ${name} serve at all the parties?`;
-                        }
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, creature, dessert, ingredient, magic] = words;
-                            const divisor = random(3, 5);
-                            const quotient = random(5, 8);
-                            const num1 = divisor * quotient;
-                            return `At the end of the day, the ${creature} made ${num1} leftover ${dessert} with ${ingredient}. ${name} said "${magic}!" and divided them equally among ${divisor} ${creature} to take home. How many ${dessert} did each ${creature.slice(0, -1)} get?`;
-                        }
-                    }
-                ]
-            },
-            {
-                title: "The Wild Carnival Adventure",
-                description: "Play games, win prizes, and have fun with silly animals at the most exciting carnival ever!",
-                prompts: [
-                    { label: "Your Name", type: "text" },
-                    { label: "Funny Animal (plural)", type: "text" },
-                    { label: "Carnival Game", type: "text" },
-                    { label: "Prize Item (plural)", type: "text" },
-                    { label: "Excitement Word", type: "text" }
-                ],
-                problemTemplates: [
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
                             const num1 = random(8, 15);
                             const num2 = random(5, 11);
-                            return `${name} arrived at the carnival and saw ${num1} ${animal} playing ${game}. The ${animal} were shouting "${exclaim}!" Then ${num2} more ${animal} ran over to join the fun. How many ${animal} were playing ${game}?`;
+                            return `${name} was planning the town's first ever ${animal} parade! Early in the morning, ${num1} ${color} ${animal} arrived at the park saying "${sound}!" Then ${num2} more ${animal} showed up excited to march. How many ${animal} were ready for the parade?`;
                         }
                     },
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const num1 = random(17, 29);
-                            const num2 = random(6, 13);
-                            return `${name} won ${num1} ${prize} playing ${game} at the carnival! The ${animal} yelled "${exclaim}!" and ${name} gave ${num2} ${prize} to them as gifts. How many ${prize} did ${name} have left?`;
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(18, 28);
+                            const num2 = random(7, 13);
+                            return `${name} brought ${num1} bags of ${food} as treats for the ${animal}. Before the parade even started, the hungry ${animal} went "${sound}!" and gobbled up ${num2} bags! How many bags of ${food} were left for the celebration?`;
                         }
                     },
+                    // MIDDLE: Parade in action
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const num1 = random(4, 8);
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(5, 8);
                             const num2 = random(3, 6);
-                            return `At the ${game} booth, there were ${num1} rounds. In each round, ${num2} ${animal} won ${prize} and celebrated by saying "${exclaim}!" How many ${animal} won ${prize} altogether?`;
-                        }
-                    },
-                    {
-                        type: 'division',
-                        generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const divisor = random(2, 5);
-                            const quotient = random(4, 9);
-                            const num1 = divisor * quotient;
-                            return `${name} and the ${animal} won ${num1} ${prize} at the ${game} booth. They said "${exclaim}!" and decided to share them equally among ${divisor} groups. How many ${prize} did each group get?`;
+                            return `The parade started down Main Street! There were ${num1} rows of marching ${animal}, and each row had ${num2} ${color} ${animal} all shouting "${sound}!" How many ${animal} were marching in the parade?`;
                         }
                     },
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const num1 = random(9, 16);
-                            const num2 = random(6, 13);
-                            return `During the afternoon, ${num1} ${animal} rode the ferris wheel, all shouting "${exclaim}!" Later, ${num2} more ${animal} joined them for a second ride with ${name}. How many ${animal} went on rides in total?`;
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(12, 20);
+                            const num2 = random(8, 15);
+                            return `Word spread fast! ${num1} people came to watch the parade in the morning. By noon, ${num2} more spectators arrived to cheer on the ${color} ${animal} who kept saying "${sound}!" How many people watched the parade total?`;
                         }
                     },
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const num1 = random(21, 35);
-                            const num2 = random(8, 16);
-                            return `${name} bought ${num1} tickets to play ${game}. After using ${num2} tickets (with ${animal} cheering "${exclaim}!" each time), how many tickets did ${name} have remaining?`;
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(22, 35);
+                            const num2 = random(9, 16);
+                            return `${name} gave out ${num1} ${color} balloons to kids along the parade route. The playful ${animal} accidentally popped ${num2} balloons while saying "${sound}!" How many balloons were still floating?`;
                         }
                     },
+                    // END: Celebration and cleanup
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const num1 = random(5, 9);
-                            const num2 = random(3, 7);
-                            return `${name} played ${game} ${num1} times. Each time, ${name} won ${num2} ${prize}, and the ${animal} yelled "${exclaim}!" every single time! How many ${prize} did ${name} win in all?`;
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(4, 7);
+                            return `After the parade, ${name} took ${num1} group photos of the ${animal}. Each photo captured ${num2} happy ${color} ${animal} all going "${sound}!" How many ${animal} appeared in all the photos combined?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, animal, game, prize, exclaim] = words;
-                            const divisor = random(3, 6);
-                            const quotient = random(4, 7);
+                            const [name, animal, color, food, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
                             const num1 = divisor * quotient;
-                            return `Before leaving the carnival, the ${animal} collected ${num1} ${prize} from playing ${game}. They said "${exclaim}!" one last time and split them equally into ${divisor} bags. How many ${prize} went in each bag?`;
+                            return `At the celebration party, ${name} had ${num1} pieces of ${food} left to share. The ${animal} said "${sound}!" as ${name} divided them equally among ${divisor} teams. How many pieces of ${food} did each team get?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, color, food, sound] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 12);
+                            return `The parade was such a hit! ${name} collected ${num1} thank-you cards from happy parade watchers. The ${animal} brought ${num2} more cards from their fans, all going "${sound}!" How many thank-you cards did ${name} receive in total?`;
                         }
                     }
                 ]
             },
+
+            // STORY 2: THE MYSTERIOUS DETECTIVE CASE
             {
-                title: "Pirate Treasure Hunt",
-                description: "Sail the seven seas with your crew and search for hidden treasure on mysterious islands!",
+                title: "Detective [Name]'s Biggest Case",
+                description: "Solve mysterious clues and catch the sneaky thief who stole something precious!",
                 prompts: [
-                    { label: "Your Pirate Name", type: "text" },
-                    { label: "Type of Sea Creature (plural)", type: "text" },
-                    { label: "Treasure Item (plural)", type: "text" },
-                    { label: "Island Name", type: "text" },
-                    { label: "Pirate Saying", type: "text" }
+                    { label: "Detective Name", type: "text" },
+                    { label: "Stolen Item (plural)", type: "text" },
+                    { label: "Helper Animal (plural)", type: "text" },
+                    { label: "Place to Search", type: "text" },
+                    { label: "Mystery Word", type: "text" }
                 ],
                 problemTemplates: [
-                    {
-                        type: 'addition',
-                        generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
-                            const num1 = random(10, 18);
-                            const num2 = random(6, 14);
-                            return `Captain ${name} spotted ${num1} ${creature} near ${island} Island. After shouting "${saying}!", the crew discovered ${num2} more ${creature} swimming by. How many ${creature} did they see altogether?`;
-                        }
-                    },
+                    // BEGINNING: Crime discovered
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
-                            const num1 = random(19, 33);
-                            const num2 = random(7, 15);
-                            return `Captain ${name} found a chest with ${num1} ${treasure} on ${island} Island! "${saying}!" yelled the crew. They gave ${num2} ${treasure} to the ${creature} they met. How many ${treasure} does Captain ${name} have left?`;
+                            const [name, item, animal, place, word] = words;
+                            const num1 = random(25, 40);
+                            const num2 = random(10, 18);
+                            return `Detective ${name} got a call! The museum had ${num1} precious ${item} last night, but this morning only ${num2} were missing! "${word}!" gasped Detective ${name}. How many ${item} were still safe?`;
                         }
                     },
                     {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, item, animal, place, word] = words;
+                            const num1 = random(7, 14);
+                            const num2 = random(5, 11);
+                            return `Detective ${name} started investigating. At the ${place}, they found ${num1} mysterious clues. Their trusty ${animal} sniffed out ${num2} more clues and barked "${word}!" How many clues did they discover altogether?`;
+                        }
+                    },
+                    // MIDDLE: Following clues
+                    {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
+                            const [name, item, animal, place, word] = words;
                             const num1 = random(4, 7);
-                            const num2 = random(5, 9);
-                            return `On ${island} Island, Captain ${name} found ${num1} treasure chests. Each chest had ${num2} ${treasure} inside. Every time they opened a chest, the crew shouted "${saying}!" How many ${treasure} did they find in total?`;
+                            const num2 = random(3, 6);
+                            return `Detective ${name} interviewed ${num1} witnesses at the ${place}. Each witness had seen ${num2} suspicious ${animal} near the ${item}. "${word}!" realized Detective ${name}. How many ${animal} were spotted in total?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
+                            const [name, item, animal, place, word] = words;
                             const divisor = random(2, 4);
                             const quotient = random(6, 10);
                             const num1 = divisor * quotient;
-                            return `Captain ${name} and the crew collected ${num1} ${treasure} from ${island} Island. "${saying}!" they cheered as they split them equally among ${divisor} ships. How many ${treasure} did each ship get?`;
+                            return `The ${animal} helped search for evidence. They collected ${num1} footprints leading from the ${place}. Detective ${name} said "${word}!" and organized them into ${divisor} different trails. How many footprints were in each trail?`;
                         }
                     },
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
-                            const num1 = random(12, 20);
-                            const num2 = random(8, 16);
-                            return `While sailing away from ${island} Island, Captain ${name} saw ${num1} friendly ${creature}. Then ${num2} more ${creature} joined them, all singing "${saying}!" How many ${creature} were swimming with the ship?`;
+                            const [name, item, animal, place, word] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 12);
+                            return `The investigation continued! Detective ${name} found ${num1} fingerprints at the crime scene. The clever ${animal} discovered ${num2} more fingerprints at the ${place}, all saying "${word}!" How many fingerprints were found?`;
                         }
                     },
+                    // END: Case solved!
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
-                            const num1 = random(24, 40);
-                            const num2 = random(10, 18);
-                            return `Captain ${name} started with ${num1} pieces of treasure map. After solving riddles near ${island} Island, ${num2} pieces were used up. The ${creature} cried "${saying}!" How many map pieces remain?`;
+                            const [name, item, animal, place, word] = words;
+                            const num1 = random(20, 32);
+                            const num2 = random(8, 15);
+                            return `Detective ${name} narrowed it down! There were ${num1} possible suspects. After the ${animal} eliminated ${num2} suspects who had alibis at the ${place}, Detective ${name} shouted "${word}!" How many suspects remained?`;
                         }
                     },
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
-                            const num1 = random(6, 10);
+                            const [name, item, animal, place, word] = words;
+                            const num1 = random(5, 8);
                             const num2 = random(3, 6);
-                            return `Captain ${name} visited ${num1} caves on ${island} Island. In each cave, there were ${num2} ${treasure} guarded by ${creature}. Every cave echoed with "${saying}!" How many ${treasure} were there in all the caves?`;
+                            return `Detective ${name} caught the thief! They recovered ${num1} hidden stashes of stolen ${item}. Each stash contained ${num2} ${item}. The ${animal} celebrated by barking "${word}!" How many ${item} were recovered?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, creature, treasure, island, saying] = words;
+                            const [name, item, animal, place, word] = words;
                             const divisor = random(3, 5);
                             const quotient = random(5, 9);
                             const num1 = divisor * quotient;
-                            return `The ${creature} helped Captain ${name} find ${num1} ${treasure} on ${island} Island. "${saying}!" they celebrated, dividing the treasure equally into ${divisor} pouches. How many ${treasure} went in each pouch?`;
+                            return `Case closed! The museum gave Detective ${name} and the ${animal} ${num1} reward medals for recovering the ${item}. "${word}!" cheered everyone at the ${place} as they divided the medals equally into ${divisor} display cases. How many medals went in each case?`;
                         }
                     }
                 ]
             },
+
+            // STORY 3: THE UNDERWATER EXPEDITION
             {
-                title: "Dinosaur Discovery",
-                description: "Travel back in time to meet amazing dinosaurs and explore the prehistoric world!",
+                title: "The Deep Sea Discovery",
+                description: "Dive deep underwater to explore a sunken ship and meet amazing sea creatures!",
                 prompts: [
-                    { label: "Your Name", type: "text" },
-                    { label: "Type of Dinosaur (plural)", type: "text" },
-                    { label: "Prehistoric Plant (plural)", type: "text" },
-                    { label: "Dinosaur Sound", type: "text" },
-                    { label: "Color", type: "text" }
+                    { label: "Explorer Name", type: "text" },
+                    { label: "Sea Creature (plural)", type: "text" },
+                    { label: "Shiny Treasure (plural)", type: "text" },
+                    { label: "Ocean Sound", type: "text" },
+                    { label: "Ship Name", type: "text" }
                 ],
                 problemTemplates: [
+                    // BEGINNING: The dive begins
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const num1 = random(7, 15);
-                            const num2 = random(4, 11);
-                            return `${name} traveled back in time and spotted ${num1} ${color} ${dino} munching on ${plant}. They went "${sound}!" Then ${num2} more ${dino} stomped over to join them. How many ${dino} were there in all?`;
+                            const [name, creature, treasure, sound, ship] = words;
+                            const num1 = random(6, 13);
+                            const num2 = random(4, 10);
+                            return `${name} put on their diving gear and dove into the ocean! Right away, they spotted ${num1} friendly ${creature} swimming by. The water went "${sound}!" as ${num2} more ${creature} joined them near the sunken ${ship}. How many ${creature} were swimming around?`;
                         }
                     },
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const num1 = random(18, 30);
-                            const num2 = random(6, 13);
-                            return `${name} found ${num1} delicious ${plant} growing near the ${dino}. The ${dino} went "${sound}!" and ate ${num2} of the ${plant}. How many ${plant} were left?`;
+                            const [name, creature, treasure, sound, ship] = words;
+                            const num1 = random(16, 27);
+                            const num2 = random(6, 12);
+                            return `${name} brought ${num1} waterproof cameras to photograph the ${ship}. While swimming, ${num2} cameras got swept away by the current making a "${sound}!" noise. The ${creature} tried to help. How many cameras did ${name} still have?`;
                         }
                     },
+                    // MIDDLE: Exploring the ship
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const num1 = random(3, 7);
-                            const num2 = random(4, 8);
-                            return `${name} watched ${num1} groups of ${color} ${dino}. Each group had ${num2} ${dino} that roared "${sound}!" as they ate ${plant}. How many ${dino} did ${name} see altogether?`;
+                            const [name, creature, treasure, sound, ship] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(5, 8);
+                            return `Inside the sunken ${ship}, ${name} found ${num1} locked treasure chests! Each chest contained ${num2} sparkling ${treasure}. The ${creature} circled excitedly going "${sound}!" How many ${treasure} were in all the chests?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const divisor = random(2, 5);
-                            const quotient = random(5, 9);
+                            const [name, creature, treasure, sound, ship] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(7, 11);
                             const num1 = divisor * quotient;
-                            return `${name} collected ${num1} ${plant} for the ${dino}. The ${dino} said "${sound}!" as ${name} divided the ${plant} equally among ${divisor} nests. How many ${plant} went in each nest?`;
+                            return `${name} collected ${num1} pieces of ${treasure} from different rooms of the ${ship}. The ocean went "${sound}!" as ${name} organized them into ${divisor} waterproof bags with help from the ${creature}. How many ${treasure} went in each bag?`;
                         }
                     },
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const num1 = random(9, 17);
-                            const num2 = random(5, 12);
-                            return `In the morning, ${name} saw ${num1} baby ${dino} hatching from ${color} eggs. They chirped "${sound}!" By afternoon, ${num2} more babies hatched. How many baby ${dino} hatched in total?`;
+                            const [name, creature, treasure, sound, ship] = words;
+                            const num1 = random(10, 17);
+                            const num2 = random(7, 13);
+                            return `The ${creature} were so helpful! They showed ${name} ${num1} secret passages in the ${ship}. Then they revealed ${num2} more hidden rooms filled with ${treasure}. Everything echoed with "${sound}!" How many areas did they explore?`;
                         }
                     },
+                    // END: Surfacing with treasure
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const num1 = random(22, 36);
+                            const [name, creature, treasure, sound, ship] = words;
+                            const num1 = random(23, 36);
                             const num2 = random(9, 16);
-                            return `${name} counted ${num1} ${color} footprints left by the ${dino} near the ${plant}. After it rained, ${num2} footprints were washed away. The ${dino} roared "${sound}!" How many footprints remained?`;
+                            return `Time to surface! ${name} had ${num1} ${treasure} to bring up from the ${ship}. Unfortunately, ${num2} ${treasure} were too heavy and had to stay behind. The ${creature} made a sad "${sound}!" How many ${treasure} did ${name} bring to the surface?`;
                         }
                     },
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
+                            const [name, creature, treasure, sound, ship] = words;
                             const num1 = random(5, 9);
                             const num2 = random(3, 6);
-                            return `${name} discovered ${num1} ${color} ${dino}. Each ${dino.slice(0, -1)} ate ${num2} bunches of ${plant} per day, making a "${sound}!" sound with each bite. How many bunches of ${plant} did they eat altogether?`;
+                            return `Back on the boat, ${name} made ${num1} dives that day to the ${ship}. On each dive, they brought up ${num2} ${treasure}. The ${creature} celebrated each trip with "${sound}!" How many ${treasure} were recovered in total?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, dino, plant, sound, color] = words;
-                            const divisor = random(3, 6);
-                            const quotient = random(4, 7);
+                            const [name, creature, treasure, sound, ship] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
                             const num1 = divisor * quotient;
-                            return `The ${dino} helped ${name} gather ${num1} ${color} ${plant}. With a loud "${sound}!", they organized them into ${divisor} equal piles. How many ${plant} were in each pile?`;
+                            return `${name} donated ${num1} ${treasure} from the ${ship} to the ocean museum. The ${creature} said "${sound}!" as the treasures were displayed equally across ${divisor} exhibit halls. How many ${treasure} were in each hall?`;
                         }
                     }
                 ]
             },
+
+            // STORY 4: THE MAGICAL GARDEN
             {
-                title: "Superhero Training Academy",
-                description: "Join the superhero academy and use your powers to complete amazing training missions!",
+                title: "The Enchanted Garden Mystery",
+                description: "Tend to a magical garden where plants grow in surprising ways and friendly sprites help out!",
                 prompts: [
-                    { label: "Your Superhero Name", type: "text" },
-                    { label: "Superpower", type: "text" },
-                    { label: "Training Object (plural)", type: "text" },
-                    { label: "Superhero Catchphrase", type: "text" },
-                    { label: "Villain Type (plural)", type: "text" }
+                    { label: "Gardener Name", type: "text" },
+                    { label: "Magical Plant (plural)", type: "text" },
+                    { label: "Tiny Helper (plural)", type: "text" },
+                    { label: "Special Power", type: "text" },
+                    { label: "Garden Tool", type: "text" }
                 ],
                 problemTemplates: [
+                    // BEGINNING: Discovering the garden
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(8, 16);
-                            const num2 = random(5, 12);
-                            return `${name} used their ${power} to save ${num1} ${object} from the ${villain}. "${phrase}!" shouted ${name}. Then ${num2} more ${object} needed saving. How many ${object} did ${name} save in total?`;
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(8, 14);
+                            const num2 = random(5, 11);
+                            return `${name} discovered a hidden garden behind the old gate! Inside were ${num1} glowing ${plant} with ${power}. Suddenly, ${num2} more ${plant} sprouted up before their eyes! Tiny ${helper} appeared with a ${tool}. How many magical ${plant} were growing?`;
                         }
                     },
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(17, 29);
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(17, 28);
                             const num2 = random(6, 13);
-                            return `At the training academy, ${name} had ${num1} ${object} to practice their ${power}. After training and yelling "${phrase}!", ${num2} ${object} were used up stopping the ${villain}. How many ${object} are left?`;
+                            return `${name} planted ${num1} seeds of ${plant} in the enchanted soil. The playful ${helper} accidentally dug up ${num2} seeds with their tiny ${tool} while testing their ${power}. How many seeds were still planted?`;
                         }
                     },
+                    // MIDDLE: Garden growing
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(4, 8);
-                            const num2 = random(3, 7);
-                            return `${name} completed ${num1} training missions using ${power}. In each mission, ${name} collected ${num2} ${object} while fighting ${villain}. Every time, ${name} said "${phrase}!" How many ${object} did ${name} collect?`;
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `The ${helper} used ${power} to help! They created ${num1} garden sections. Each section had ${num2} rows of ${plant} that ${name} tended with their ${tool}. How many rows of ${plant} were in the garden?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const divisor = random(2, 5);
-                            const quotient = random(5, 10);
+                            const [name, plant, helper, power, tool] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
                             const num1 = divisor * quotient;
-                            return `${name} defeated ${villain} and rescued ${num1} ${object} using ${power}. "${phrase}!" ${name} exclaimed, then divided the ${object} equally among ${divisor} superhero teams. How many ${object} did each team get?`;
+                            return `${name} harvested ${num1} magical ${plant} that glowed with ${power}. The ${helper} suggested using the ${tool} to divide them equally among ${divisor} enchanted flower pots. How many ${plant} went in each pot?`;
                         }
                     },
                     {
                         type: 'addition',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(10, 18);
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(11, 18);
                             const num2 = random(7, 14);
-                            return `${name} trained ${num1} new superheroes in the art of ${power} in the morning. In the afternoon, ${num2} more heroes joined to learn how to stop ${villain}. Everyone cheered "${phrase}!" How many superheroes trained that day?`;
+                            return `Word of the magical garden spread! ${num1} curious ${helper} came to visit and see the ${plant}. By evening, ${num2} more ${helper} arrived, all carrying a ${tool} and wanting to learn about ${power}. How many ${helper} visited the garden?`;
                         }
                     },
+                    // END: Garden thriving
                     {
                         type: 'subtraction',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(20, 34);
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(21, 34);
                             const num2 = random(8, 15);
-                            return `The academy gave ${name} ${num1} ${object} to upgrade their ${power}. During a battle with ${villain}, ${num2} ${object} were destroyed. ${name} yelled "${phrase}!" How many ${object} does ${name} still have?`;
+                            return `${name} prepared ${num1} bouquets of ${plant} to share with the neighborhood. The ${helper} used ${power} to deliver ${num2} bouquets right away using a flying ${tool}. How many bouquets were left to deliver?`;
                         }
                     },
                     {
                         type: 'multiplication',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const num1 = random(5, 9);
-                            const num2 = random(4, 7);
-                            return `${name} faced ${num1} waves of ${villain} attacks. In each wave, ${name} used ${power} to protect ${num2} ${object}. After each wave, ${name} shouted "${phrase}!" How many ${object} were protected in all?`;
+                            const [name, plant, helper, power, tool] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(3, 6);
+                            return `The garden festival was a success! ${name} hosted ${num1} tours of the magical garden. Each tour had ${num2} amazed visitors learning about ${plant} and ${power} from the ${helper} with a ${tool}. How many people toured the garden?`;
                         }
                     },
                     {
                         type: 'division',
                         generate: (words) => {
-                            const [name, power, object, phrase, villain] = words;
-                            const divisor = random(3, 6);
-                            const quotient = random(4, 8);
+                            const [name, plant, helper, power, tool] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
                             const num1 = divisor * quotient;
-                            return `Using ${power}, ${name} recovered ${num1} stolen ${object} from the ${villain}. "${phrase}!" ${name} declared victoriously, organizing them into ${divisor} safe vaults. How many ${object} went in each vault?`;
+                            return `At season's end, ${name} and the ${helper} collected ${num1} seeds from their best ${plant} with ${power}. They used their ${tool} to divide them equally into ${divisor} magical packets to plant next year. How many seeds were in each packet?`;
                         }
                     }
                 ]
             },
+
+            // STORY 5: THE ROBOT FACTORY
+            {
+                title: "Robot Factory Adventure",
+                description: "Build amazing robots with special abilities and solve problems when things go hilariously wrong!",
+                prompts: [
+                    { label: "Engineer Name", type: "text" },
+                    { label: "Robot Type (plural)", type: "text" },
+                    { label: "Robot Part", type: "text" },
+                    { label: "Funny Malfunction", type: "text" },
+                    { label: "Beeping Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Starting production
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 12);
+                            return `Engineer ${name} arrived at the robot factory excited to build ${robot}! The assembly line produced ${num1} ${robot} in the morning. After lunch, ${num2} more ${robot} rolled off the line, all going "${sound}!" How many ${robot} were built?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(18, 29);
+                            const num2 = random(7, 14);
+                            return `Engineer ${name} had ${num1} ${part} ready to install in the ${robot}. Suddenly, ${num2} ${part} started ${malfunction} and making "${sound}!" sounds. They had to be set aside for repairs. How many ${part} were still working properly?`;
+                        }
+                    },
+                    // MIDDLE: Problems arise
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(3, 6);
+                            return `The factory had ${num1} assembly stations. Each station built ${num2} ${robot} equipped with a special ${part}. Every completed robot announced "${sound}!" despite some ${malfunction}. How many ${robot} were assembled in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(7, 11);
+                            const num1 = divisor * quotient;
+                            return `Oh no! ${num1} ${robot} started ${malfunction} because of a ${part} error. Engineer ${name} heard "${sound}!" everywhere and quickly divided the ${robot} into ${divisor} repair bays. How many ${robot} went to each repair bay?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(10, 17);
+                            const num2 = random(7, 13);
+                            return `Engineer ${name} fixed the ${malfunction} problem! ${num1} repaired ${robot} came back online. Then the factory produced ${num2} brand new ${robot} with upgraded ${part}, all beeping "${sound}!" How many working ${robot} were there now?`;
+                        }
+                    },
+                    // END: Success!
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(22, 35);
+                            const num2 = random(9, 16);
+                            return `Time to ship! Engineer ${name} had ${num1} completed ${robot} ready for delivery. The first truck took ${num2} ${robot} equipped with ${part} to their new homes. Everyone heard "${sound}!" as they left. How many ${robot} remained at the factory?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(4, 7);
+                            return `The factory was a hit! Engineer ${name} received ${num1} new orders. Each order was for ${num2} custom ${robot} with special ${part}. No more ${malfunction}! They all celebrated with "${sound}!" How many ${robot} were ordered?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, robot, part, malfunction, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `Engineer ${name} won an award! The factory gave them ${num1} prototype ${robot} with the newest ${part} technology. Despite minor ${malfunction}, they went "${sound}!" and were divided equally among ${divisor} research teams. How many ${robot} did each team get?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 6: THE TIME MACHINE MIX-UP
+            {
+                title: "The Time Traveler's Wild Day",
+                description: "Jump through different time periods and fix historical mix-ups before time runs out!",
+                prompts: [
+                    { label: "Time Traveler Name", type: "text" },
+                    { label: "Historical Item (plural)", type: "text" },
+                    { label: "Time Period", type: "text" },
+                    { label: "Famous Person (plural)", type: "text" },
+                    { label: "Time Whoosh Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Time machine activated
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(7, 14);
+                            const num2 = random(5, 11);
+                            return `${name} jumped into the time machine set for ${period}! "${sound}!" went the machine. Upon arrival, ${name} found ${num1} ${item} scattered around. Then discovered ${num2} more ${item} that the ${person} had been looking for. How many ${item} were out of place?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(16, 27);
+                            const num2 = random(6, 13);
+                            return `${name} collected ${num1} ${item} to return to ${period}. After traveling through time with a "${sound}!", ${num2} ${item} disappeared during the journey. The ${person} were concerned! How many ${item} made it safely?`;
+                        }
+                    },
+                    // MIDDLE: Fixing the timeline
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `${name} visited ${num1} different moments in ${period}. At each stop, ${name} helped ${num2} ${person} recover their missing ${item}. Every jump made a "${sound}!" noise. How many ${person} got their ${item} back?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `The ${person} from ${period} gave ${name} ${num1} historical ${item} as thanks. "${sound}!" The time machine organized them equally into ${divisor} temporal storage containers. How many ${item} were in each container?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(10, 17);
+                            const num2 = random(7, 13);
+                            return `${name} met ${num1} ${person} who were amazed by the time machine and wanted to see ${item}. The machine went "${sound}!" and ${num2} more ${person} from different parts of ${period} came to investigate. How many ${person} saw the time machine?`;
+                        }
+                    },
+                    // END: Mission complete
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(21, 33);
+                            const num2 = random(8, 15);
+                            return `Time to return home! ${name} needed to correct ${num1} timeline problems in ${period}. After several "${sound}!" jumps, ${name} fixed ${num2} problems. The ${person} cheered! How many problems still needed fixing?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(3, 6);
+                            return `Success! ${name} made ${num1} successful trips to ${period}. On each trip, ${name} brought back ${num2} souvenirs like ${item} to remember the ${person}. The time machine hummed "${sound}!" How many souvenirs did ${name} collect?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, item, period, person, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `Back in the present, ${name} documented ${num1} amazing discoveries about ${item} from ${period}. With a final "${sound}!", the ${person}'s stories were organized into ${divisor} history books. How many discoveries were in each book?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 7: THE DRAGON TRAINING SCHOOL
+            {
+                title: "Dragon Academy Training Day",
+                description: "Learn to train adorable baby dragons and teach them amazing tricks!",
+                prompts: [
+                    { label: "Trainer Name", type: "text" },
+                    { label: "Dragon Color", type: "text" },
+                    { label: "Dragon Trick", type: "text" },
+                    { label: "Dragon Treat (plural)", type: "text" },
+                    { label: "Dragon Roar", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: First day at the academy
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(8, 15);
+                            const num2 = random(5, 11);
+                            return `${name} arrived at Dragon Academy on their first day! There were ${num1} baby ${color} dragons ready to learn. They all roared "${roar}!" Then ${num2} more excited baby dragons flew into the training yard. How many baby dragons was ${name} training?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(17, 28);
+                            const num2 = random(7, 13);
+                            return `${name} brought ${num1} delicious ${treat} to reward dragons who learned ${trick}. Before training even started, the hungry ${color} dragons went "${roar}!" and gobbled up ${num2} ${treat}! How many ${treat} were left for training rewards?`;
+                        }
+                    },
+                    // MIDDLE: Training in progress
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `${name} organized ${num1} training groups. Each group had ${num2} ${color} dragons practicing ${trick}. Every time a dragon succeeded, it would proudly "${roar}!" How many dragons were practicing in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `Great job! ${name}'s dragons mastered ${trick} and earned ${num1} ${treat} as rewards. All the ${color} dragons said "${roar}!" as ${name} divided the ${treat} equally into ${divisor} feeding bowls. How many ${treat} went in each bowl?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(11, 18);
+                            const num2 = random(7, 14);
+                            return `The academy grew! ${num1} parent dragons came to watch their babies perform ${trick}. Impressed by the ${color} dragons, ${num2} more parents flew in, all roaring "${roar}!" How many adult dragons attended the show?`;
+                        }
+                    },
+                    // END: Graduation day
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(22, 35);
+                            const num2 = random(9, 16);
+                            return `Graduation day! ${name} had ${num1} medals to award the ${color} dragons who mastered ${trick}. After the ceremony (with lots of "${roar}!" sounds), ${num2} dragons took their medals home already. How many medals were still being awarded?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(3, 6);
+                            return `${name}'s training was so successful! The academy scheduled ${num1} more training sessions. Each session would teach ${num2} new ${color} dragons how to do ${trick}. They all practiced their "${roar}!" How many dragons would be trained in the new sessions?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, color, trick, treat, roar] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `The graduation feast! ${name} prepared ${num1} special ${treat} for all the graduating ${color} dragons. With a celebratory "${roar}!", they were divided equally among ${divisor} dragon families. How many ${treat} did each family get?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 8: THE MUSIC FESTIVAL CHAOS
+            {
+                title: "The Epic Music Festival",
+                description: "Organize a huge music festival where things get wild and everyone has a blast!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Band Name (plural)", type: "text" },
+                    { label: "Musical Instrument", type: "text" },
+                    { label: "Concert Snack (plural)", type: "text" },
+                    { label: "Crowd Cheer", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Setting up
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 12);
+                            return `${name} was organizing the biggest music festival ever! In the morning, ${num1} ${band} arrived with their ${instrument} for soundcheck. By afternoon, ${num2} more ${band} showed up! The crowd went "${cheer}!" How many ${band} were performing?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(18, 29);
+                            const num2 = random(7, 14);
+                            return `${name} ordered ${num1} boxes of ${snack} for the festival. Before the ${band} even started playing ${instrument}, the crew ate ${num2} boxes during setup! Everyone yelled "${cheer}!" How many boxes of ${snack} were left for fans?`;
+                        }
+                    },
+                    // MIDDLE: Festival underway
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(4, 7);
+                            return `The festival had ${num1} different stages. Each stage featured ${num2} ${band} playing ${instrument}. Every performance ended with the crowd shouting "${cheer}!" How many ${band} performed in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(7, 11);
+                            const num1 = divisor * quotient;
+                            return `${name} had ${num1} ${instrument} that needed tuning for the ${band}. The crowd chanted "${cheer}!" as the instruments were divided equally among ${divisor} music technicians. How many ${instrument} did each technician tune?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(12, 20);
+                            const num2 = random(8, 15);
+                            return `The festival was packed! ${num1} food vendors sold ${snack} near the stage where ${band} played ${instrument}. Word spread and ${num2} more vendors arrived! Everyone screamed "${cheer}!" How many vendors were selling ${snack}?`;
+                        }
+                    },
+                    // END: Grand finale
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(23, 36);
+                            const num2 = random(10, 17);
+                            return `For the finale, ${name} prepared ${num1} special ${snack} gift bags. After the ${band} finished their final ${instrument} solo, ${num2} bags were given to VIP guests. The crowd roared "${cheer}!" How many gift bags remained?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(3, 6);
+                            return `What a success! ${name} took ${num1} video recordings of the best moments. Each video captured ${num2} different ${band} playing ${instrument}. Fans watching commented "${cheer}!" How many ${band} performances were recorded?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, band, instrument, snack, cheer] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `Festival complete! The ${band} signed ${num1} autographs for fans who loved their ${instrument} performances. With a final "${cheer}!", ${name} organized them into ${divisor} collectors' albums. How many autographs went in each album?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 9: THE HAUNTED MANSION SLEEPOVER
+            {
+                title: "The Friendly Ghost Sleepover",
+                description: "Spend the night in a mansion with silly ghosts who love to play harmless pranks!",
+                prompts: [
+                    { label: "Your Name", type: "text" },
+                    { label: "Friendly Ghost (plural)", type: "text" },
+                    { label: "Spooky Room", type: "text" },
+                    { label: "Glowing Item (plural)", type: "text" },
+                    { label: "Silly Boo Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Arriving at mansion
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(7, 14);
+                            const num2 = random(5, 11);
+                            return `${name} arrived at the mansion for the sleepover! In the ${room}, they met ${num1} friendly ${ghost} floating around. All the ${ghost} said "${sound}!" Then ${num2} more ${ghost} appeared through the walls! How many ${ghost} were at the sleepover?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(16, 27);
+                            const num2 = random(6, 13);
+                            return `${name} brought ${num1} snacks to share with the ${ghost} in the ${room}. The playful ${ghost} went "${sound}!" and made ${num2} snacks float away as a prank! How many snacks did ${name} have left?`;
+                        }
+                    },
+                    // MIDDLE: Ghost games
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `The ${ghost} organized ${num1} fun games in different parts of the ${room}. Each game had ${num2} ${ghost} with glowing ${item} playing. Everyone kept saying "${sound}!" How many ${ghost} were playing games?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `${name} found ${num1} magical ${item} hidden around the ${room}. The ${ghost} said "${sound}!" and suggested dividing them equally into ${divisor} treasure chests. How many ${item} went in each chest?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(10, 17);
+                            const num2 = random(7, 13);
+                            return `Storytime in the ${room}! ${num1} ${ghost} gathered around ${name} to hear spooky tales about ${item}. Then ${num2} more ${ghost} floated in, all whispering "${sound}!" How many ${ghost} listened to stories?`;
+                        }
+                    },
+                    // END: Morning comes
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(21, 33);
+                            const num2 = random(8, 15);
+                            return `Before dawn, ${name} and the ${ghost} played with ${num1} floating ${item} in the ${room}. As the sun rose, ${num2} ${item} stopped glowing and disappeared. The ${ghost} said "${sound}!" sadly. How many ${item} were still glowing?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(3, 6);
+                            return `What a night! ${name} took ${num1} photos in the ${room} to remember the sleepover. Each photo showed ${num2} ${ghost} holding ${item} and saying "${sound}!" How many ${ghost} were in all the photos?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, ghost, room, item, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `Time to go! The ${ghost} gave ${name} ${num1} glowing ${item} as goodbye gifts from the ${room}. With a final "${sound}!", ${name} organized them into ${divisor} backpacks. How many ${item} went in each backpack?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 10: THE WILDERNESS CAMPING TRIP
+            {
+                title: "The Great Camping Adventure",
+                description: "Go on an exciting camping trip and discover nature's wonders with forest friends!",
+                prompts: [
+                    { label: "Camper Name", type: "text" },
+                    { label: "Forest Animal (plural)", type: "text" },
+                    { label: "Camping Gear", type: "text" },
+                    { label: "Nature Discovery (plural)", type: "text" },
+                    { label: "Outdoor Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Setting up camp
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(8, 15);
+                            const num2 = random(5, 11);
+                            return `${name} hiked into the woods and started setting up camp! While unpacking ${gear}, they spotted ${num1} curious ${animal} watching. The forest went "${sound}!" and ${num2} more ${animal} came to investigate. How many ${animal} visited the campsite?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(17, 28);
+                            const num2 = random(7, 13);
+                            return `${name} brought ${num1} pieces of ${gear} for camping. During setup, the playful ${animal} made a "${sound}!" noise and dragged away ${num2} pieces to play with! How many pieces of ${gear} did ${name} have left?`;
+                        }
+                    },
+                    // MIDDLE: Exploring nature
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `${name} went on ${num1} nature walks with the ${animal}. On each walk, they found ${num2} amazing ${discovery} and used their ${gear}. Everything made a "${sound}!" in the wind. How many ${discovery} did they find total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `${name} collected ${num1} ${discovery} to study. The ${animal} made a "${sound}!" and helped organize them equally into ${divisor} sections using ${gear}. How many ${discovery} were in each section?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(11, 18);
+                            const num2 = random(7, 14);
+                            return `Evening came and ${num1} ${animal} gathered around the campfire where ${name} had set up ${gear}. The woods echoed with "${sound}!" as ${num2} more ${animal} joined to see the ${discovery}. How many ${animal} were at the campfire?`;
+                        }
+                    },
+                    // END: Last morning
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(22, 35);
+                            const num2 = random(9, 16);
+                            return `Time to pack! ${name} had ${num1} ${discovery} to take home. The ${animal} went "${sound}!" and ${name} decided to leave ${num2} ${discovery} in the forest for others to enjoy with their ${gear}. How many ${discovery} did ${name} pack?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(3, 6);
+                            return `What a trip! ${name} camped for ${num1} amazing days. Each day, they made ${num2} new friends among the ${animal} and found ${discovery} using their ${gear}. The forest sang "${sound}!" How many ${animal} friends did ${name} make?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, gear, discovery, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `Before leaving, the ${animal} gave ${name} ${num1} special ${discovery} as memories. With a final "${sound}!", ${name} organized them into ${divisor} memory boxes using their ${gear}. How many ${discovery} went in each box?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 11: THE BAKERY COMPETITION
+            {
+                title: "The Great Baking Championship",
+                description: "Compete in a exciting baking contest and create delicious treats under pressure!",
+                prompts: [
+                    { label: "Baker Name", type: "text" },
+                    { label: "Dessert Type (plural)", type: "text" },
+                    { label: "Secret Ingredient", type: "text" },
+                    { label: "Baking Tool", type: "text" },
+                    { label: "Timer Ding Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Competition starts
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(9, 16);
+                            const num2 = random(6, 12);
+                            return `Baker ${name} entered the championship! In round one, they baked ${num1} delicious ${dessert} using ${ingredient} and a ${tool}. The oven went "${sound}!" and ${num2} more ${dessert} came out perfect! How many ${dessert} did ${name} make in round one?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(18, 29);
+                            const num2 = random(7, 14);
+                            return `${name} had ${num1} portions of ${ingredient} measured out for the ${dessert}. While using the ${tool}, ${num2} portions spilled when the timer buzzed "${sound}!" How many portions of ${ingredient} were left?`;
+                        }
+                    },
+                    // MIDDLE: Intense baking
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(3, 6);
+                            return `The competition heated up! ${name} had ${num1} ovens running. Each oven held ${num2} trays of ${dessert} made with ${ingredient} and the special ${tool}. "${sound}!" went all the timers. How many trays of ${dessert} were baking?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(7, 11);
+                            const num1 = divisor * quotient;
+                            return `Time for judging! ${name} made ${num1} ${dessert} with ${ingredient}. The judges went "${sound}!" and divided them equally onto ${divisor} judging plates using a ${tool}. How many ${dessert} were on each plate?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(12, 20);
+                            const num2 = random(8, 15);
+                            return `The audience loved it! ${num1} people tasted ${name}'s ${dessert} with ${ingredient}. After the timer went "${sound}!", ${num2} more people rushed to try them using the sample ${tool}. How many people tasted the ${dessert}?`;
+                        }
+                    },
+                    // END: Final round
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(23, 36);
+                            const num2 = random(10, 17);
+                            return `The final round! ${name} needed ${num1} ${dessert} for the grand presentation. The clock went "${sound}!" and they had only finished ${num2} so far using their ${tool} and ${ingredient}. How many more ${dessert} did ${name} need to make?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const num1 = random(6, 9);
+                            const num2 = random(4, 7);
+                            return `Victory! ${name} won ${num1} different awards for their ${dessert}. Each award came with ${num2} medals for using ${ingredient} and the ${tool} so creatively. Everyone cheered "${sound}!" How many medals did ${name} receive?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, dessert, ingredient, tool, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 9);
+                            const num1 = divisor * quotient;
+                            return `Celebration time! The show gave ${name} ${num1} champion ${dessert} recipes featuring ${ingredient}. The final "${sound}!" announced they'd be divided equally among ${divisor} cookbooks. How many recipes went in each cookbook?`;
+                        }
+                    }
+                ]
+            },
+
+            // STORY 12: THE MOUNTAIN RESCUE MISSION
+            {
+                title: "Mountain Peak Rescue Team",
+                description: "Join a rescue team helping lost hikers and discovering amazing mountain secrets!",
+                prompts: [
+                    { label: "Rescuer Name", type: "text" },
+                    { label: "Mountain Animal (plural)", type: "text" },
+                    { label: "Rescue Equipment", type: "text" },
+                    { label: "Mountain Peak", type: "text" },
+                    { label: "Echo Sound", type: "text" }
+                ],
+                problemTemplates: [
+                    // BEGINNING: Call for help
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(7, 14);
+                            const num2 = random(5, 11);
+                            return `Rescuer ${name} got an emergency call! ${num1} hikers were lost near ${peak}. The mountain echoed "${sound}!" as ${num2} more hikers in need were spotted by the ${animal} using ${equipment}. How many hikers needed rescue?`;
+                        }
+                    },
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(16, 27);
+                            const num2 = random(6, 13);
+                            return `${name} packed ${num1} pieces of ${equipment} for the mission up ${peak}. While climbing, ${num2} pieces were damaged by rocks. The ${animal} called "${sound}!" in warning. How many pieces of ${equipment} were still usable?`;
+                        }
+                    },
+                    // MIDDLE: Rescue operation
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(4, 7);
+                            const num2 = random(4, 7);
+                            return `${name} led ${num1} rescue teams up ${peak}. Each team had ${num2} ${animal} carrying ${equipment}. The valley echoed with "${sound}!" as they climbed. How many ${animal} helpers were on the rescue?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const divisor = random(2, 4);
+                            const quotient = random(6, 10);
+                            const num1 = divisor * quotient;
+                            return `${name} found ${num1} hikers scattered around ${peak}. The ${animal} made a "${sound}!" and they divided the hikers equally among ${divisor} rescue stations with ${equipment}. How many hikers were at each station?`;
+                        }
+                    },
+                    {
+                        type: 'addition',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(10, 17);
+                            const num2 = random(7, 13);
+                            return `More help arrived! ${num1} rescue ${animal} came with extra ${equipment} to help at ${peak}. The mountains shouted "${sound}!" as ${num2} more ${animal} joined them. How many rescue ${animal} were there now?`;
+                        }
+                    },
+                    // END: Everyone safe
+                    {
+                        type: 'subtraction',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(21, 33);
+                            const num2 = random(8, 15);
+                            return `Mission progressing! ${name} needed to rescue ${num1} people total from ${peak}. Using ${equipment}, the ${animal} safely brought down ${num2} people. The mountain echoed "${sound}!" How many people still needed rescue?`;
+                        }
+                    },
+                    {
+                        type: 'multiplication',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const num1 = random(5, 8);
+                            const num2 = random(3, 6);
+                            return `Success! ${name} led ${num1} rescue missions to ${peak}. Each mission saved ${num2} people using ${equipment} and the help of ${animal}. Everyone celebrated with "${sound}!" How many people were rescued in total?`;
+                        }
+                    },
+                    {
+                        type: 'division',
+                        generate: (words) => {
+                            const [name, animal, equipment, peak, sound] = words;
+                            const divisor = random(3, 5);
+                            const quotient = random(5, 8);
+                            const num1 = divisor * quotient;
+                            return `Heroes return! The town gave ${name} and the ${animal} ${num1} medals of honor for the ${peak} rescues using their ${equipment}. With a final "${sound}!", they were displayed equally in ${divisor} community centers. How many medals were in each center?`;
+                        }
+                    }
+                ]
+            }
         ];
 
         let currentTemplate;
