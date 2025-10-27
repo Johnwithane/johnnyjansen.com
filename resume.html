@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Johnny Jansen - Resume</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* LEFT COLUMN - Sidebar with Vue style */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.85);
+            color: #ffffff;
+            padding: 30px 25px;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        /* Gradient blobs background */
+        .gradient-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.2;
+            width: 600px;
+            height: 600px;
+            pointer-events: none;
+        }
+
+        .green {
+            background: radial-gradient(circle, #1DA85E, transparent);
+            top: 10%;
+            left: -200px;
+        }
+
+        .orange {
+            background: radial-gradient(circle, #E6A935, transparent);
+            top: 40%;
+            left: -150px;
+        }
+
+        .purple {
+            background: radial-gradient(circle, #A73CE6, transparent);
+            top: 70%;
+            left: -180px;
+        }
+
+        /* SVG grain filter overlay */
+        .noise-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(29, 168, 94, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 0px solid #1DA85E;
+            margin-bottom: 15px;
+        }
+
+        .name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #1DA85E;
+            white-space: nowrap;
+        }
+
+        .title {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0;
+            font-weight: 300;
+        }
+
+        .contact-section {
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar h2 {
+            font-size: 14px;
+            color: #1DA85E;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .contact-item {
+            margin-bottom: 10px;
+            font-size: 11px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .contact-item a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+        }
+
+        .contact-item a:hover {
+            color: #1DA85E;
+        }
+
+        .skills-section {
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .skill-category {
+            margin-bottom: 12px;
+        }
+
+        .skill-category-title {
+            color: #1DA85E;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .skill-list {
+            font-size: 10px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .awards-section {
+            position: relative;
+            z-index: 2;
+        }
+
+        .awards-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .awards-section li {
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .awards-section li:before {
+            content: "★";
+            position: absolute;
+            left: 0;
+            color: #1DA85E;
+            font-size: 11px;
+        }
+
+        /* RIGHT COLUMN - Main Content */
+        .main-content {
+            padding: 28px 40px;
+            background: #ffffff;
+        }
+
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .summary-section h1 {
+            font-size: 16px;
+            color: #1C211F;
+            margin-bottom: 6px;
+            font-weight: bold;
+            border-bottom: 2px solid #1DA85E;
+            padding-bottom: 5px;
+        }
+
+        .summary-section p {
+            font-size: 10px;
+            line-height: 1.4;
+            color: #333333;
+            text-align: justify;
+        }
+
+        .section {
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            color: #1C211F;
+            border-bottom: 2px solid #1DA85E;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        /* Core Competencies - Condensed */
+        .competencies-grid {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3px;
+        }
+
+        .competencies-grid li {
+            font-size: 10px;
+            padding-left: 12px;
+            position: relative;
+            line-height: 1.25;
+        }
+
+        .competencies-grid li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #1DA85E;
+            font-weight: bold;
+        }
+
+        .job {
+            margin-bottom: 10px;
+            page-break-inside: avoid;
+        }
+
+        .job-header {
+            margin-bottom: 4px;
+        }
+
+        .job-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1C211F;
+            margin-bottom: 1px;
+        }
+
+        .company {
+            font-size: 11px;
+            color: #1DA85E;
+            font-weight: 600;
+            margin-bottom: 1px;
+        }
+
+        .date {
+            font-size: 9px;
+            color: #666666;
+            font-style: italic;
+        }
+
+        .job ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 3px;
+        }
+
+        .job li {
+            font-size: 10px;
+            margin-bottom: 2px;
+            padding-left: 12px;
+            position: relative;
+            line-height: 1.25;
+        }
+
+        .job li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #1DA85E;
+            font-weight: bold;
+        }
+
+        /* PRINT STYLES - CRITICAL FOR PDF */
+        @media print {
+            @page {
+                margin: 0;
+                size: letter;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                min-height: auto;
+                display: grid !important;
+                grid-template-columns: 280px 1fr !important;
+            }
+
+            /* Force sidebar colors to print */
+            .sidebar {
+                background: rgba(0, 0, 0, 0.85) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color: #ffffff !important;
+            }
+
+            .gradient-circle {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .green {
+                background: radial-gradient(circle, #1DA85E, transparent) !important;
+            }
+
+            .orange {
+                background: radial-gradient(circle, #E6A935, transparent) !important;
+            }
+
+            .purple {
+                background: radial-gradient(circle, #A73CE6, transparent) !important;
+            }
+
+            .name,
+            .sidebar h2,
+            .skill-category-title {
+                color: #1DA85E !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .company {
+                color: #1DA85E !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .section-title {
+                border-bottom-color: #1DA85E !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .profile-image {
+                border-color: #1DA85E !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .competencies-grid li:before,
+            .job li:before,
+            .awards-section li:before {
+                color: #1DA85E !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .job {
+                page-break-inside: avoid;
+            }
+
+            a {
+                text-decoration: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LEFT SIDEBAR -->
+        <div class="sidebar">
+            <!-- Gradient blobs -->
+            <div class="gradient-circle green"></div>
+            <div class="gradient-circle orange"></div>
+            <div class="gradient-circle purple"></div>
+            
+            <!-- SVG grain filter -->
+            <svg class="noise-overlay">
+                <defs>
+                    <filter id="noiseFilter">
+                        <feTurbulence
+                            type="fractalNoise"
+                            baseFrequency="3.1"
+                            numOctaves="4"
+                            stitchTiles="stitch"
+                        />
+                        <feColorMatrix type="saturate" values="30" />
+                    </filter>
+                </defs>
+                <rect
+                    width="100%"
+                    height="100%"
+                    filter="url(#noiseFilter)"
+                    opacity="0.15"
+                />
+            </svg>
+
+            <div class="profile-section">
+                <img src="https://johnnyjansen.com/static/johnny-about.jpg" alt="Johnny Jansen" class="profile-image">
+                <div class="name">JOHNNY JANSEN</div>
+                <div class="title">Creative Director & Content Strategist</div>
+            </div>
+
+            <div class="contact-section">
+                <h2>Contact</h2>
+                <div class="contact-item">
+                    <strong>Location:</strong><br>
+                    Kelowna, BC, Canada
+                </div>
+                <div class="contact-item">
+                    <strong>Phone:</strong><br>
+                    <a href="tel:7788332339">778.833.2339</a>
+                </div>
+                <div class="contact-item">
+                    <strong>Email:</strong><br>
+                    <a href="mailto:johnnyajansen@gmail.com">johnnyajansen@gmail.com</a>
+                </div>
+                <div class="contact-item">
+                    <strong>LinkedIn:</strong><br>
+                    <a href="https://linkedin.com/in/johnnyjansen22">linkedin.com/in/johnnyjansen22</a>
+                </div>
+                <div class="contact-item">
+                    <strong>Portfolio:</strong><br>
+                    <a href="https://johnnyjansen.com">johnnyjansen.com</a>
+                </div>
+            </div>
+
+            <div class="skills-section">
+                <h2>Technical Skills</h2>
+                <div class="skill-category">
+                    <div class="skill-category-title">Design Tools</div>
+                    <div class="skill-list">Figma, Adobe Creative Suite (Photoshop, Illustrator, After Effects)</div>
+                </div>
+                <div class="skill-category">
+                    <div class="skill-category-title">Development & Prototyping</div>
+                    <div class="skill-list">Vue, Front-End Development, WordPress, AI-Assisted Creative</div>
+                </div>
+                <div class="skill-category">
+                    <div class="skill-category-title">Content & Strategy</div>
+                    <div class="skill-list">Copywriting, Content Strategy, Brand Identity, Design Systems</div>
+                </div>
+                <div class="skill-category">
+                    <div class="skill-category-title">Motion & Video</div>
+                    <div class="skill-list">Motion Design, Video Production, Visual Storytelling, Post-Production</div>
+                </div>
+                <div class="skill-category">
+                    <div class="skill-category-title">Analytics & PM</div>
+                    <div class="skill-list">Airtable, SEO Strategy, Asana, JIRA, Trello</div>
+                </div>
+            </div>
+
+            <div class="awards-section">
+                <h2>Awards</h2>
+                <ul>
+                    <li>Leo Award – Outstanding Achievement in Music Videos (2019)</li>
+                    <li>WCMA Video Director of the Year (2019)</li>
+                    <li>Prism Prize Winner</li>
+                    <li>Juno Award Nominee (2020)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- RIGHT MAIN CONTENT -->
+        <div class="main-content">
+            <div class="summary-section">
+                <h1>PROFESSIONAL SUMMARY</h1>
+                <p>Award-winning Creative Director with 12+ years leading brand identity, campaigns, and content strategy for Disney, LEGO, and major entertainment brands. Expert in blending creative direction with hands-on execution in design, copywriting, and motion design. Passionate about creating experiences that make personal growth engaging and accessible.</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Core Competencies</h2>
+                <ul class="competencies-grid">
+                    <li>Brand Identity & Design Systems</li>
+                    <li>Creative Direction & Campaign Strategy</li>
+                    <li>Design (Figma/Adobe) & Copywriting</li>
+                    <li>Motion Design & Video Production</li>
+                    <li>Cross-Functional Team Leadership</li>
+                    <li>Visual & Written Storytelling</li>
+                    <li>Product Marketing & Content Strategy</li>
+                    <li>AI-Powered Creative Innovation</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Professional Experience</h2>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Co-founder & Chief Creative Officer</div>
+                        <div class="company">Remoose Interactive</div>
+                        <div class="date">March 2023 – Present</div>
+                    </div>
+                    <ul>
+                        <li>Co-founded creative communication platform with Nicole Thompson and Lance Priebe (Club Penguin co-creator)</li>
+                        <li>Lead creative strategy, front-end development, UX architecture, and brand identity</li>
+                        <li>Built first prototype May 2023, officially launched company April 2024</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Content Director</div>
+                        <div class="company">RocketSnail Games</div>
+                        <div class="date">April 2021 – March 2024</div>
+                    </div>
+                    <ul>
+                        <li>Led content strategy working with Lance Priebe across Party Parrot World launch and documentary development</li>
+                        <li>Developed "The Club Penguin Story" documentary (in development) and began Remoose prototyping (May 2023)</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Content Specialist</div>
+                        <div class="company">LEGO Group</div>
+                        <div class="date">April 2021 – August 2023</div>
+                    </div>
+                    <ul>
+                        <li>Created "Build Your Own Adventure" serialized UGC storytelling experience across 2 seasons</li>
+                        <li>Pioneered interactive storytelling formats scaling to millions of users on LEGO Life community</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Director & Motion Designer</div>
+                        <div class="company">Freelance (johnnyjansen.com)</div>
+                        <div class="date">March 2014 – Present</div>
+                    </div>
+                    <ul>
+                        <li>Leo Award (2019), WCMA Video Director of the Year (2019), Prism Prize (2019), Juno nomination (2020)</li>
+                        <li>Directing "Most Likely to Become Famous" feature film (in post) and "The Club Penguin Story" documentary</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Motion Designer & Video Producer</div>
+                        <div class="company">Ocean Wise (Vancouver Aquarium)</div>
+                        <div class="date">February 2017 – July 2019</div>
+                    </div>
+                    <ul>
+                        <li>Created "Ocean Kitchen" series with chef Ned Bell and "Brain Waves" educational series</li>
+                        <li>Produced promotional content and animated exhibit screens for environmental storytelling</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Community Manager & Videographer</div>
+                        <div class="company">Hyper Hippo Productions</div>
+                        <div class="date">April 2013 – March 2014</div>
+                    </div>
+                    <ul>
+                        <li>Directed game trailers and studio video blogs while managing social media channels</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-header">
+                        <div class="job-title">Online Community Videographer (Businesmoose)</div>
+                        <div class="company">Disney Interactive (Club Penguin)</div>
+                        <div class="date">May 2011 – April 2013</div>
+                    </div>
+                    <ul>
+                        <li>Generated 14M+ views on Club Penguin YouTube; created 61 videos as community figure "Businesmoose"</li>
+                        <li>Produced TV commercials aired on Cartoon Network and Nickelodeon; managed social channels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
