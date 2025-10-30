@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scrapbook Prototype</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ddd;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn.active {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .canvas-wrapper {
+      position: relative;
+      height: 500px;
+      overflow: hidden;
+      background: #fafafa;
+    }
+    .canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+    }
+    .scrap-item {
+      position: absolute;
+      user-select: none;
+      cursor: move;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      transition: none;
+    }
+    .scrap-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    .scrap-item.emoji {
+      font-size: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .scrap-item.selected {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
+    .resize-handle {
+      position: absolute;
+      right: -6px; bottom: -6px;
+      width: 12px; height: 12px;
+      background: #007bff;
+      border: 2px solid white;
+      border-radius: 50%;
+      cursor: nwse-resize;
+    }
+
+    /* Controls attached to item, but NOT animated */
+    .controls {
+      position: absolute;
+      bottom: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      pointer-events: auto;
+      z-index: 1000;
+      /* Prevent animation inheritance */
+      animation: none !important;
+    }
+    .ctrl-btn {
+      width: 28px; height: 28px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ctrl-btn.active {
+      background: #007bff;
+      color: white;
+    }
+
+    .cut-line {
+      position: absolute;
+      border: 2px dashed #e91e63;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .cut-scissors {
+      position: absolute;
+      font-size: 1.5rem;
+      pointer-events: none;
+      z-index: 1000;
+      animation: snip 0.4s infinite;
+    }
+    @keyframes snip {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(20deg); }
+    }
+
+    .palette {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: #f9f9f9;
+      border-top: 1px solid #eee;
+    }
+    .emoji-drag, .photo-sample {
+      width: 60px; height: 60px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .photo-sample img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 6px;
+    }
+    .upload {
+      padding: 1rem;
+      text-align: center;
+      border-top: 1px solid #eee;
+      background: #f9f9f9;
+    }
+    .upload input { display: none; }
+    .upload label {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #007bff;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Animations - only apply to .content */
+    .content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes wiggle { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    @keyframes zoom { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+    .anim-wiggle .content { animation: wiggle 0.7s ease-in-out infinite; }
+    .anim-rotate .content { animation: rotate 1.8s linear infinite; }
+    .anim-hop .content { animation: hop 0.9s ease-in-out infinite; }
+    .anim-zoom .content { animation: zoom 1.1s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <div class="toolbar">
+      <button class="btn" :class="{ active: mode === 'select' }" @click="setMode('select')">Select</button>
+      <button class="btn" :class="{ active: mode === 'cut' }" @click="setMode('cut')">Cut</button>
+      <button class="btn" @click="refreshBackground">New BG</button>
+      <button class="btn" @click="clearAll">Clear</button>
+    </div>
+
+    <div class="canvas-wrapper" @drop.prevent="drop" @dragover.prevent @mousedown="startCut" @mousemove="updateCut" @mouseup="finishCut">
+      <div class="canvas" :style="{ backgroundImage: `url(${bgUrl})` }">
+        <!-- Cut preview -->
+        <div v-if="cutting" class="cut-line"
+             :style="{ 
+               left: Math.min(cutStart.x, cutEnd.x)+'px', 
+               top: Math.min(cutStart.y, cutEnd.y)+'px',
+               width: Math.abs(cutEnd.x - cutStart.x)+'px', 
+               height: Math.abs(cutEnd.y - cutStart.y)+'px' 
+             }">
+        </div>
+        <div v-if="cutting" class="cut-scissors" :style="{ left: cutEnd.x+'px', top: cutEnd.y+'px' }">Scissors</div>
+
+        <!-- Items -->
+        <div v-for="item in items" :key="item.id"
+             class="scrap-item"
+             :class="{ 
+               selected: selectedId === item.id, 
+               emoji: item.type === 'emoji',
+               'anim-wiggle': item.anim === 'anim-wiggle',
+               'anim-rotate': item.anim === 'anim-rotate',
+               'anim-hop': item.anim === 'anim-hop',
+               'anim-zoom': item.anim === 'anim-zoom'
+             }"
+             :style="itemStyle(item)"
+             @mousedown.stop="selectAndDrag($event, item.id)">
+          
+          <!-- Animated content -->
+          <div class="content">
+            <img v-if="item.type === 'photo'" :src="item.src" />
+            <div v-else>{{ item.emoji }}</div>
+          </div>
+
+          <!-- Resize handle -->
+          <div class="resize-handle" @mousedown.stop="startResize($event, item.id)"></div>
+
+          <!-- Per-item controls (not animated) -->
+          <div v-if="selectedId === item.id" class="controls">
+            <button class="ctrl-btn" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="toggleAnim(item, 'anim-wiggle')">≈</button>
+            <button class="ctrl-btn" :class="{ active: item.anim === 'anim-rotate' }" @click.stop="toggleAnim(item, 'anim-rotate')">⟳</button>
+            <button class="ctrl-btn" :class="{ active: item.anim === 'anim-hop' }" @click.stop="toggleAnim(item, 'anim-hop')">↥</button>
+            <button class="ctrl-btn" :class="{ active: item.anim === 'anim-zoom' }" @click.stop="toggleAnim(item, 'anim-zoom')">⤡</button>
+            <button class="ctrl-btn" @click.stop="bringToFront">⇧</button>
+            <button class="ctrl-btn" @click.stop="sendToBack">⇩</button>
+            <button class="ctrl-btn" @click.stop="duplicate(item)">⧉</button>
+            <button class="ctrl-btn" @click.stop="remove(item)">X</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload">
+      <label @click.stop>Upload Photos <input type="file" multiple accept="image/*" @change="uploadPhotos"></label>
+    </div>
+
+    <div class="palette">
+      <span v-for="e in emojis" :key="e" class="emoji-drag" draggable="true" @dragstart="dragStart($event, 'emoji', e)">{{ e }}</span>
+      <div v-for="p in samplePhotos" :key="p" class="photo-sample" draggable="true" @dragstart="dragStart($event, 'photo', p)">
+        <img :src="p">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const bgUrl = ref('');
+        const items = ref([]);
+        const nextId = ref(0);
+        const selectedId = ref(null);
+        const mode = ref('select');
+        const cutting = ref(false);
+        const cutStart = ref({ x: 0, y: 0 });
+        const cutEnd = ref({ x: 0, y: 0 });
+
+        // Real emojis
+        const emojis = ['😂', '😎', '👍', '❤️', '🔥'];
+        const samplePhotos = [
+          'https://picsum.photos/200/200?random=1',
+          'https://picsum.photos/200/200?random=2',
+          'https://picsum.photos/200/200?random=3',
+          'https://picsum.photos/200/200?random=4'
+        ];
+
+        onMounted(() => {
+          refreshBackground();
+        });
+
+        const refreshBackground = () => {
+          bgUrl.value = `https://picsum.photos/900/500?blur=2&random=${Date.now()}`;
+        };
+
+        const dragStart = (e, type, data) => {
+          e.dataTransfer.setData('type', type);
+          e.dataTransfer.setData('data', data);
+        };
+
+        const drop = (e) => {
+          if (mode.value !== 'select') return;
+          const type = e.dataTransfer.getData('type');
+          const data = e.dataTransfer.getData('data');
+          if (!type || !data) return;
+
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          items.value.push({
+            id: nextId.value++,
+            type,
+            [type === 'emoji' ? 'emoji' : 'src']: data,
+            x, y,
+            width: type === 'emoji' ? 50 : 120,
+            height: type === 'emoji' ? 50 : 120,
+            anim: null,
+            z: items.value.length
+          });
+        };
+
+        const uploadPhotos = (e) => {
+          Array.from(e.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const img = new Image();
+              img.onload = () => {
+                items.value.push({
+                  id: nextId.value++,
+                  type: 'photo',
+                  src: ev.target.result,
+                  x: 300 + Math.random() * 200,
+                  y: 200 + Math.random() * 150,
+                  width: Math.min(img.width / 4, 150),
+                  height: Math.min(img.height / 4, 150),
+                  anim: null,
+                  z: items.value.length
+                });
+              };
+              img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+          });
+        };
+
+        const setMode = (m) => {
+          mode.value = m;
+          cutting.value = false;
+        };
+
+        const startCut = (e) => {
+          if (mode.value !== 'cut' || e.target !== e.currentTarget) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          cutStart.value = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          cutEnd.value = cutStart.value;
+          cutting.value = true;
+        };
+
+        const updateCut = (e) => {
+          if (!cutting.value) return;
+          const rect = document.querySelector('.canvas-wrapper').getBoundingClientRect();
+          cutEnd.value = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        };
+
+        const finishCut = () => {
+          if (!cutting.value) return;
+          performCut();
+          cutting.value = false;
+        };
+
+        const performCut = () => {
+          const x1 = Math.min(cutStart.value.x, cutEnd.value.x);
+          const x2 = Math.max(cutStart.value.x, cutEnd.value.x);
+          const y1 = Math.min(cutStart.value.y, cutEnd.value.y);
+          const y2 = Math.max(cutStart.value.y, cutEnd.value.y);
+
+          // Use midpoint of cut line as split point
+          const splitX = (cutStart.value.x + cutEnd.value.x) / 2;
+
+          const toCut = items.value.filter(item => {
+            const left = item.x - item.width / 2;
+            const right = item.x + item.width / 2;
+            const top = item.y - item.height / 2;
+            const bottom = item.y + item.height / 2;
+            return left < x2 && right > x1 && top < y2 && bottom > y1;
+          });
+
+          toCut.forEach(item => {
+            const idx = items.value.indexOf(item);
+            const centerX = item.x;
+
+            // Left piece
+            const leftWidth = Math.max(20, (splitX - (centerX - item.width / 2)) * 0.95);
+            const leftPiece = {
+              ...item,
+              id: nextId.value++,
+              width: leftWidth,
+              x: centerX - item.width / 2 + leftWidth / 2 - 20,
+              z: items.value.length
+            };
+
+            // Right piece
+            const rightWidth = Math.max(20, item.width - leftWidth * 1.05);
+            const rightPiece = {
+              ...item,
+              id: nextId.value++,
+              width: rightWidth,
+              x: centerX + item.width / 2 - rightWidth / 2 + 20,
+              z: items.value.length
+            };
+
+            items.value.push(leftPiece, rightPiece);
+            items.value.splice(idx, 1);
+          });
+        };
+
+        let dragState = { active: false, id: null, startX: 0, startY: 0, initX: 0, initY: 0, initW: 0, initH: 0, mode: '' };
+
+        const selectAndDrag = (e, id) => {
+          if (mode.value !== 'select') return;
+          selectedId.value = id;
+          bringToFront(id);
+          if (e.target.classList.contains('resize-handle')) {
+            startResize(e, id);
+            return;
+          }
+          dragState = { active: true, id, startX: e.clientX, startY: e.clientY, initX: find(id).x, initY: find(id).y, mode: 'move' };
+          bindDrag();
+        };
+
+        const startResize = (e, id) => {
+          const item = find(id);
+          dragState = { active: true, id, startX: e.clientX, startY: e.clientY, initW: item.width, initH: item.height, mode: 'resize' };
+          bindDrag();
+        };
+
+        const bindDrag = () => {
+          document.addEventListener('mousemove', handleDrag);
+          document.addEventListener('mouseup', stopDrag);
+        };
+
+        const handleDrag = (e) => {
+          if (!dragState.active) return;
+          const item = find(dragState.id);
+          if (dragState.mode === 'move') {
+            item.x = dragState.initX + (e.clientX - dragState.startX);
+            item.y = dragState.initY + (e.clientY - dragState.startY);
+          } else if (dragState.mode === 'resize') {
+            const delta = (e.clientX - dragState.startX) + (e.clientY - dragState.startY);
+            const newW = Math.max(20, dragState.initW + delta / 3);
+            item.width = newW;
+            item.height = newW * (dragState.initH / dragState.initW);
+          }
+        };
+
+        const stopDrag = () => {
+          dragState.active = false;
+          document.removeEventListener('mousemove', handleDrag);
+          document.removeEventListener('mouseup', stopDrag);
+        };
+
+        const find = (id) => items.value.find(i => i.id === id);
+
+        const bringToFront = (id) => {
+          const item = find(id || selectedId.value);
+          if (!item) return;
+          const maxZ = Math.max(...items.value.map(i => i.z), -1);
+          item.z = maxZ + 1;
+        };
+
+        const sendToBack = (id) => {
+          const item = find(id || selectedId.value);
+          if (!item) return;
+          const minZ = Math.min(...items.value.map(i => i.z), 1);
+          item.z = minZ - 1;
+        };
+
+        const toggleAnim = (item, anim) => {
+          item.anim = item.anim === anim ? null : anim;
+        };
+
+        const duplicate = (item) => {
+          items.value.push({
+            ...item,
+            id: nextId.value++,
+            x: item.x + 30,
+            y: item.y + 30,
+            z: items.value.length
+          });
+        };
+
+        const remove = (item) => {
+          const idx = items.value.indexOf(item);
+          if (idx > -1) items.value.splice(idx, 1);
+          if (selectedId.value === item.id) selectedId.value = null;
+        };
+
+        const clearAll = () => {
+          if (confirm('Clear all?')) {
+            items.value = [];
+            selectedId.value = null;
+          }
+        };
+
+        const itemStyle = (item) => ({
+          left: `${item.x}px`,
+          top: `${item.y}px`,
+          width: `${item.width}px`,
+          height: `${item.height}px`,
+          zIndex: item.z,
+          fontSize: item.type === 'emoji' ? `${item.width * 0.8}px` : '1em'
+        });
+
+        return {
+          bgUrl, items, selectedId, mode, cutting, cutStart, cutEnd,
+          emojis, samplePhotos,
+          refreshBackground, drop, dragStart, uploadPhotos,
+          setMode, startCut, updateCut, finishCut,
+          selectAndDrag, startResize,
+          bringToFront, sendToBack, toggleAnim, duplicate, remove, clearAll,
+          itemStyle
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
