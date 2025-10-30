@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scrapbook Prototype</title>
+  <title>Scrapbook Prototype – Cropping Dropdown</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,243 +36,143 @@
       font-size: 0.9rem;
       transition: all 0.2s ease;
     }
-    .btn.active {
-      background: #007bff;
-      color: white;
-      border-color: #007bff;
-    }
-    .btn:hover {
-      background: #f8f9fa;
-    }
-    .btn.active:hover {
-      background: #0056b3;
-    }
+    .btn.active { background:#007bff; color:white; border-color:#007bff; }
+    .btn:hover { background:#f8f9fa; }
+    .btn.active:hover { background:#0056b3; }
 
     .canvas-wrapper {
       position: relative;
       height: 500px;
       overflow: hidden;
-      background: #fafafa;
+      background:#fafafa;
     }
     .canvas {
       position: relative;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      background-position: center;
+      width:100%; height:100%;
+      background-size:cover;
+      background-position:center;
     }
     .scrap-item {
       position: absolute;
       user-select: none;
       cursor: move;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
       pointer-events: auto;
-      transition: none;
     }
-    .scrap-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 4px;
-      pointer-events: none;
+    .scrap-item img,
+    .scrap-item .emoji-inner {
+      width:100%; height:100%;
+      object-fit:cover;
+      border-radius:4px;
+      pointer-events:none;
     }
-    .scrap-item.emoji {
-      font-size: 1em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .scrap-item.emoji .emoji-inner {
+      display:flex; align-items:center; justify-content:center; font-size:0.8em;
     }
-    .scrap-item.selected {
-      outline: 2px solid #007bff;
-      outline-offset: 2px;
-    }
+    .scrap-item.selected { outline:2px solid #007bff; outline-offset:2px; }
     .resize-handle {
-      position: absolute;
-      right: -6px; bottom: -6px;
-      width: 12px; height: 12px;
-      background: #007bff;
-      border: 2px solid white;
-      border-radius: 50%;
-      cursor: nwse-resize;
+      position:absolute; right:-6px; bottom:-6px;
+      width:12px; height:12px;
+      background:#007bff; border:2px solid white; border-radius:50%;
+      cursor:nwse-resize;
     }
 
-    /* Controls attached to item */
+    /* ---------- Controls (unaffected by filter) ---------- */
     .controls {
-      position: absolute;
-      bottom: -56px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 0.6rem;
-      display: flex;
-      gap: 0.4rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      pointer-events: auto;
-      z-index: 1000;
-      animation: none !important;
+      position:absolute; bottom:-56px; left:50%;
+      transform:translateX(-50%);
+      background:white; border:1px solid #ddd; border-radius:10px;
+      padding:0.6rem; display:flex; gap:0.4rem;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+      pointer-events:auto; z-index:1000;
     }
     .ctrl-btn {
-      width: 32px; height: 32px;
-      border: none;
-      background: #f0f0f0;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
+      width:32px; height:32px;
+      border:none; background:#f0f0f0; border-radius:8px;
+      cursor:pointer; font-size:1.1rem;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .2s;
     }
-    .ctrl-btn:hover {
-      background: #e0e0e0;
-    }
-    .ctrl-btn.active {
-      background: #007bff;
-      color: white;
-    }
+    .ctrl-btn:hover { background:#e0e0e0; }
+    .ctrl-btn.active { background:#007bff; color:white; }
 
-    /* Dropdown Menu */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
+    /* ---------- Dropdowns (scrollable, high z-index) ---------- */
+    .dropdown { position:relative; display:inline-block; }
     .dropdown-btn {
-      width: 32px; height: 32px;
-      background: #f0f0f0;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width:32px; height:32px; background:#f0f0f0; border:none;
+      border-radius:8px; cursor:pointer; font-size:1.1rem;
+      display:flex; align-items:center; justify-content:center;
     }
-    .dropdown-btn.active {
-      background: #007bff;
-      color: white;
-    }
+    .dropdown-btn.active { background:#007bff; color:white; }
     .dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      margin-top: 6px;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      min-width: 160px;
-      z-index: 1001;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateX(-50%) translateY(-8px);
-      transition: all 0.2s ease;
+      position:absolute; top:100%; left:50%; transform:translateX(-50%);
+      margin-top:6px; background:white; border:1px solid #ddd;
+      border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,0.2);
+      min-width:160px; max-height:220px; overflow-y:auto;
+      z-index: 2000; /* Higher than item content */
+      opacity:0; visibility:hidden;
+      transform:translateX(-50%) translateY(-8px);
+      transition:all .2s;
+      pointer-events: none;
     }
     .dropdown.open .dropdown-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateX(-50%) translateY(0);
+      opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
+      pointer-events: auto;
     }
     .dropdown-item {
-      padding: 0.5rem 0.8rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: background 0.2s;
+      padding:0.5rem 0.8rem; font-size:0.9rem;
+      cursor:pointer; display:flex; align-items:center; gap:0.5rem;
+      transition:background .2s;
     }
-    .dropdown-item:hover {
-      background: #f5f5f5;
-    }
-    .dropdown-item.active {
-      background: #e3f2fd;
-      color: #007bff;
-      font-weight: 500;
-    }
+    .dropdown-item:hover { background:#f5f5f5; }
+    .dropdown-item.active { background:#e3f2fd; color:#007bff; font-weight:500; }
 
-    .palette {
-      display: flex;
-      gap: 0.5rem;
-      padding: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      background: #f9f9f9;
-      border-top: 1px solid #eee;
-    }
-    .emoji-drag, .photo-sample {
-      width: 60px; height: 60px;
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.2rem;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      transition: transform 0.2s;
-    }
-    .emoji-drag:active, .photo-sample:active {
-      transform: scale(0.95);
-    }
-    .photo-sample img {
-      width: 100%; height: 100%; object-fit: cover; border-radius: 6px;
-    }
-    .upload {
-      padding: 1rem;
-      text-align: center;
-      border-top: 1px solid #eee;
-      background: #f9f9f9;
-    }
-    .upload input { display: none; }
-    .upload label {
-      display: inline-block;
-      padding: 0.5rem 1rem;
-      background: #007bff;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .upload label:hover {
-      background: #0056b3;
-    }
+    /* ---------- Clip-path (applied only to .content) ---------- */
+    .clip-circle   { clip-path: circle(50%); }
+    .clip-heart    { clip-path: path('M50 58.6c-5-5.6-13.3-5.6-18.3 0l-7.7 8.6-7.7-8.6c-5-5.6-13.3-5.6-18.3 0-5 5.6-5 14.2 0 19.8l26 29 26-29c5-5.6 5-14.2 0-19.8z'); }
+    .clip-star     { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+    .clip-square   { clip-path: inset(0); }
+    .clip-hexagon  { clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%); }
 
-    /* Filters */
+    .palette { display:flex; gap:0.5rem; padding:1rem; flex-wrap:wrap; justify-content:center;
+               background:#f9f9f9; border-top:1px solid #eee; }
+    .emoji-drag, .photo-sample { width:60px; height:60px; cursor:grab;
+      display:flex; align-items:center; justify-content:center; font-size:2.2rem;
+      background:white; border:1px solid #ddd; border-radius:8px; transition:transform .2s; }
+    .emoji-drag:active, .photo-sample:active { transform:scale(.95); }
+    .photo-sample img { width:100%; height:100%; object-fit:cover; border-radius:6px; }
+
+    .upload { padding:1rem; text-align:center; border-top:1px solid #eee; background:#f9f9f9; }
+    .upload input { display:none; }
+    .upload label { display:inline-block; padding:.5rem 1rem; background:#007bff;
+      color:white; border-radius:6px; cursor:pointer; transition:background .2s; }
+    .upload label:hover { background:#0056b3; }
+
+    /* Filters (only on .content) */
     .filter-bw { filter: grayscale(100%); }
     .filter-sepia { filter: sepia(80%); }
     .filter-vibrant { filter: saturate(180%) contrast(110%); }
     .filter-cool { filter: hue-rotate(200deg) brightness(1.1); }
     .filter-warm { filter: sepia(30%) saturate(130%) hue-rotate(20deg); }
 
-    /* Animations - 4s loop */
-    .content {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    @keyframes wiggle { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 50% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
-    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes hop { 0%,100% { transform: translateY(0); } 25% { transform: translateY(-20px); } 50% { transform: translateY(0); } 75% { transform: translateY(-10px); } }
-    @keyframes zoom { 0%,100% { transform: scale(1); } 30% { transform: scale(1.3); } 60% { transform: scale(0.9); } 80% { transform: scale(1.15); } }
-    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-    @keyframes sway { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(15deg); } 75% { transform: rotate(-15deg); } }
-    @keyframes boing { 0% { transform: scale(1); } 40% { transform: scale(1.4, 0.8); } 60% { transform: scale(0.9, 1.3); } 80% { transform: scale(1.1, 0.95); } 100% { transform: scale(1); } }
-
-    .anim-wiggle .content { animation: wiggle 4s ease-in-out infinite; }
-    .anim-rotate .content { animation: rotate 4s linear infinite; }
-    .anim-hop .content { animation: hop 4s ease-in-out infinite; }
-    .anim-zoom .content { animation: zoom 4s ease-in-out infinite; }
-    .anim-pulse .content { animation: pulse 4s ease-in-out infinite; }
-    .anim-float .content { animation: float 4s ease-in-out infinite; }
-    .anim-sway .content { animation: sway 4s ease-in-out infinite; }
-    .anim-boing .content { animation: boing 4s ease-in-out infinite; }
+    /* Animations */
+    .content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    @keyframes wiggle {0%,100%{transform:rotate(0deg)}25%{transform:rotate(8deg)}50%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+    @keyframes rotate {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes hop {0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
+    @keyframes zoom {0%,100%{transform:scale(1)}30%{transform:scale(1.3)}60%{transform:scale(.9)}80%{transform:scale(1.15)}}
+    @keyframes pulse {0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+    @keyframes float {0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    @keyframes sway {0%,100%{transform:rotate(0deg)}25%{transform:rotate(15deg)}75%{transform:rotate(-15deg)}}
+    @keyframes boing {0%{transform:scale(1)}40%{transform:scale(1.4,.8)}60%{transform:scale(.9,1.3)}80%{transform:scale(1.1,.95)}100%{transform:scale(1)}}
+    .anim-wiggle .content{animation:wiggle 4s ease-in-out infinite}
+    .anim-rotate .content{animation:rotate 4s linear infinite}
+    .anim-hop .content{animation:hop 4s ease-in-out infinite}
+    .anim-zoom .content{animation:zoom 4s ease-in-out infinite}
+    .anim-pulse .content{animation:pulse 4s ease-in-out infinite}
+    .anim-float .content{animation:float 4s ease-in-out infinite}
+    .anim-sway .content{animation:sway 4s ease-in-out infinite}
+    .anim-boing .content{animation:boing 4s ease-in-out infinite}
   </style>
 </head>
 <body>
@@ -288,19 +188,16 @@
         <!-- Items -->
         <div v-for="item in items" :key="item.id"
              class="scrap-item"
-             :class="{ 
-               selected: selectedId === item.id, 
-               emoji: item.type === 'emoji',
-               [item.anim]: item.anim,
-               [item.filter]: item.filter
-             }"
+             :class="{ selected: selectedId === item.id,
+                       emoji: item.type === 'emoji',
+                       [item.anim]: item.anim }"
              :style="itemStyle(item)"
              @mousedown.stop="selectAndDrag($event, item.id)">
-          
-          <!-- Animated & Filtered content -->
-          <div class="content">
+
+          <!-- Content: Filter + Clip-Path applied here -->
+          <div class="content" :class="[item.filter, item.clip]">
             <img v-if="item.type === 'photo'" :src="item.src" />
-            <div v-else>{{ item.emoji }}</div>
+            <div v-else class="emoji-inner">{{ item.emoji }}</div>
           </div>
 
           <!-- Resize handle -->
@@ -308,22 +205,36 @@
 
           <!-- Per-item controls -->
           <div v-if="selectedId === item.id" class="controls">
+            <!-- Crop Dropdown -->
+            <div class="dropdown" :class="{ open: cropOpen }">
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')">
+                ✂️
+              </button>
+              <div class="dropdown-menu">
+                <div class="dropdown-item" :class="{ active: !item.clip }" @click.stop="setClip(item, null)">None</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-circle' }" @click.stop="setClip(item, 'clip-circle')">Circle</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-heart' }" @click.stop="setClip(item, 'clip-heart')">Heart</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-star' }" @click.stop="setClip(item, 'clip-star')">Star</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-square' }" @click.stop="setClip(item, 'clip-square')">Square</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-hexagon' }" @click.stop="setClip(item, 'clip-hexagon')">Hexagon</div>
+              </div>
+            </div>
+
             <!-- Animation Dropdown -->
             <div class="dropdown" :class="{ open: animOpen }">
               <button class="ctrl-btn dropdown-btn" :class="{ active: item.anim }" @click.stop="toggleDropdown('anim')">
-                <span v-if="!item.anim">🎞️</span>
-                <span v-else>🎞️</span>
+                🎞️
               </button>
               <div class="dropdown-menu">
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="setAnim(item, 'anim-wiggle')">Wiggle</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-rotate' }" @click.stop="setAnim(item, 'anim-rotate')">Rotate</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-hop' }" @click.stop="setAnim(item, 'anim-hop')">Hop</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-zoom' }" @click.stop="setAnim(item, 'anim-zoom')">Zoom</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-pulse' }" @click.stop="setAnim(item, 'anim-pulse')">Pulse</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-float' }" @click.stop="setAnim(item, 'anim-float')">Float</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-sway' }" @click.stop="setAnim(item, 'anim-sway')">Sway</div>
-                <div class="dropdown-item" :class="{ active: item.anim === 'anim-boing' }" @click.stop="setAnim(item, 'anim-boing')">Boing!</div>
-                <div class="dropdown-item" @click.stop="setAnim(item, null)">None</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="setAnim(item,'anim-wiggle')">Wiggle</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-rotate' }" @click.stop="setAnim(item,'anim-rotate')">Rotate</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-hop' }" @click.stop="setAnim(item,'anim-hop')">Hop</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-zoom' }" @click.stop="setAnim(item,'anim-zoom')">Zoom</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-pulse' }" @click.stop="setAnim(item,'anim-pulse')">Pulse</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-float' }" @click.stop="setAnim(item,'anim-float')">Float</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-sway' }" @click.stop="setAnim(item,'anim-sway')">Sway</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-boing' }" @click.stop="setAnim(item,'anim-boing')">Boing!</div>
+                <div class="dropdown-item" @click.stop="setAnim(item,null)">None</div>
               </div>
             </div>
 
@@ -333,15 +244,14 @@
                 🎨
               </button>
               <div class="dropdown-menu">
-                <div class="dropdown-item" :class="{ active: item.filter === 'filter-bw' }" @click.stop="setFilter(item, 'filter-bw')">B&W</div>
-                <div class="dropdown-item" :class="{ active: item.filter === 'filter-sepia' }" @click.stop="setFilter(item, 'filter-sepia')">Sepia</div>
-                <div class="dropdown-item" :class="{ active: item.filter === 'filter-vibrant' }" @click.stop="setFilter(item, 'filter-vibrant')">Vibrant</div>
-                <div class="dropdown-item" :class="{ active: item.filter === 'filter-cool' }" @click.stop="setFilter(item, 'filter-cool')">Cool</div>
-                <div class="dropdown-item" :class="{ active: item.filter === 'filter-warm' }" @click.stop="setFilter(item, 'filter-warm')">Warm</div>
-                <div class="dropdown-item" @click.stop="setFilter(item, null)">None</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-bw' }" @click.stop="setFilter(item,'filter-bw')">B&W</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-sepia' }" @click.stop="setFilter(item,'filter-sepia')">Sepia</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-vibrant' }" @click.stop="setFilter(item,'filter-vibrant')">Vibrant</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-cool' }" @click.stop="setFilter(item,'filter-cool')">Cool</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-warm' }" @click.stop="setFilter(item,'filter-warm')">Warm</div>
+                <div class="dropdown-item" @click.stop="setFilter(item,null)">None</div>
               </div>
             </div>
-
             <!-- <button class="ctrl-btn" @click.stop="bringToFront">⬆️</button>
             <button class="ctrl-btn" @click.stop="sendToBack">⬇️</button> -->
             <button class="ctrl-btn" @click.stop="duplicate(item)">⧉</button>
@@ -356,8 +266,8 @@
     </div>
 
     <div class="palette">
-      <span v-for="e in emojis" :key="e" class="emoji-drag" draggable="true" @dragstart="dragStart($event, 'emoji', e)">{{ e }}</span>
-      <div v-for="p in samplePhotos" :key="p" class="photo-sample" draggable="true" @dragstart="dragStart($event, 'photo', p)">
+      <span v-for="e in emojis" :key="e" class="emoji-drag" draggable="true" @dragstart="dragStart($event,'emoji',e)">{{ e }}</span>
+      <div v-for="p in samplePhotos" :key="p" class="photo-sample" draggable="true" @dragstart="dragStart($event,'photo',p)">
         <img :src="p">
       </div>
     </div>
@@ -375,6 +285,7 @@
         const mode = ref('select');
         const animOpen = ref(false);
         const filterOpen = ref(false);
+        const cropOpen = ref(false); // New
 
           const emojis = ['😂', '😎', '👍', '❤️', '🔥'];
         const samplePhotos = [
@@ -386,6 +297,11 @@
 
         onMounted(() => {
           refreshBackground();
+          document.addEventListener('click', () => {
+            animOpen.value = false;
+            filterOpen.value = false;
+            cropOpen.value = false;
+          });
         });
 
         const refreshBackground = () => {
@@ -416,6 +332,7 @@
             height: type === 'emoji' ? 50 : 120,
             anim: null,
             filter: null,
+            clip: null,
             z: items.value.length
           });
         };
@@ -436,6 +353,7 @@
                   height: Math.min(img.height / 4, 150),
                   anim: null,
                   filter: null,
+                  clip: null,
                   z: items.value.length
                 });
               };
@@ -445,27 +363,24 @@
           });
         };
 
-        const setMode = (m) => {
-          mode.value = m;
-        };
+        const setMode = (m) => { mode.value = m; };
 
-        let dragState = { active: false, id: null, startX: 0, startY: 0, initX: 0, initY: 0, initW: 0, initH: 0, mode: '' };
+        let dragState = { active:false, id:null, startX:0, startY:0, initX:0, initY:0, initW:0, initH:0, mode:'' };
 
         const selectAndDrag = (e, id) => {
           if (mode.value !== 'select') return;
           selectedId.value = id;
           bringToFront(id);
-          if (e.target.classList.contains('resize-handle')) {
-            startResize(e, id);
-            return;
-          }
-          dragState = { active: true, id, startX: e.clientX, startY: e.clientY, initX: find(id).x, initY: find(id).y, mode: 'move' };
+          if (e.target.classList.contains('resize-handle')) { startResize(e,id); return; }
+          dragState = { active:true, id, startX:e.clientX, startY:e.clientY,
+                        initX:find(id).x, initY:find(id).y, mode:'move' };
           bindDrag();
         };
 
         const startResize = (e, id) => {
           const item = find(id);
-          dragState = { active: true, id, startX: e.clientX, startY: e.clientY, initW: item.width, initH: item.height, mode: 'resize' };
+          dragState = { active:true, id, startX:e.clientX, startY:e.clientY,
+                        initW:item.width, initH:item.height, mode:'resize' };
           bindDrag();
         };
 
@@ -473,7 +388,6 @@
           document.addEventListener('mousemove', handleDrag);
           document.addEventListener('mouseup', stopDrag);
         };
-
         const handleDrag = (e) => {
           if (!dragState.active) return;
           const item = find(dragState.id);
@@ -482,12 +396,11 @@
             item.y = dragState.initY + (e.clientY - dragState.startY);
           } else if (dragState.mode === 'resize') {
             const delta = (e.clientX - dragState.startX) + (e.clientY - dragState.startY);
-            const newW = Math.max(20, dragState.initW + delta / 3);
+            const newW = Math.max(20, dragState.initW + delta/3);
             item.width = newW;
             item.height = newW * (dragState.initH / dragState.initW);
           }
         };
-
         const stopDrag = () => {
           dragState.active = false;
           document.removeEventListener('mousemove', handleDrag);
@@ -495,70 +408,43 @@
         };
 
         const find = (id) => items.value.find(i => i.id === id);
-
         const bringToFront = (id) => {
           const item = find(id || selectedId.value);
           if (!item) return;
-          const maxZ = Math.max(...items.value.map(i => i.z), -1);
+          const maxZ = Math.max(...items.value.map(i=>i.z), -1);
           item.z = maxZ + 1;
-        };
-
-        const sendToBack = (id) => {
-          const item = find(id || selectedId.value);
-          if (!item) return;
-          const minZ = Math.min(...items.value.map(i => i.z), 1);
-          item.z = minZ - 1;
         };
 
         const setAnim = (item, anim) => {
           item.anim = item.anim === anim ? null : anim;
           animOpen.value = false;
         };
-
         const setFilter = (item, filter) => {
           item.filter = item.filter === filter ? null : filter;
           filterOpen.value = false;
         };
+        const setClip = (item, clip) => {
+          item.clip = item.clip === clip ? null : clip;
+          cropOpen.value = false;
+        };
 
         const toggleDropdown = (type) => {
-          if (type === 'anim') {
-            animOpen.value = !animOpen.value;
-            filterOpen.value = false;
-          } else {
-            filterOpen.value = !filterOpen.value;
-            animOpen.value = false;
-          }
+          animOpen.value = filterOpen.value = cropOpen.value = false;
+          if (type === 'anim') animOpen.value = true;
+          else if (type === 'filter') filterOpen.value = true;
+          else if (type === 'crop') cropOpen.value = true;
         };
-
-        // Close dropdowns on outside click
-        onMounted(() => {
-          document.addEventListener('click', () => {
-            animOpen.value = false;
-            filterOpen.value = false;
-          });
-        });
 
         const duplicate = (item) => {
-          items.value.push({
-            ...item,
-            id: nextId.value++,
-            x: item.x + 30,
-            y: item.y + 30,
-            z: items.value.length
-          });
+          items.value.push({ ...item, id: nextId.value++, x: item.x+30, y: item.y+30, z: items.value.length });
         };
-
         const remove = (item) => {
           const idx = items.value.indexOf(item);
-          if (idx > -1) items.value.splice(idx, 1);
+          if (idx > -1) items.value.splice(idx,1);
           if (selectedId.value === item.id) selectedId.value = null;
         };
-
         const clearAll = () => {
-          if (confirm('Clear all items?')) {
-            items.value = [];
-            selectedId.value = null;
-          }
+          if (confirm('Clear all items?')) { items.value = []; selectedId.value = null; }
         };
 
         const itemStyle = (item) => ({
@@ -567,15 +453,16 @@
           width: `${item.width}px`,
           height: `${item.height}px`,
           zIndex: item.z,
-          fontSize: item.type === 'emoji' ? `${item.width * 0.8}px` : '1em'
+          fontSize: item.type === 'emoji' ? `${item.width*0.8}px` : '1em'
         });
 
         return {
-          bgUrl, items, selectedId, mode, animOpen, filterOpen,
+          bgUrl, items, selectedId, mode, animOpen, filterOpen, cropOpen,
           emojis, samplePhotos,
           refreshBackground, drop, dragStart, uploadPhotos,
           setMode, selectAndDrag, startResize,
-          bringToFront, sendToBack, setAnim, setFilter, toggleDropdown,
+          bringToFront,
+          setAnim, setFilter, setClip, toggleDropdown,
           duplicate, remove, clearAll, itemStyle
         };
       }
