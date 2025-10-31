@@ -302,7 +302,7 @@
     }
 
     .rotate-handle {
-      position:absolute; left:-6px; top:-6px; width:20px; height:20px;
+      position:absolute; left:-6px; top:-6px; width:0px; height:0px;
       background:#28a745; border:2px solid white; border-radius:50%;
       cursor:grab; touch-action:none;
     }
@@ -466,7 +466,9 @@
               @touchstart.stop="startRotate($event, item.id)"></div>
 
           <div v-if="selectedId === item.id" class="controls" :style="{ transform: `translateX(-50%) rotate(${-(item.rotation || 0)}deg)` }">
-            <div class="dropdown" :class="{ open: cropOpen }">
+            
+            
+            <!-- <div class="dropdown" :class="{ open: cropOpen }">
               <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')" @touchend.stop="toggleDropdown('crop')">✂️</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: !item.clip }" @click.stop="setClip(item, null)" @touchend.stop.prevent="setClip(item, null)">None</div>
@@ -476,9 +478,9 @@
                 <div class="dropdown-item" :class="{ active: item.clip === 'clip-square' }" @click.stop="setClip(item, 'clip-square')" @touchend.stop.prevent="setClip(item, 'clip-square')">Square</div>
                 <div class="dropdown-item" :class="{ active: item.clip === 'clip-hexagon' }" @click.stop="setClip(item, 'clip-hexagon')" @touchend.stop.prevent="setClip(item, 'clip-hexagon')">Hexagon</div>   
               </div>
-            </div>
+            </div> -->
 
-            <div class="dropdown" :class="{ open: animOpen }">
+            <!-- <div class="dropdown" :class="{ open: animOpen }">
               <button class="ctrl-btn dropdown-btn" :class="{ active: item.anim }" @click.stop="toggleDropdown('anim')" @touchend.stop="toggleDropdown('anim')">🎞️</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="setAnim(item,'anim-wiggle')" @touchend.stop.prevent="setAnim(item,'anim-wiggle')">Wiggle</div>
@@ -491,9 +493,9 @@
                 <div class="dropdown-item" :class="{ active: item.anim === 'anim-boing' }" @click.stop="setAnim(item,'anim-boing')" @touchend.stop.prevent="setAnim(item,'anim-boing')">Boing!</div>
                 <div class="dropdown-item" @click.stop="setAnim(item,null)" @touchend.stop.prevent="setAnim(item,null)">None</div>
               </div>
-            </div>
+            </div> -->
 
-            <div class="dropdown" :class="{ open: filterOpen }">
+            <!-- <div class="dropdown" :class="{ open: filterOpen }">
               <button class="ctrl-btn dropdown-btn" :class="{ active: item.filter }" @click.stop="toggleDropdown('filter')" @touchend.stop="toggleDropdown('filter')">🎨</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: item.filter === 'filter-bw' }" @click.stop="setFilter(item,'filter-bw')" @touchend.stop.prevent="setFilter(item,'filter-bw')">B&W</div>
@@ -503,7 +505,8 @@
                 <div class="dropdown-item" :class="{ active: item.filter === 'filter-warm' }" @click.stop="setFilter(item,'filter-warm')" @touchend.stop.prevent="setFilter(item,'filter-warm')">Warm</div>
                 <div class="dropdown-item" @click.stop="setFilter(item,null)" @touchend.stop.prevent="setFilter(item,null)">None</div>
               </div>
-            </div>
+            </div> -->
+
             <!-- <button class="ctrl-btn" @click.stop="bringToFront">⬆️</button>
             <button class="ctrl-btn" @click.stop="sendToBack">⬇️</button> -->
           <button class="ctrl-btn" @click.stop="duplicate(item)" @touchend.stop="duplicate(item)">⧉</button>
@@ -1207,7 +1210,7 @@ const itemStyle = item => {
             workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
           });
           
-          const fps = 30;
+          const fps = 24;
           const duration = 4; // 4 seconds
           const totalFrames = fps * duration;
           
