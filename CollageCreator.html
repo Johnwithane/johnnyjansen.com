@@ -33,20 +33,22 @@
     /* Canvas Scaler – always fits screen, preserves ratio */
     .canvas-scaler {
       flex:1; position:relative; overflow:hidden; background:#fafafa;
-      width:100%;
-      padding-bottom: calc(var(--ratio-h) / var(--ratio-w) * 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .canvas {
-      position:absolute; inset:0; width:100%; height:100%;
+      position:relative;
+      width: 900px;
+      height: calc(900px * var(--ratio-h) / var(--ratio-w));
+      max-width: 100%;
+      max-height: 100%;
       background-size:cover; background-position:center;
-      transform: scale(var(--scale));
-      transform-origin: top left;
       touch-action: none;
     }
 
     .scrap-item {
       position:absolute; user-select:none; cursor:move;
-      transform: translate(-50%,-50%) scale(calc(1/var(--scale)));
       transform-origin: center;
       pointer-events:auto; touch-action:none;
     }
@@ -64,8 +66,14 @@
       cursor:nwse-resize; touch-action:none;
     }
 
+    .rotate-handle {
+      position:absolute; left:-6px; top:-6px; width:12px; height:12px;
+      background:#28a745; border:2px solid white; border-radius:50%;
+      cursor:grab; touch-action:none;
+    }
+    .rotate-handle:active { cursor:grabbing; }
     .controls {
-      position:absolute; bottom:-56px; left:50%; transform:translateX(-50%);
+      position:absolute; bottom:-56px; left:50%; 
       background:white; border:1px solid #ddd; border-radius:10px;
       padding:0.6rem; display:flex; gap:0.4rem;
       box-shadow:0 4px 12px rgba(0,0,0,.15);
@@ -183,8 +191,8 @@
       <button class="btn" :class="{ active: aspect === '1:1' }" @click="setAspect('1:1')">Square</button>
     </div>
 
-    <div class="canvas-scaler" ref="scaler" @drop.prevent="drop" @dragover.prevent>
-      <div class="canvas" :style="{ backgroundImage: `url(${bgUrl})` }">
+    <div class="canvas-scaler" ref="scaler" @drop.prevent="drop" @dragover.prevent @mousedown.self="deselectAll" @touchstart.self="deselectAll">
+      <div class="canvas" :style="{ backgroundImage: `url(${bgUrl})` }" @mousedown.self="deselectAll" @touchstart.self="deselectAll">
         <div v-for="item in items" :key="item.id"
              class="scrap-item"
              :class="{ selected: selectedId === item.id, emoji: item.type === 'emoji', [item.anim]: item.anim }"
@@ -197,13 +205,17 @@
             <div v-else class="emoji-inner">{{ item.emoji }}</div>
           </div>
 
-          <div class="resize-handle"
-               @mousedown.stop="startResize($event, item.id)"
-               @touchstart.stop="startResize($event, item.id)"></div>
+          <div v-if="selectedId === item.id" class="resize-handle"
+              @mousedown.stop="startResize($event, item.id)"
+              @touchstart.stop="startResize($event, item.id)"></div>
 
-          <div v-if="selectedId === item.id" class="controls">
+          <div v-if="selectedId === item.id" class="rotate-handle"
+              @mousedown.stop="startRotate($event, item.id)"
+              @touchstart.stop="startRotate($event, item.id)"></div>
+
+          <div v-if="selectedId === item.id" class="controls" :style="{ transform: `translateX(-50%) rotate(${-(item.rotation || 0)}deg)` }">
             <div class="dropdown" :class="{ open: cropOpen }">
-              <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')">✂️</button>
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')" @touchend.stop="toggleDropdown('crop')">✂️</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: !item.clip }" @click.stop="setClip(item, null)">None</div>
                 <div class="dropdown-item" :class="{ active: item.clip === 'clip-circle' }" @click.stop="setClip(item, 'clip-circle')">Circle</div>
@@ -215,7 +227,7 @@
             </div>
 
             <div class="dropdown" :class="{ open: animOpen }">
-              <button class="ctrl-btn dropdown-btn" :class="{ active: item.anim }" @click.stop="toggleDropdown('anim')">🎞️</button>
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.anim }" @click.stop="toggleDropdown('anim')" @touchend.stop="toggleDropdown('anim')">🎞️</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="setAnim(item,'anim-wiggle')">Wiggle</div>
                 <div class="dropdown-item" :class="{ active: item.anim === 'anim-rotate' }" @click.stop="setAnim(item,'anim-rotate')">Rotate</div>
@@ -230,7 +242,7 @@
             </div>
 
             <div class="dropdown" :class="{ open: filterOpen }">
-              <button class="ctrl-btn dropdown-btn" :class="{ active: item.filter }" @click.stop="toggleDropdown('filter')">🎨</button>
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.filter }" @click.stop="toggleDropdown('filter')" @touchend.stop="toggleDropdown('filter')">🎨</button>
               <div class="dropdown-menu">
                 <div class="dropdown-item" :class="{ active: item.filter === 'filter-bw' }" @click.stop="setFilter(item,'filter-bw')">B&W</div>
                 <div class="dropdown-item" :class="{ active: item.filter === 'filter-sepia' }" @click.stop="setFilter(item,'filter-sepia')">Sepia</div>
@@ -242,8 +254,8 @@
             </div>
             <!-- <button class="ctrl-btn" @click.stop="bringToFront">⬆️</button>
             <button class="ctrl-btn" @click.stop="sendToBack">⬇️</button> -->
-            <button class="ctrl-btn" @click.stop="duplicate(item)">⧉</button>
-            <button class="ctrl-btn" @click.stop="remove(item)">X</button>
+          <button class="ctrl-btn" @click.stop="duplicate(item)" @touchend.stop="duplicate(item)">⧉</button>
+          <button class="ctrl-btn" @click.stop="remove(item)" @touchend.stop="remove(item)">X</button>
           </div>
         </div>
       </div>
@@ -254,8 +266,18 @@
     </div>
 
     <div class="palette">
-      <span v-for="e in emojis" :key="e" class="emoji-drag" draggable="true" @dragstart="dragStart($event,'emoji',e)">{{ e }}</span>
-      <div v-for="p in samplePhotos" :key="p" class="photo-sample" draggable="true" @dragstart="dragStart($event,'photo',p)">
+      <span v-for="e in emojis" :key="e" class="emoji-drag" 
+      draggable="true" 
+      @dragstart="dragStart($event,'emoji',e)"
+      @touchstart="touchStartPalette($event,'emoji',e)"
+      @touchmove.prevent
+      @touchend="touchEndPalette($event,'emoji',e)">{{ e }}</span>
+      <div v-for="p in samplePhotos" :key="p" class="photo-sample" 
+          draggable="true" 
+          @dragstart="dragStart($event,'photo',p)"
+          @touchstart="touchStartPalette($event,'photo',p)"
+          @touchmove.prevent
+          @touchend="touchEndPalette($event,'photo',p)">
         <img :src="p">
       </div>
     </div>
@@ -277,7 +299,14 @@
         const aspect = ref('16:9');
         const scaler = ref(null);
 
-          const emojis = ['😂', '😎', '👍', '❤️', '🔥'];
+        const touchPaletteState = ref({ active: false, type: null, data: null });
+
+        const deselectAll = () => { 
+          selectedId.value = null; 
+          animOpen.value = filterOpen.value = cropOpen.value = false; 
+        };
+
+        const emojis = ['😂', '😎', '👍', '❤️', '🔥'];
         const samplePhotos = [
           'https://picsum.photos/200/200?random=1',
           'https://picsum.photos/200/200?random=2',
@@ -294,12 +323,17 @@
         const updateScale = () => {
           nextTick(() => {
             if (!scaler.value) return;
-            const rect = scaler.value.getBoundingClientRect();
             const ratio = ratios[aspect.value];
-            const scale = rect.width / (900 * (ratio.w / 16));
-            document.documentElement.style.setProperty('--scale', scale);
+            const canvasEl = scaler.value.querySelector('.canvas');
+            
             document.documentElement.style.setProperty('--ratio-w', ratio.w);
             document.documentElement.style.setProperty('--ratio-h', ratio.h);
+            
+            if (canvasEl) {
+              const rect = canvasEl.getBoundingClientRect();
+              const scale = rect.width / 900;
+              document.documentElement.style.setProperty('--canvas-scale', scale);
+            }
           });
         };
 
@@ -313,7 +347,11 @@
 
         const setAspect = (a) => { aspect.value = a; updateScale(); };
         const refreshBackground = () => { bgUrl.value = `https://picsum.photos/900/506?blur=2&random=${Date.now()}`; };
-        const closeAllDropdowns = e => { if (!e.target.closest('.dropdown')) { animOpen.value = filterOpen.value = cropOpen.value = false; }};
+        const closeAllDropdowns = e => { 
+          if (!e.target.closest('.dropdown') && !e.target.closest('.dropdown-item')) { 
+            animOpen.value = filterOpen.value = cropOpen.value = false; 
+          }
+        };
 
         const dragStart = (e, type, data) => {
           e.dataTransfer.setData('type', type);
@@ -326,8 +364,9 @@
           const data = e.dataTransfer.getData('data');
           if (!type || !data) return;
 
-          const rect = scaler.value.getBoundingClientRect();
-          const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'));
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
           const clientX = e.touches ? e.touches[0].clientX : e.clientX;
           const clientY = e.touches ? e.touches[0].clientY : e.clientY;
           const x = (clientX - rect.left) / scale;
@@ -340,6 +379,7 @@
             width: type === 'emoji' ? 50 : 120,
             height: type === 'emoji' ? 50 : 120,
             anim: null, filter: null, clip: null,
+            rotation: 0,
             z: items.value.length
           });
         };
@@ -350,17 +390,18 @@
             reader.onload = ev => {
               const img = new Image();
               img.onload = () => {
-                items.value.push({
-                  id: nextId.value++,
-                  type: 'photo',
-                  src: ev.target.result,
-                  x: 300 + Math.random()*200,
-                  y: 200 + Math.random()*150,
-                  width: Math.min(img.width/4,150),
-                  height: Math.min(img.height/4,150),
-                  anim:null, filter:null, clip:null,
-                  z: items.value.length
-                });
+              items.value.push({
+                id: nextId.value++,
+                type: 'photo',
+                src: ev.target.result,
+                x: 300 + Math.random()*200,
+                y: 200 + Math.random()*150,
+                width: Math.min(img.width/4,150),
+                height: Math.min(img.height/4,150),
+                anim:null, filter:null, clip:null,
+                rotation: 0, // ADD THIS
+                z: items.value.length
+              });
               };
               img.src = ev.target.result;
             };
@@ -370,11 +411,45 @@
 
         const setMode = m => { mode.value = m; };
 
+        const touchStartPalette = (e, type, data) => {
+          touchPaletteState.value = { active: true, type, data };
+        };
+
+        const touchEndPalette = (e, type, data) => {
+          if (!touchPaletteState.value.active) return;
+          touchPaletteState.value.active = false;
+          
+          const touch = e.changedTouches[0];
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
+          
+          if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+              touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+            
+            const x = (touch.clientX - rect.left) / scale;
+            const y = (touch.clientY - rect.top) / scale;
+            
+            items.value.push({
+              id: nextId.value++,
+              type,
+              [type === 'emoji' ? 'emoji' : 'src']: data,
+              x, y,
+              width: type === 'emoji' ? 50 : 120,
+              height: type === 'emoji' ? 50 : 120,
+              anim: null, filter: null, clip: null,
+              rotation: 0,
+              z: items.value.length
+            });
+          }
+        };
+
         let dragState = { active:false, id:null, startX:0, startY:0, initX:0, initY:0, initW:0, initH:0, mode:'', client:'mouse' };
 
         const getCoords = e => {
-          const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'));
-          const rect = scaler.value.getBoundingClientRect();
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
           const clientX = e.touches ? e.touches[0].clientX : e.clientX;
           const clientY = e.touches ? e.touches[0].clientY : e.clientY;
           return {
@@ -406,6 +481,28 @@
           bindDrag();
         };
 
+        const startRotate = (e, id) => {
+          e.preventDefault();
+          const item = find(id);
+          
+          // Get the initial mouse/touch position
+          const { x, y } = getCoords(e);
+          
+          // Calculate initial angle from center to touch point
+          const startAngle = Math.atan2(y - item.y, x - item.x);
+          
+          dragState = { 
+            active:true, id, 
+            mode:'rotate', 
+            client: e.touches?'touch':'mouse',
+            centerX: item.x,
+            centerY: item.y,
+            initialRotation: item.rotation || 0,
+            startAngle: startAngle  // Store in radians
+          };
+          bindDrag();
+        };
+
         const bindDrag = () => {
           const move = dragState.client === 'touch' ? e => handleDrag(e) : handleDrag;
           const end  = dragState.client === 'touch' ? () => stopDrag() : stopDrag;
@@ -432,6 +529,10 @@
             const newW = Math.max(20, dragState.initW + delta/3);
             item.width = newW;
             item.height = newW * (dragState.initH / dragState.initW);
+          } else if (dragState.mode === 'rotate') {
+            const currentAngle = Math.atan2(y - dragState.centerY, x - dragState.centerX);
+            const angleDiff = (currentAngle - dragState.startAngle) * 180 / Math.PI;
+            item.rotation = dragState.initialRotation + angleDiff;
           }
         };
 
@@ -464,21 +565,29 @@
         const remove = item => { const idx=items.value.indexOf(item); if(idx>-1)items.value.splice(idx,1); if(selectedId.value===item.id)selectedId.value=null; };
         const clearAll = () => { if(confirm('Clear all items?')) { items.value=[]; selectedId.value=null; }};
 
-        const itemStyle = item => ({
-          left: `${item.x}px`, top: `${item.y}px`,
-          width: `${item.width}px`, height: `${item.height}px`,
-          zIndex: item.z,
-          fontSize: item.type==='emoji' ? `${item.width*0.8}px` : '1em'
-        });
-
-        return {
-          bgUrl, items, selectedId, mode, animOpen, filterOpen, cropOpen, aspect,
-          emojis, samplePhotos, scaler,
-          refreshBackground, drop, dragStart, uploadPhotos,
-          setMode, selectAndDrag, startResize, setAspect,
-          bringToFront, setAnim, setFilter, setClip, toggleDropdown,
-          duplicate, remove, clearAll, itemStyle
+        const itemStyle = item => {
+          const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--canvas-scale')) || 1;
+          return {
+            left: `${item.x}px`, 
+            top: `${item.y}px`,
+            width: `${item.width}px`, 
+            height: `${item.height}px`,
+            zIndex: item.z,
+            fontSize: item.type==='emoji' ? `${item.width*0.8}px` : '1em',
+            transform: `translate(-50%,-50%) scale(${1/scale}) rotate(${item.rotation || 0}deg)`
+          };
         };
+
+      return {
+        bgUrl, items, selectedId, mode, animOpen, filterOpen, cropOpen, aspect,
+        emojis, samplePhotos, scaler,
+        refreshBackground, drop, dragStart, uploadPhotos,
+        setMode, selectAndDrag, startResize, setAspect,
+        bringToFront, setAnim, setFilter, setClip, toggleDropdown,
+        duplicate, remove, clearAll, itemStyle,
+        deselectAll, startRotate,
+        touchStartPalette, touchEndPalette // ADD THESE
+      };
       }
     }).mount('#app');
   </script>
