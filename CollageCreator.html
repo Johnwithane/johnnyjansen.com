@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Scrapbook – Full View Canvas</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body { height:100%; overflow:hidden; font-family:system-ui,sans-serif; background:#f5f5f5; }
@@ -14,6 +16,238 @@
       max-width:900px; margin:0 auto; background:white; border-radius:12px;
       overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.1);
       height:calc(100vh - 1rem); display:flex; flex-direction:column;
+    }
+
+    .speech-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 0.5rem 0.8rem;
+  font-size: 14px;
+  font-family: system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  max-width: 200px;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: center;
+  z-index: 10;
+}
+
+.speech-bubble:empty {
+  display: none;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #333;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+  z-index: 1;
+  margin-top: -2px;
+}
+
+.speech-input {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  min-width: 120px;
+  max-width: 200px;
+  text-align: center;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.speech-input:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: #999;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .step {
+      margin-bottom: 1.5rem;
+    }
+
+    .step-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .copy-btn {
+      padding: 0.4rem 0.8rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #0056b3;
+    }
+
+    .prompt-area,
+    .response-area {
+      width: 100%;
+      min-height: 150px;
+      max-height: 250px;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+      background: #f9f9f9;
+    }
+
+    .response-area {
+      background: white;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .error-message {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: #fee;
+      color: #c33;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .success-message {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: #efe;
+      color: #3a3;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .user-prompt-area {
+      width: 100%;
+      min-height: 80px;
+      max-height: 150px;
+      padding: 0.8rem;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.95rem;
+      resize: vertical;
+      background: white;
+    }
+
+    .user-prompt-area:focus {
+      outline: none;
+      border-color: #0056b3;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
     }
 
     .toolbar {
@@ -187,24 +421,41 @@
       <button class="btn" @click="clearAll">Clear</button>
 
       <!-- Aspect Ratio Buttons -->
-      <button class="btn" :class="{ active: aspect === '16:9' }" @click="setAspect('16:9')">Horizontal</button>
+      <!-- <button class="btn" :class="{ active: aspect === '16:9' }" @click="setAspect('16:9')">Horizontal</button>
       <button class="btn" :class="{ active: aspect === '9:16' }" @click="setAspect('9:16')">Vertical</button>
       <button class="btn" :class="{ active: aspect === '1:1' }" @click="setAspect('1:1')">Square</button>
+
+      <button class="btn" @click="exportGif">Export GIF</button> -->
+      <button class="btn" @click="showAIModal = true">🤖 AI Animate</button>
     </div>
 
     <div class="canvas-scaler" ref="scaler" @drop.prevent="drop" @dragover.prevent @mousedown.self="deselectAll" @touchstart.self="deselectAll">
       <div class="canvas" :style="{ backgroundImage: `url(${bgUrl})` }" @mousedown.self="deselectAll" @touchstart.self="deselectAll">
-        <div v-for="item in items" :key="item.id"
-             class="scrap-item"
-             :class="{ selected: selectedId === item.id, emoji: item.type === 'emoji', [item.anim]: item.anim }"
-             :style="itemStyle(item)"
-             @mousedown.stop="selectAndDrag($event, item.id)"
-             @touchstart.stop="selectAndDrag($event, item.id)">
+<div v-for="item in items" :key="item.id"
+     class="scrap-item"
+     :class="{ selected: selectedId === item.id, emoji: item.type === 'emoji' }"
+     :data-id="item.id"
+     :style="itemStyle(item)"
+     @mousedown.stop="selectAndDrag($event, item.id)"
+     @touchstart.stop="selectAndDrag($event, item.id)">
 
-          <div class="content" :class="[item.filter, item.clip]">
-            <img v-if="item.type === 'photo'" :src="item.src" />
-            <div v-else class="emoji-inner">{{ item.emoji }}</div>
-          </div>
+  <!-- Speech Bubble (only if selected and editing, or if has text and not selected) -->
+  <input 
+    v-if="selectedId === item.id"
+    type="text"
+    class="speech-input"
+    v-model="item.speech"
+    placeholder="Add speech..."
+    @click.stop
+    @mousedown.stop
+    @touchstart.stop
+  />
+  <div v-else-if="item.speech" class="speech-bubble">{{ item.speech }}</div>
+
+  <div class="content" :class="[item.filter, item.clip]">
+    <img v-if="item.type === 'photo'" :src="item.src" />
+    <div v-else class="emoji-inner">{{ item.emoji }}</div>
+  </div>
 
           <div v-if="selectedId === item.id" class="resize-handle"
               @mousedown.stop="startResize($event, item.id)"
@@ -284,10 +535,66 @@
         <img :src="p">
       </div>
     </div>
+  <!-- AI Modal -->
+<div v-if="showAIModal" class="modal-overlay" @click.self="showAIModal = false">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>AI Animation Assistant</h2>
+      <button class="close-btn" @click="showAIModal = false">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="step">
+        <label class="step-label">
+          Step 1: Describe what you want (optional)
+        </label>
+        <textarea 
+          v-model="userPrompt"
+          class="user-prompt-area"
+          placeholder="e.g., 'Make it shake like an earthquake' or 'Create a dreamy floating effect' or leave blank for AI to decide..."
+        ></textarea>
+      </div>
+
+      <div class="step">
+        <label class="step-label">
+          Step 2: Copy this prompt and paste it into Claude, ChatGPT, or any LLM
+          <button class="copy-btn" @click="copyPrompt">📋 Copy Prompt</button>
+        </label>
+        <textarea 
+          readonly 
+          ref="promptArea"
+          class="prompt-area"
+          :value="aiPrompt"
+        ></textarea>
+      </div>
+
+      <div class="step">
+        <label class="step-label">
+          Step 3: Paste the AI's JSON response here
+        </label>
+        <textarea 
+          v-model="aiResponse"
+          class="response-area"
+          placeholder='Paste the JSON response from the AI here...'
+        ></textarea>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn" @click="applyAIAnimations" :disabled="!aiResponse">
+          ✨ Apply Animations
+        </button>
+        <button class="btn" @click="showAIModal = false">Cancel</button>
+      </div>
+      
+      <div v-if="aiError" class="error-message">{{ aiError }}</div>
+      <div v-if="aiSuccess" class="success-message">{{ aiSuccess }}</div>
+    </div>
+  </div>
+</div>
   </div>
 
   <script>
-    const { createApp, ref, onMounted, nextTick } = Vue;
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
     createApp({
       setup() {
@@ -322,6 +629,276 @@
           '9:16':  { w: 9,  h: 16 },
           '1:1':   { w: 1,  h: 1 }
         };
+
+const showAIModal = ref(false);
+const aiResponse = ref('');
+const aiError = ref('');
+const aiSuccess = ref('');
+const promptArea = ref(null);
+
+// Add this with your other refs
+const userPrompt = ref('');
+
+// Update the aiPrompt computed property
+const aiPrompt = computed(() => {
+  const config = exportScene();
+  
+  let prompt = `You are an animation director for a 4-second looping animation in a scrapbooking app.\n\n`;
+  
+  if (userPrompt.value.trim()) {
+    prompt += `USER'S CREATIVE DIRECTION:\n"${userPrompt.value.trim()}"\n\n`;
+  }
+  
+  prompt += `SCENE:
+${config.assets.map((asset, i) => {
+  let desc = `${i + 1}. ${asset.description} (id: ${asset.id})`;
+  if (asset.speech) desc += ` - says: "${asset.speech}"`;
+  return desc;
+}).join('\n')}
+
+${config.assets.length === 0 ? `Scene is empty. Ask user to add elements first.\n\n` : ''}
+
+KEYFRAME PROPERTIES (0-100% time):
+- x: horizontal offset px (+ right, - left)
+- y: vertical offset px (+ down, - up)  
+- rotation: degrees
+- scale: multiplier (1.0 = normal)
+
+PRESETS: wiggle, rotate, hop, zoom, pulse, float, sway, boing
+
+SPEECH BUBBLES:
+You can add or update speech text for any character. Use empty string "" for no speech.
+
+Respond with minimal JSON:
+{
+  "context": "2-4 word summary",
+  "speech": [
+    {"id": 0, "text": "Hello!"},
+    {"id": 1, "text": ""}
+  ],
+  "animations": [
+    {
+      "id": 0,
+      "type": "custom",
+      "keyframes": [{"time": 0, "x": 0, "y": 0, "rotation": 0, "scale": 1}, ...]
+    }
+  ]
+}
+
+Include ALL asset IDs. Speech array is optional. Be creative!`;
+
+  return prompt;
+});
+
+const customAnimations = ref(new Map()); // Store custom keyframe animations
+
+const injectCustomAnimation = (itemId, keyframes) => {
+  // Remove old animation if exists
+  const oldStyle = document.getElementById(`anim-${itemId}`);
+  if (oldStyle) oldStyle.remove();
+  
+  // Get the item to include its base rotation
+  const item = items.value.find(i => i.id === itemId);
+  const baseRotation = item ? (item.rotation || 0) : 0;
+  
+  // Create new style element
+  const style = document.createElement('style');
+  style.id = `anim-${itemId}`;
+  
+  // Generate CSS keyframes with base rotation included
+  style.textContent = `
+    @keyframes custom-anim-${itemId} {
+      ${keyframes.map(kf => `
+        ${kf.time}% {
+          transform: translate(-50%, -50%) 
+                     translate(${kf.x || 0}px, ${kf.y || 0}px) 
+                     rotate(${baseRotation + (kf.rotation || 0)}deg) 
+                     scale(${kf.scale || 1});
+        }
+      `).join('\n')}
+    }
+    .scrap-item[data-id="${itemId}"] {
+      animation: custom-anim-${itemId} 4s ease-in-out infinite;
+    }
+  `;
+  
+  document.head.appendChild(style);
+  customAnimations.value.set(itemId, keyframes);
+  
+  // PostHog event
+  if (window.posthog) {
+    posthog.capture('custom_animation_created', {
+      item_id: itemId,
+      keyframe_count: keyframes.length
+    });
+  }
+};
+
+const generateAssetDescription = (item) => {
+  let desc = item.type === 'emoji' ? `emoji ${item.emoji}` : 'photo';
+  desc += ` at position (${Math.round(item.x)}, ${Math.round(item.y)})`;
+  desc += `, size ${Math.round(item.width)}×${Math.round(item.height)}px`;
+  if (item.rotation) desc += `, rotated ${Math.round(item.rotation)}°`;
+  if (item.anim) desc += `, currently animated with ${item.anim.replace('anim-', '')}`;
+  if (item.filter) desc += `, ${item.filter.replace('filter-', '')} filter`;
+  if (item.clip) desc += `, ${item.clip.replace('clip-', '')} shape`;
+  return desc;
+};
+
+const copyPrompt = () => {
+  navigator.clipboard.writeText(aiPrompt.value).then(() => {
+    aiSuccess.value = '✓ Prompt copied! Paste it into your favorite LLM.';
+    setTimeout(() => { aiSuccess.value = ''; }, 3000);
+    
+    // PostHog event
+    if (window.posthog) {
+      posthog.capture('ai_prompt_copied', {
+        asset_count: items.value.length,
+        aspect_ratio: aspect.value
+      });
+    }
+  });
+};
+
+const applySceneChanges = (changes) => {
+  if (changes.addAssets) {
+    changes.addAssets.forEach(asset => {
+      items.value.push({
+        id: nextId.value++,
+        type: asset.type,
+        [asset.type === 'emoji' ? 'emoji' : 'src']: asset.type === 'emoji' ? asset.emoji : asset.src,
+        x: asset.x,
+        y: asset.y,
+        width: asset.width,
+        height: asset.height,
+        rotation: asset.rotation || 0,
+        anim: null,
+        filter: null,
+        clip: null,
+        z: items.value.length,
+        speech: '' 
+      });
+    });
+  }
+  
+  if (changes.duplicateAssets) {
+    changes.duplicateAssets.forEach(id => {
+      const original = items.value.find(i => i.id === id);
+      if (original) {
+        items.value.push({
+          ...original,
+          id: nextId.value++,
+          x: original.x + 50,
+          y: original.y + 50,
+          z: items.value.length
+        });
+      }
+    });
+  }
+};
+
+const exportScene = () => {
+  return {
+    version: "1.0",
+    metadata: {
+      aspect: aspect.value,
+      background: bgUrl.value,
+      timestamp: Date.now()
+    },
+    assets: items.value.map(item => ({
+      id: item.id,
+      type: item.type,
+      content: item.type === 'emoji' ? item.emoji : 'photo',
+      speech: item.speech || '', // ADD THIS
+      transform: {
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation || 0,
+        z: item.z
+      },
+      effects: {
+        animation: item.anim || null,
+        filter: item.filter || null,
+        clip: item.clip || null
+      },
+      description: generateAssetDescription(item)
+    }))
+  };
+};
+
+const applyAIAnimations = () => {
+  aiError.value = '';
+  aiSuccess.value = '';
+  
+  try {
+    const result = JSON.parse(aiResponse.value);
+    
+    // Apply speech updates if provided
+    if (result.speech && Array.isArray(result.speech)) {
+      result.speech.forEach(speechItem => {
+        const item = items.value.find(i => i.id === speechItem.id);
+        if (item) {
+          item.speech = speechItem.text || '';
+        }
+      });
+    }
+    
+    if (!result.animations || !Array.isArray(result.animations)) {
+      throw new Error('Response must contain an "animations" array');
+    }
+    
+    let appliedCount = 0;
+    
+    result.animations.forEach(suggestion => {
+      const item = items.value.find(i => i.id === suggestion.id);
+      if (!item) return;
+      
+      if (suggestion.type === 'custom' && suggestion.keyframes) {
+        injectCustomAnimation(suggestion.id, suggestion.keyframes);
+        item.anim = `custom-${suggestion.id}`;
+        appliedCount++;
+      } else if (suggestion.type === 'preset' && suggestion.animation) {
+        const validAnims = ['wiggle', 'rotate', 'hop', 'zoom', 'pulse', 'float', 'sway', 'boing'];
+        if (validAnims.includes(suggestion.animation)) {
+          const oldStyle = document.getElementById(`anim-${suggestion.id}`);
+          if (oldStyle) oldStyle.remove();
+          customAnimations.value.delete(suggestion.id);
+          
+          item.anim = `anim-${suggestion.animation}`;
+          appliedCount++;
+        }
+      }
+    });
+    
+    const contextText = result.context ? ` (${result.context})` : '';
+    aiSuccess.value = `✓ Applied ${appliedCount} animation${appliedCount !== 1 ? 's' : ''}!${contextText}`;
+    
+    if (window.posthog) {
+      posthog.capture('ai_animations_applied', {
+        animations_applied: appliedCount,
+        total_assets: items.value.length,
+        context: result.context || '',
+        has_speech: result.speech && result.speech.length > 0,
+        has_custom_animations: result.animations.some(a => a.type === 'custom')
+      });
+    }
+    
+    setTimeout(() => {
+      showAIModal.value = false;
+      aiResponse.value = '';
+      aiSuccess.value = '';
+    }, 2000);
+    
+  } catch (e) {
+    aiError.value = `Error: ${e.message}`;
+    
+    if (window.posthog) {
+      posthog.capture('ai_animations_error', { error: e.message });
+    }
+  }
+};
 
         const updateScale = () => {
           nextTick(() => {
@@ -383,7 +960,8 @@
             height: type === 'emoji' ? 50 : 120,
             anim: null, filter: null, clip: null,
             rotation: 0,
-            z: items.value.length
+            z: items.value.length,
+            speech: '' // ADD THIS
           });
         };
 
@@ -402,8 +980,9 @@
                 width: Math.min(img.width/4,150),
                 height: Math.min(img.height/4,150),
                 anim:null, filter:null, clip:null,
-                rotation: 0, // ADD THIS
-                z: items.value.length
+                rotation: 0,
+                z: items.value.length,
+                speech: '' // ADD THIS
               });
               };
               img.src = ev.target.result;
@@ -432,7 +1011,8 @@
             height: type === 'emoji' ? 50 : 120,
             anim: null, filter: null, clip: null,
             rotation: 0,
-            z: items.value.length
+            z: items.value.length,
+            speech: ''
           });
         };
 
@@ -464,7 +1044,8 @@
               height: type === 'emoji' ? 50 : 120,
               anim: null, filter: null, clip: null,
               rotation: 0,
-              z: items.value.length
+              z: items.value.length,
+              speech: ''
             });
           }
         };
@@ -590,19 +1171,157 @@
         const remove = item => { const idx=items.value.indexOf(item); if(idx>-1)items.value.splice(idx,1); if(selectedId.value===item.id)selectedId.value=null; };
         const clearAll = () => { if(confirm('Clear all items?')) { items.value=[]; selectedId.value=null; }};
 
-        const itemStyle = item => {
-          const canvasEl = scaler.value?.querySelector('.canvas');
-          const scale = canvasEl ? canvasEl.getBoundingClientRect().width / 900 : 1;
+const itemStyle = item => {
+  const canvasEl = scaler.value?.querySelector('.canvas');
+  const scale = canvasEl ? canvasEl.getBoundingClientRect().width / 900 : 1;
+  
+  return {
+    left: `${item.x * scale}px`, 
+    top: `${item.y * scale}px`,
+    width: `${item.width * scale}px`, 
+    height: `${item.height * scale}px`,
+    zIndex: item.z,
+    fontSize: item.type==='emoji' ? `${item.width * scale * 0.8}px` : '1em',
+    // Remove rotation from here - it's handled in CSS animation
+    transform: `translate(-50%, -50%)`
+  };
+};
+
+        const exportGif = async () => {
+          const canvasEl = scaler.value.querySelector('.canvas');
+          if (!canvasEl) return;
           
-          return {
-            left: `${item.x * scale}px`, 
-            top: `${item.y * scale}px`,
-            width: `${item.width * scale}px`, 
-            height: `${item.height * scale}px`,
-            zIndex: item.z,
-            fontSize: item.type==='emoji' ? `${item.width * scale * 0.8}px` : '1em',
-            transform: `translate(-50%,-50%) rotate(${item.rotation || 0}deg)`
-          };
+          // Create a temporary canvas
+          const tempCanvas = document.createElement('canvas');
+          const ratio = ratios[aspect.value];
+          tempCanvas.width = 900;
+          tempCanvas.height = 900 * (ratio.h / ratio.w);
+          const ctx = tempCanvas.getContext('2d');
+          
+          // Initialize GIF encoder
+          const gif = new GIF({
+            workers: 2,
+            quality: 10,
+            width: tempCanvas.width,
+            height: tempCanvas.height,
+            workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+          });
+          
+          const fps = 30;
+          const duration = 4; // 4 seconds
+          const totalFrames = fps * duration;
+          
+          for (let frame = 0; frame < totalFrames; frame++) {
+            const time = (frame / totalFrames) * duration;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw background
+            const bgImg = new Image();
+            bgImg.crossOrigin = 'anonymous';
+            await new Promise((resolve) => {
+              bgImg.onload = resolve;
+              bgImg.src = bgUrl.value;
+            });
+            ctx.drawImage(bgImg, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw each item
+            for (const item of items.value) {
+              ctx.save();
+              ctx.translate(item.x, item.y);
+              ctx.rotate((item.rotation || 0) * Math.PI / 180);
+              
+              // Apply animation offset
+              let animOffset = { x: 0, y: 0, rotation: 0, scale: 1 };
+              if (item.anim) {
+                animOffset = calculateAnimationOffset(item.anim, time);
+              }
+              
+              ctx.rotate(animOffset.rotation * Math.PI / 180);
+              ctx.scale(animOffset.scale, animOffset.scale);
+              ctx.translate(animOffset.x, animOffset.y);
+              
+              if (item.type === 'emoji') {
+                ctx.font = `${item.width * 0.8}px system-ui`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.emoji, 0, 0);
+              } else {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve) => {
+                  img.onload = resolve;
+                  img.src = item.src;
+                });
+                ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
+              }
+              
+              ctx.restore();
+            }
+            
+            gif.addFrame(ctx, { copy: true, delay: 1000 / fps });
+          }
+          
+          gif.on('finished', (blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'remoose-animation.gif';
+            a.click();
+            URL.revokeObjectURL(url);
+          });
+          
+          gif.render();
+        };
+
+        const calculateAnimationOffset = (anim, time) => {
+          const t = time % 4; // 4 second loop
+          const offset = { x: 0, y: 0, rotation: 0, scale: 1 };
+          
+          switch (anim) {
+            case 'anim-wiggle':
+              if (t < 1) offset.rotation = 8 * (t / 1);
+              else if (t < 2) offset.rotation = 8 - 14 * ((t - 1) / 1);
+              else if (t < 3) offset.rotation = -6 + 12 * ((t - 2) / 1);
+              else offset.rotation = 6 - 6 * ((t - 3) / 1);
+              break;
+            case 'anim-rotate':
+              offset.rotation = (t / 4) * 360;
+              break;
+            case 'anim-hop':
+              if (t < 1) offset.y = -20 * (t / 1);
+              else if (t < 2) offset.y = -20 + 20 * ((t - 1) / 1);
+              else if (t < 3) offset.y = -10 * ((t - 2) / 1);
+              else offset.y = -10 + 10 * ((t - 3) / 1);
+              break;
+            case 'anim-zoom':
+              if (t < 1.2) offset.scale = 1 + 0.3 * (t / 1.2);
+              else if (t < 2.4) offset.scale = 1.3 - 0.4 * ((t - 1.2) / 1.2);
+              else if (t < 3.2) offset.scale = 0.9 + 0.25 * ((t - 2.4) / 0.8);
+              else offset.scale = 1.15 - 0.15 * ((t - 3.2) / 0.8);
+              break;
+            case 'anim-pulse':
+              offset.scale = t < 2 ? 1 + 0.25 * (t / 2) : 1.25 - 0.25 * ((t - 2) / 2);
+              break;
+            case 'anim-float':
+              offset.y = t < 2 ? -12 * (t / 2) : -12 + 12 * ((t - 2) / 2);
+              break;
+            case 'anim-sway':
+              if (t < 1) offset.rotation = 15 * (t / 1);
+              else if (t < 3) offset.rotation = 15 - 30 * ((t - 1) / 2);
+              else offset.rotation = -15 + 15 * ((t - 3) / 1);
+              break;
+            case 'anim-boing':
+              // Simplified boing
+              if (t < 1.6) offset.scale = 1 + 0.4 * (t / 1.6);
+              else if (t < 2.4) offset.scale = 1.4 - 0.5 * ((t - 1.6) / 0.8);
+              else if (t < 3.2) offset.scale = 0.9 + 0.2 * ((t - 2.4) / 0.8);
+              else offset.scale = 1.1 - 0.1 * ((t - 3.2) / 0.8);
+              break;
+          }
+          
+          return offset;
         };
 
         return {
@@ -613,7 +1332,11 @@
           bringToFront, setAnim, setFilter, setClip, toggleDropdown,
           duplicate, remove, clearAll, itemStyle,
           deselectAll, startRotate,
-          touchStartPalette, touchEndPalette, addToCenter // ADD addToCenter
+          touchStartPalette, touchEndPalette, addToCenter,
+          showAIModal, aiPrompt, aiResponse, aiError, aiSuccess, promptArea,
+          userPrompt,
+          copyPrompt, applyAIAnimations,
+          customAnimations, injectCustomAnimation
         };
       }
     }).mount('#app');
