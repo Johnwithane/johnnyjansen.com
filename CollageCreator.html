@@ -465,8 +465,7 @@
               @mousedown.stop="startRotate($event, item.id)"
               @touchstart.stop="startRotate($event, item.id)"></div>
 
-          <div v-if="selectedId === item.id" class="controls" :style="{ transform: `translateX(-50%) rotate(${-(item.rotation || 0)}deg)` }">
-            
+          <div v-if="selectedId === item.id" class="controls" :style="{ transform: `translateX(-50%) rotate(${-(item.rotation || 0)}deg)` }"> 
             
             <!-- <div class="dropdown" :class="{ open: cropOpen }">
               <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')" @touchend.stop="toggleDropdown('crop')">✂️</button>
