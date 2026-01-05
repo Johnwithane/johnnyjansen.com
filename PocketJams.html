@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v15</title>
+    <title>Forest's Pocket Jams v15.4</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -325,7 +325,7 @@
 
 <!-- Desktop Instructions -->
 <div id="desktop-instructions">
-    <h3>USER MANUAL v15</h3>
+    <h3>USER MANUAL v15.4</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Hold REC + Play</strong></li>
@@ -373,14 +373,14 @@
 
     <div class="top-section">
         <div class="knob-container">
-            <div class="knob-label">EFFECTS</div>
+            <div class="knob-label">REV / DELAY</div>
             <div class="knob knurled" id="knob-glitch"></div>
         </div>
         <div class="mic-grille">
             <div class="mic-led" id="mic-led"></div>
         </div>
         <div class="knob-container">
-            <div class="knob-label">SPEED</div>
+            <div class="knob-label">SLOW / FAST</div>
             <div class="knob knurled" id="knob-speed"></div>
         </div>
     </div>
@@ -410,7 +410,7 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 15.0</p>
+    <p>Version 15.4</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
@@ -433,7 +433,7 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V15 CORE LOGIC
+ * FOREST'S POCKET JAMROOM - V15.4 (Latency Compensation Fix)
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -441,18 +441,22 @@ let ctx;
 let masterGain, compressor;
 let analyser;
 let micStream, micNode;
-let micCompressor; // NEW: Dedicated Mic Compressor
+let micCompressor;
 
 // Dual Bus System
-let instBus, micBus; // Buses
-let micGateGain;     // Input Gate for Mic
-let micMonitorGain;  // Monitor Gate (Output to speakers)
-let instFXReturn, micFXReturn; // FX Outputs
+let instBus, micBus; 
+let micGateGain;     
+let micMonitorGain;
+let instMonitorGain; // NEW: To mute instruments monitoring during sampling
+let instFXReturn, micFXReturn;
 
 // FX Nodes
 let reverbBuffer = null;
 let instReverb, instDelay, instFeedback, instDelayGain;
 let micReverb, micDelay, micFeedback, micDelayGain;
+
+// Playback Nodes
+let loopGainNode; // NEW: To duck loop volume
 
 const STATE = { IDLE: 0, ARMED: 1, RECORDING_1: 2, PLAYING: 3, OVERDUB: 4, SAMPLING_ARMED: 5, SAMPLING_REC: 6 };
 let currentState = STATE.IDLE;
@@ -476,10 +480,12 @@ let loopStartTime = 0; let loopLengthSamples = 0;
 let inputThreshold = 0.04;
 let undoStack = []; let undoTimeout; let hasReset = false;
 let minLoopLength = 2000;
-const LATENCY_COMPENSATION_SAMPLES = 2048; 
+// FIX: INCREASED LATENCY COMPENSATION (Previously 2048)
+const LATENCY_COMPENSATION_SAMPLES = 15000; // Approx 100ms at 44.1kHz
 
 let userSamples = new Array(8).fill(null);
 let heldPadIndex = -1;
+let recordingPadIndex = -1; 
 let sampleRecBuffer = [];
 
 let playbackRate = 1.0;
@@ -543,21 +549,19 @@ els.startBtn.addEventListener('click', async () => {
             }});
             micNode = ctx.createMediaStreamSource(micStream);
             
-            // NEW: DEDICATED MIC COMPRESSOR (Vocal Chain)
             micCompressor = ctx.createDynamicsCompressor();
-            micCompressor.threshold.value = -24; // Lower threshold to catch more
-            micCompressor.knee.value = 30;       // Soft knee
-            micCompressor.ratio.value = 12;      // High ratio for consistent levels
-            micCompressor.attack.value = 0.003;  // Fast attack
-            micCompressor.release.value = 0.25;  // Moderate release
+            micCompressor.threshold.value = -24;
+            micCompressor.knee.value = 30;
+            micCompressor.ratio.value = 12;
+            micCompressor.attack.value = 0.003;
+            micCompressor.release.value = 0.25;
             
             micNode.connect(micCompressor);
-            micCompressor.connect(analyser); // Analyzer sees compressed signal
+            micCompressor.connect(analyser); 
             
             micGateGain = ctx.createGain();
             micGateGain.gain.value = 0; 
             
-            // Connect compressed mic to gate
             micCompressor.connect(micGateGain);
             micGateGain.connect(micBus);
             
@@ -584,7 +588,12 @@ function setupDualFX() {
     instDelayGain = ctx.createGain(); instDelayGain.gain.value = 0;
     instBus.connect(instDelay); instDelay.connect(instFeedback); instFeedback.connect(instDelay);
     instDelay.connect(instDelayGain); instDelayGain.connect(instFXReturn);
-    instFXReturn.connect(compressor);
+    
+    // NEW: Instrument Monitor Gain (For Muting during sampling)
+    instMonitorGain = ctx.createGain();
+    instMonitorGain.gain.value = 1.0;
+    instFXReturn.connect(instMonitorGain); // Pass through monitor gain
+    instMonitorGain.connect(compressor); // Then to master
 
     micBus = ctx.createGain(); micFXReturn = ctx.createGain(); micBus.connect(micFXReturn);
     micReverb = ctx.createConvolver(); micReverb.buffer = reverbBuffer;
@@ -620,7 +629,6 @@ function makeOsc(type, freq, start, dur, volNode, volEnv) {
     return osc;
 }
 
-// Helper for FM Synthesis (used for Glass/Metal sounds)
 function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
     const carrier = ctx.createOscillator();
     const modulator = ctx.createOscillator();
@@ -647,7 +655,6 @@ function playDrum(type) {
     const t = ctx.currentTime; const gain = ctx.createGain(); gain.connect(instBus);
     const style = DRUM_STYLES[currentDrumIdx];
 
-    // Humanize
     const humanize = (val, amt) => val + ((Math.random() * amt * 2) - amt);
 
     const hit = (freq, decay, type='sine', vol=1) => {
@@ -658,15 +665,14 @@ function playDrum(type) {
         osc.connect(gain); osc.start(t); osc.stop(t + decay);
     };
 
-    // New GLASS Kit Logic using FM
     if (style === 'Glass') {
-        if(type === 'kick') { playFM(60, 120, 200, 0.5, 0.9, t); } // Heavy thud
-        else if(type === 'snare') { playFM(400, 850, 500, 0.2, 0.7, t); makeNoise(0.15, 0.5, t, true); } // Shatter
-        else if(type === 'hat') { playFM(3000, 4100, 1000, 0.05, 0.4, t); } // Crystal click
-        else if(type === 'tom') { playFM(200, 280, 150, 0.4, 0.6, t); } // Hollow glass
-        else if(type === 'clap') { playFM(800, 1200, 300, 0.1, 0.5, t); makeNoise(0.05, 0.3, t+0.02, true); } // Shards
-        else if(type === 'crash') { playFM(1000, 234, 2000, 1.2, 0.5, t); makeNoise(0.5, 0.3, t, true); } // Big crash
-        else { playFM(1500, 2000, 400, 0.1, 0.4, t); } // Ping
+        if(type === 'kick') { playFM(60, 120, 200, 0.5, 0.9, t); } 
+        else if(type === 'snare') { playFM(400, 850, 500, 0.2, 0.7, t); makeNoise(0.15, 0.5, t, true); } 
+        else if(type === 'hat') { playFM(3000, 4100, 1000, 0.05, 0.4, t); } 
+        else if(type === 'tom') { playFM(200, 280, 150, 0.4, 0.6, t); } 
+        else if(type === 'clap') { playFM(800, 1200, 300, 0.1, 0.5, t); makeNoise(0.05, 0.3, t+0.02, true); } 
+        else if(type === 'crash') { playFM(1000, 234, 2000, 1.2, 0.5, t); makeNoise(0.5, 0.3, t, true); } 
+        else { playFM(1500, 2000, 400, 0.1, 0.4, t); } 
         return;
     }
 
@@ -787,7 +793,8 @@ function isRecordingState() {
 }
 
 // --- Recorder ---
-const bufferSize = 4096;
+// FIX: REDUCED BUFFER SIZE (Was 4096) - Faster response
+const bufferSize = 2048;
 let recorderNode;
 let recordingStream = [];
 
@@ -798,21 +805,19 @@ function setupRecorder() {
         if (!isRecordingState()) return;
         const input = e.inputBuffer.getChannelData(0);
         
-        // SOFT GATE: Simple Noise Floor check to silence extreme quiet (background hiss)
-        // If the RMS of the buffer is too low, we zero it out before processing
         let rms = 0;
         for(let i=0; i<input.length; i++) rms += input[i]*input[i];
         rms = Math.sqrt(rms/input.length);
         
-        if (rms < 0.001) { // Very low noise floor threshold
+        if (rms < 0.001) { 
              for(let i=0; i<input.length; i++) input[i] = 0;
         }
 
         if (currentState === STATE.SAMPLING_ARMED) {
             if(rms > inputThreshold) {
                 currentState = STATE.SAMPLING_REC; sampleRecBuffer = [];
-                if (heldPadIndex !== -1) {
-                    const pad = els.padsGrid.children[heldPadIndex];
+                if (recordingPadIndex !== -1) {
+                    const pad = els.padsGrid.children[recordingPadIndex];
                     if(pad) { pad.classList.remove('recording-armed'); pad.classList.add('recording'); }
                 }
                 log("SAMPLING..."); updateMicGate(); 
@@ -833,14 +838,34 @@ function setupRecorder() {
     const zeroGain = ctx.createGain(); zeroGain.gain.value = 0; recorderNode.connect(zeroGain); zeroGain.connect(ctx.destination);
 }
 
+function muteSystem(shouldMute) {
+    if(!ctx) return;
+    const now = ctx.currentTime;
+    // Mute Backing Loop
+    if(loopGainNode) {
+        loopGainNode.gain.cancelScheduledValues(now);
+        loopGainNode.gain.setTargetAtTime(shouldMute ? 0 : 1.0, now, 0.05);
+    }
+    // Mute Instrument Monitor (prevents synth sounds bleeding into mic during sampling)
+    if(instMonitorGain) {
+        instMonitorGain.gain.cancelScheduledValues(now);
+        instMonitorGain.gain.setTargetAtTime(shouldMute ? 0 : 1.0, now, 0.05);
+    }
+}
+
 // --- Control Logic ---
 function onRecPress() {
     if(!isPowered) return;
     if (currentMode === 'voice' && heldPadIndex !== -1) {
+        recordingPadIndex = heldPadIndex;
         currentState = STATE.SAMPLING_ARMED; sampleRecBuffer = [];
-        const pad = els.padsGrid.children[heldPadIndex];
+        const pad = els.padsGrid.children[recordingPadIndex];
         if(pad) pad.classList.add('recording-armed');
-        log("ARMED: SPEAK"); updateMicGate(); return;
+        log("ARMED: SPEAK"); updateMicGate(); 
+        
+        // AUTO-MUTE: Silence everything else so we get a clean sample
+        muteSystem(true);
+        return;
     }
     if (currentState === STATE.IDLE) {
         currentState = STATE.ARMED; els.recLed.className = 'rec-led-ring standby'; recordingStream = []; 
@@ -856,7 +881,10 @@ function onRecRelease() {
 }
 
 function finishSampling() {
-    if (currentState === STATE.SAMPLING_REC && sampleRecBuffer.length > 0) {
+    // Unmute system when sampling is done (or cancelled)
+    muteSystem(false);
+
+    if (currentState === STATE.SAMPLING_REC && sampleRecBuffer.length > 0 && recordingPadIndex !== -1) {
         const totalSamples = sampleRecBuffer.length * bufferSize;
         const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
         const data = rawBuffer.getChannelData(0); let offset = 0;
@@ -865,12 +893,17 @@ function finishSampling() {
         if(totalSamples > trim) {
             const trimmedBuffer = ctx.createBuffer(1, totalSamples - trim, ctx.sampleRate);
             trimmedBuffer.copyToChannel(data.subarray(trim), 0);
-            userSamples[heldPadIndex] = trimmedBuffer;
-        } else { userSamples[heldPadIndex] = rawBuffer; }
+            userSamples[recordingPadIndex] = trimmedBuffer;
+        } else { userSamples[recordingPadIndex] = rawBuffer; }
         log("SAMPLE SAVED");
     } else { log("SAMPLE CANCELLED"); }
-    const pad = els.padsGrid.children[heldPadIndex];
-    if(pad) { pad.classList.remove('recording'); pad.classList.remove('recording-armed'); }
+    
+    if (recordingPadIndex !== -1) {
+        const pad = els.padsGrid.children[recordingPadIndex];
+        if(pad) { pad.classList.remove('recording'); pad.classList.remove('recording-armed'); }
+    }
+    
+    recordingPadIndex = -1;
     currentState = (loopBuffer !== null) ? STATE.PLAYING : STATE.IDLE; updateMicGate(); updatePadVisuals();
 }
 
@@ -892,14 +925,24 @@ function startOverdub() {
     if(!loopBuffer) return;
     saveUndoState(); currentState = STATE.OVERDUB; els.recLed.className = 'rec-led-ring recording';
     recordingStream = []; recStartTime = ctx.currentTime; log("DUBBING..."); updateMicGate();
+    
+    // AUTO-DUCKING: Lower background volume to 20% ONLY if in Voice Mode (Microphone)
+    if(loopGainNode && currentMode === 'voice') {
+        loopGainNode.gain.setTargetAtTime(0.2, ctx.currentTime, 0.1);
+    }
 }
 
 function stopOverdub() {
     currentState = STATE.PLAYING; els.recLed.className = 'rec-led-ring playing'; log("PLAYING"); updateMicGate();
+    
+    // RESTORE VOLUME: Bring background volume back to 100%
+    if(loopGainNode) {
+        loopGainNode.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
+    }
+
     if(!loopBuffer || recordingStream.length === 0) return;
     const oldData = loopBuffer.getChannelData(0); const loopTotalSamples = loopBuffer.length;
     
-    // Stable calculation based on time elapsed
     let timeElapsed = ctx.currentTime - loopStartTime;
     let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
     
@@ -929,7 +972,14 @@ function startPlayback() {
     loopSource = ctx.createBufferSource(); loopSource.buffer = loopBuffer; loopSource.loop = true;
     loopSource.loopStart = 0; loopSource.loopEnd = loopBuffer.duration;
     loopSource.playbackRate.value = playbackRate;
-    loopSource.connect(compressor);
+    
+    // NEW: Insert Gain Node for Ducking Control
+    loopGainNode = ctx.createGain();
+    loopGainNode.gain.value = 1.0;
+    
+    loopSource.connect(loopGainNode);
+    loopGainNode.connect(compressor);
+    
     loopStartTime = ctx.currentTime;
     loopSource.start(0);
 }
@@ -974,7 +1024,6 @@ function hitPad(index, el) {
 function updateMicGate() {
     if(!micGateGain || !micMonitorGain) return;
     
-    // Logic: Mic is ONLY for "Voice" mode (Looping) or "Sampling"
     const isVoiceMode = (currentMode === 'voice');
     const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
     const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED);
@@ -1064,7 +1113,6 @@ function setupKnob(el, callback, magnet = false) {
     });
 }
 
-// UPDATE: 8 LEDs
 function updateLedBar(micLevel) {
     const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.ARMED);
     const isPlaying = (currentState === STATE.PLAYING || currentState === STATE.OVERDUB);
