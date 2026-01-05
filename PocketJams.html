@@ -185,7 +185,7 @@
             border-radius: 8px; padding: 10px; margin-bottom: 10px;
         }
         .rec-btn {
-            width: 90px; height: 90px; border-radius: 50%;
+            width: 100px; height: 100px; border-radius: 50%;
             background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000);
             border: 4px solid #111; box-shadow: 0 6px 0 #500, 0 15px 20px rgba(0,0,0,0.6);
             position: relative; display: flex; justify-content: center; align-items: center;
@@ -225,8 +225,8 @@
         /* Scale Switch */
         .scale-switch-wrapper {
             position: absolute;
-            top: -25px;
-            left: 5%;
+            top: -30px;
+            left: 6%;
             display: flex;
             align-items: center;
             gap: 5px;
@@ -267,9 +267,16 @@
         
         /* Sample Visuals - Only visible in Voice Mode */
         .mode-voice .pad.has-sample { 
-            border: 1px solid var(--led-blue); 
-            box-shadow: 0 0 5px var(--led-blue); 
-            background: rgba(51, 204, 255, 0.1);
+            background: rgba(255, 50, 50, 0.1); /* Subtle red tint */
+            border: 1px solid #ff3333;          /* Red Outline */
+            box-shadow: 0 0 8px #ff3333;        /* Red Glow */
+            animation: pulse-sample 2s infinite;
+        }
+
+        @keyframes pulse-sample {
+            0% { box-shadow: 0 0 5px #ff3333; border-color: #aa3333; }
+            50% { box-shadow: 0 0 10px #ff3333; border-color: #ff3333; }
+            100% { box-shadow: 0 0 5px #ff3333; border-color: #aa3333; }
         }
 
         #overlay {
@@ -383,7 +390,7 @@
         Headphones Recommended.<br>
         Microphone Access Required.
     </p>
-    <button id="start-btn">POWER ON</button>
+    <button id="start-btn">START JAMMING</button>
 </div>
 
 <script>
@@ -400,6 +407,7 @@ let micStream, micNode;
 // Dual Bus System
 let instBus, micBus; // Buses
 let micGateGain;     // Input Gate for Mic
+let micMonitorGain;  // Monitor Gate (Output to speakers)
 let instFXReturn, micFXReturn; // FX Outputs
 
 // FX Nodes
@@ -531,6 +539,12 @@ function setupDualFX() {
     micDelayGain = ctx.createGain(); micDelayGain.gain.value = 0;
     micBus.connect(micDelay); micDelay.connect(micFeedback); micFeedback.connect(micDelay);
     micDelay.connect(micDelayGain); micDelayGain.connect(micFXReturn);
+    
+    // FIX: Monitor Gain Node to control when we hear the mic
+    micMonitorGain = ctx.createGain();
+    micMonitorGain.gain.value = 1.0; 
+    micFXReturn.connect(micMonitorGain);
+    micMonitorGain.connect(compressor);
 }
 
 function createReverbBuffer() {
@@ -857,13 +871,23 @@ function hitPad(index, el) {
 }
 
 function updateMicGate() {
-    if(!micGateGain) return;
+    if(!micGateGain || !micMonitorGain) return;
+    
     const isVoiceMode = (currentMode === 'voice');
-    const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.SAMPLING_REC || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED);
-    if(isVoiceMode) {
-        if(isRecording) micGateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.05); 
-        else micGateGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05); 
-    } else { micGateGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05); }
+    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
+    const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB);
+    const isRecording = isSampling || isLoopRecording || currentState === STATE.ARMED;
+
+    // 1. INPUT GATE: Open whenever we need to capture audio (Sampling or Looping)
+    if(isRecording) {
+        micGateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.05); 
+    } else {
+        micGateGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05); 
+    }
+
+    // 2. MONITOR GATE: Always mute real-time monitoring to prevent feedback.
+    // We only want to hear the audio AFTER it has been recorded/looped.
+    micMonitorGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05);
 }
 
 function switchMode(newMode) {
