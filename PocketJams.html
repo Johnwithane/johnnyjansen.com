@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v15.4</title>
+    <title>Forest's Pocket Jams v15.10</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -227,7 +227,7 @@
             box-shadow: 0 4px 0 #003344, 0 5px 10px rgba(0,0,0,0.5);
             cursor: pointer; transition: all 0.1s;
         }
-        .undo-btn:active, .undo-btn.active-key { transform: translateY(2px); box-shadow: 0 2px 0 #003344; }
+        .undo-btn.active, .undo-btn.active-key { transform: translateY(2px); box-shadow: 0 2px 0 #003344; }
         .undo-btn.reset-flash { background: #fff; box-shadow: 0 0 20px #fff; }
 
         .rec-led-ring {
@@ -325,11 +325,11 @@
 
 <!-- Desktop Instructions -->
 <div id="desktop-instructions">
-    <h3>USER MANUAL v15.4</h3>
+    <h3>USER MANUAL v15.10</h3>
     <div class="section-title">BASICS</div>
     <ul>
-        <li><span>LOOP</span> <strong>Hold REC + Play</strong></li>
-        <li><span>OVERDUB</span> <strong>Hold REC + Play</strong></li>
+        <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
+        <li><span>OVERDUB</span> <strong>ARM by Tap, Signal Starts</strong></li>
         <li><span>VOICE SAMPLE</span> <strong>Hold PAD + REC</strong></li>
         <li><span>DELETE SAMPLE</span> <strong>Hold PAD + UNDO</strong></li>
         <li><span>CLEAR ALL</span> <strong>Hold UNDO</strong></li>
@@ -410,11 +410,11 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 15.4</p>
+    <p>Version 15.10</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
-        <span>LOOP/DUB:</span> <strong>Hold REC, Play</strong><br>
+        <span>LOOP/DUB:</span> <strong>Tap REC (Toggle) or Hold</strong><br>
         <span>VOICE SAMPLE:</span> <strong>Hold PAD + REC</strong><br>
         <span>UNDO:</span> <strong>Press UNDO (or Ctrl)</strong><br>
         <span>CLEAR ALL:</span> <strong>Hold UNDO (or Ctrl)</strong><br>
@@ -433,7 +433,7 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V15.4 (Latency Compensation Fix)
+ * FOREST'S POCKET JAMROOM - V15.10 (Signal Triggered Overdub)
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -458,7 +458,16 @@ let micReverb, micDelay, micFeedback, micDelayGain;
 // Playback Nodes
 let loopGainNode; // NEW: To duck loop volume
 
-const STATE = { IDLE: 0, ARMED: 1, RECORDING_1: 2, PLAYING: 3, OVERDUB: 4, SAMPLING_ARMED: 5, SAMPLING_REC: 6 };
+const STATE = { 
+    IDLE: 0, 
+    ARMED: 1, 
+    RECORDING_1: 2, 
+    PLAYING: 3, 
+    OVERDUB: 4, 
+    SAMPLING_ARMED: 5, 
+    SAMPLING_REC: 6,
+    OVERDUB_ARMED: 7 // NEW STATE
+};
 let currentState = STATE.IDLE;
 let currentMode = 'drums';
 let lastInstrumentMode = 'drums'; 
@@ -480,8 +489,7 @@ let loopStartTime = 0; let loopLengthSamples = 0;
 let inputThreshold = 0.04;
 let undoStack = []; let undoTimeout; let hasReset = false;
 let minLoopLength = 2000;
-// FIX: INCREASED LATENCY COMPENSATION (Previously 2048)
-const LATENCY_COMPENSATION_SAMPLES = 15000; // Approx 100ms at 44.1kHz
+let autoStopTimer = null; // NEW: For quantized loop stopping
 
 let userSamples = new Array(8).fill(null);
 let heldPadIndex = -1;
@@ -490,6 +498,7 @@ let sampleRecBuffer = [];
 
 let playbackRate = 1.0;
 let recStartTime = 0;
+let recPressTime = 0; // For latch logic
 
 // UI
 const els = {
@@ -789,11 +798,10 @@ function playSample(index) {
 }
 
 function isRecordingState() {
-    return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
+    return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || currentState === STATE.OVERDUB_ARMED);
 }
 
 // --- Recorder ---
-// FIX: REDUCED BUFFER SIZE (Was 4096) - Faster response
 const bufferSize = 2048;
 let recorderNode;
 let recordingStream = [];
@@ -809,10 +817,14 @@ function setupRecorder() {
         for(let i=0; i<input.length; i++) rms += input[i]*input[i];
         rms = Math.sqrt(rms/input.length);
         
-        if (rms < 0.001) { 
-             for(let i=0; i<input.length; i++) input[i] = 0;
+        // Gate silence ONLY when waiting for start triggers
+        if (currentState === STATE.SAMPLING_ARMED || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED) {
+             if (rms < 0.001) { 
+                 for(let i=0; i<input.length; i++) input[i] = 0;
+             }
         }
 
+        // TRIGGER LOGIC
         if (currentState === STATE.SAMPLING_ARMED) {
             if(rms > inputThreshold) {
                 currentState = STATE.SAMPLING_REC; sampleRecBuffer = [];
@@ -823,12 +835,15 @@ function setupRecorder() {
                 log("SAMPLING..."); updateMicGate(); 
             } else { return; }
         }
-
-        if (currentState === STATE.SAMPLING_REC) { sampleRecBuffer.push(new Float32Array(input)); return; }
-
-        if (currentState === STATE.ARMED) {
+        else if (currentState === STATE.ARMED) {
             if(rms > inputThreshold) startFirstRecording(); else return;
         }
+        else if (currentState === STATE.OVERDUB_ARMED) {
+            if(rms > inputThreshold) startOverdubRecording(); else return;
+        }
+
+        // RECORDING LOGIC
+        if (currentState === STATE.SAMPLING_REC) { sampleRecBuffer.push(new Float32Array(input)); return; }
         
         if (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB) recordingStream.push(new Float32Array(input));
         
@@ -856,28 +871,75 @@ function muteSystem(shouldMute) {
 // --- Control Logic ---
 function onRecPress() {
     if(!isPowered) return;
+    
+    // Voice Mode Logic (Always Momentary/Hold + Press)
     if (currentMode === 'voice' && heldPadIndex !== -1) {
         recordingPadIndex = heldPadIndex;
         currentState = STATE.SAMPLING_ARMED; sampleRecBuffer = [];
         const pad = els.padsGrid.children[recordingPadIndex];
         if(pad) pad.classList.add('recording-armed');
         log("ARMED: SPEAK"); updateMicGate(); 
-        
-        // AUTO-MUTE: Silence everything else so we get a clean sample
         muteSystem(true);
         return;
     }
+
+    recPressTime = Date.now();
+
     if (currentState === STATE.IDLE) {
         currentState = STATE.ARMED; els.recLed.className = 'rec-led-ring standby'; recordingStream = []; 
         log("ARMED: MAKE SOUND"); updateMicGate();
-    } else if (currentState === STATE.PLAYING) startOverdub();
+    } 
+    else if (currentState === STATE.ARMED) {
+        // Toggling off from ARMED
+        currentState = STATE.IDLE; els.recLed.className = 'rec-led-ring'; log("CANCELLED"); updateMicGate();
+    }
+    else if (currentState === STATE.PLAYING) {
+        armOverdub();
+    }
+    else if (currentState === STATE.OVERDUB_ARMED) {
+        // Cancel Overdub Arming
+        currentState = STATE.PLAYING; els.recLed.className = 'rec-led-ring playing'; log("CANCELLED"); updateMicGate();
+    }
+    else if (currentState === STATE.RECORDING_1) {
+        // Toggling off (finishing loop) manually
+        finishFirstLoop();
+    }
+    else if (currentState === STATE.OVERDUB) {
+        // Toggling off (stopping dub) manually
+        stopOverdub();
+    }
 }
 
 function onRecRelease() {
-    if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) finishSampling();
-    else if (currentState === STATE.RECORDING_1) finishFirstLoop();
-    else if (currentState === STATE.ARMED) { currentState = STATE.IDLE; els.recLed.className = 'rec-led-ring'; log("CANCELLED"); updateMicGate(); }
-    else if (currentState === STATE.OVERDUB) stopOverdub();
+    // Voice Mode (Pad Sampling is strict hold)
+    if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) {
+        finishSampling();
+        return;
+    }
+
+    const duration = Date.now() - recPressTime;
+    const isLongPress = duration > 500; // 500ms threshold for "Hold" vs "Tap"
+
+    if (isLongPress) {
+        if (currentState === STATE.RECORDING_1) {
+            finishFirstLoop(); // Stop recording first loop on release
+        } 
+        // For OVERDUB, we rely on Auto-Stop, so release does nothing unless manually stopped via toggle.
+        else if (currentState === STATE.ARMED) {
+             // Cancel if they held but didn't make sound
+             currentState = STATE.IDLE; 
+             els.recLed.className = 'rec-led-ring'; 
+             log("CANCELLED"); 
+             updateMicGate(); 
+        }
+        else if (currentState === STATE.OVERDUB_ARMED) {
+             // Cancel if held to arm but didn't make sound
+             currentState = STATE.PLAYING; 
+             els.recLed.className = 'rec-led-ring playing'; 
+             log("CANCELLED"); 
+             updateMicGate(); 
+        }
+    }
 }
 
 function finishSampling() {
@@ -889,7 +951,10 @@ function finishSampling() {
         const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
         const data = rawBuffer.getChannelData(0); let offset = 0;
         for(let chunk of sampleRecBuffer) { data.set(chunk, offset); offset += chunk.length; }
-        const trim = LATENCY_COMPENSATION_SAMPLES; 
+        
+        // USE SAMPLER LATENCY (0)
+        const trim = 0; 
+        
         if(totalSamples > trim) {
             const trimmedBuffer = ctx.createBuffer(1, totalSamples - trim, ctx.sampleRate);
             trimmedBuffer.copyToChannel(data.subarray(trim), 0);
@@ -921,21 +986,51 @@ function finishFirstLoop() {
     loopBuffer = rawBuffer; loopLengthSamples = totalSamples; startPlayback(); log("LOOPING"); updateMicGate();
 }
 
-function startOverdub() {
+function armOverdub() {
     if(!loopBuffer) return;
-    saveUndoState(); currentState = STATE.OVERDUB; els.recLed.className = 'rec-led-ring recording';
-    recordingStream = []; recStartTime = ctx.currentTime; log("DUBBING..."); updateMicGate();
+    currentState = STATE.OVERDUB_ARMED;
+    els.recLed.className = 'rec-led-ring standby';
+    log("ARMED: DUB");
+    updateMicGate();
+}
+
+function startOverdubRecording() {
+    // TRIGGERED BY SIGNAL
     
-    // AUTO-DUCKING: Lower background volume to 20% ONLY if in Voice Mode (Microphone)
+    // FIX: FULL CYCLE AUTO-STOP from the moment trigger happens
+    if (loopBuffer) {
+        const loopDuration = loopBuffer.duration;
+        const rate = Math.abs(playbackRate) || 1.0;
+        const timeToRecord = loopDuration / rate; 
+        
+        clearTimeout(autoStopTimer);
+        autoStopTimer = setTimeout(() => {
+            if (currentState === STATE.OVERDUB) {
+                log("AUTO STOP");
+                stopOverdub();
+            }
+        }, timeToRecord * 1000);
+    }
+
+    saveUndoState(); 
+    currentState = STATE.OVERDUB; 
+    els.recLed.className = 'rec-led-ring recording';
+    recordingStream = []; 
+    recStartTime = ctx.currentTime; 
+    log("DUBBING..."); 
+    updateMicGate();
+    
+    // AUTO-DUCKING
     if(loopGainNode && currentMode === 'voice') {
         loopGainNode.gain.setTargetAtTime(0.2, ctx.currentTime, 0.1);
     }
 }
 
 function stopOverdub() {
+    clearTimeout(autoStopTimer); // Clear auto-stop if stopped manually
     currentState = STATE.PLAYING; els.recLed.className = 'rec-led-ring playing'; log("PLAYING"); updateMicGate();
     
-    // RESTORE VOLUME: Bring background volume back to 100%
+    // RESTORE VOLUME
     if(loopGainNode) {
         loopGainNode.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
     }
@@ -949,7 +1044,14 @@ function stopOverdub() {
     while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
     while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
 
-    currentLoopPos -= (playbackRate * LATENCY_COMPENSATION_SAMPLES);
+    // --- DYNAMIC LATENCY COMPENSATION ---
+    let latencySamples = 512; // Base for internal
+    if (currentMode === 'voice') {
+        latencySamples = 15000; // High for Mic
+    }
+    
+    currentLoopPos -= (playbackRate * latencySamples);
+    
     while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
     while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
 
@@ -1026,7 +1128,7 @@ function updateMicGate() {
     
     const isVoiceMode = (currentMode === 'voice');
     const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
-    const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED);
+    const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED);
     const shouldOpenMic = isSampling || (isLoopRecording && isVoiceMode);
 
     if(shouldOpenMic) {
