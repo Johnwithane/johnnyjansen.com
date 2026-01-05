@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v12</title>
+    <title>Forest's Pocket Jams v15</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
             --plate-color: #222;
             --fr4-color: #2a2a2a;
-            --led-off: #331111;
+            --led-off: #2a1111;
             --led-red: #ff3333;
             --led-green: #33ff33;
             --led-blue: #33ccff;
@@ -90,8 +90,8 @@
         #device {
             width: 90vw;
             max-width: 380px;
-            height: 90vh;
-            max-height: 700px;
+            height: 92vh;
+            max-height: 720px;
             background-color: var(--plate-color);
             border-radius: 20px;
             position: relative;
@@ -114,6 +114,7 @@
         #device.powered-off { filter: brightness(0.4); }
         #device.powered-off .power-switch-container { filter: brightness(2.5); pointer-events: auto; }
         
+        #device.powered-off .led-cell,
         #device.powered-off .mic-led,
         #device.powered-off .rec-led-ring,
         #device.powered-off .pad.active,
@@ -126,7 +127,7 @@
 
         /* --- Power Switch --- */
         .power-switch-container {
-            position: absolute; top: 140px; right: -12px; left: auto;
+            position: absolute; top: 160px; right: -12px; left: auto;
             width: 24px; height: 50px; background: #111;
             border: 2px solid #333; border-left: none; border-radius: 0 6px 6px 0;
             z-index: 50; cursor: pointer;
@@ -141,6 +142,31 @@
             transform: translateY(10px); background-color: var(--accent-gold);
             box-shadow: 0 0 10px var(--accent-gold);
         }
+
+        /* --- LED Strip (Updated to 8) --- */
+        .led-strip {
+            display: flex;
+            justify-content: space-between; /* Spaced evenly */
+            align-items: center;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 8px 15px; /* Add padding for spacing */
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            border: 1px solid #333;
+        }
+        .led-cell {
+            width: 8px; height: 8px; /* Slightly smaller to fit 8 */
+            border-radius: 50%;
+            background-color: var(--led-off);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.9);
+            transition: background-color 0.05s, box-shadow 0.05s;
+            border: 1px solid #111;
+        }
+        /* Active States */
+        .led-cell.active-red { background-color: var(--led-red); box-shadow: 0 0 8px var(--led-red), inset 0 1px 2px rgba(255,255,255,0.4); }
+        .led-cell.active-green { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green), inset 0 1px 2px rgba(255,255,255,0.4); }
+        .led-cell.active-gold { background-color: var(--accent-gold); box-shadow: 0 0 8px var(--accent-gold), inset 0 1px 2px rgba(255,255,255,0.4); }
 
         /* --- Top: Knobs --- */
         .top-section {
@@ -299,7 +325,7 @@
 
 <!-- Desktop Instructions -->
 <div id="desktop-instructions">
-    <h3>USER MANUAL v12</h3>
+    <h3>USER MANUAL v15</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Hold REC + Play</strong></li>
@@ -331,6 +357,18 @@
 <div id="device">
     <div class="power-switch-container" id="power-switch">
         <div class="power-nub"></div>
+    </div>
+
+    <!-- NEW: 8-LED BAR -->
+    <div class="led-strip" id="led-strip">
+        <div class="led-cell" id="led-0"></div>
+        <div class="led-cell" id="led-1"></div>
+        <div class="led-cell" id="led-2"></div>
+        <div class="led-cell" id="led-3"></div>
+        <div class="led-cell" id="led-4"></div>
+        <div class="led-cell" id="led-5"></div>
+        <div class="led-cell" id="led-6"></div>
+        <div class="led-cell" id="led-7"></div>
     </div>
 
     <div class="top-section">
@@ -372,7 +410,7 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 12.0</p>
+    <p>Version 15.0</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
@@ -395,7 +433,7 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V12 CORE LOGIC
+ * FOREST'S POCKET JAMROOM - V15 CORE LOGIC
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -403,6 +441,7 @@ let ctx;
 let masterGain, compressor;
 let analyser;
 let micStream, micNode;
+let micCompressor; // NEW: Dedicated Mic Compressor
 
 // Dual Bus System
 let instBus, micBus; // Buses
@@ -422,8 +461,8 @@ let lastInstrumentMode = 'drums';
 let isPowered = true;
 let isMinorScale = false;
 
-// EXPANDED SOUND LIBRARY (8 Styles Each)
-const DRUM_STYLES = ['Standard', '808', 'Acoustic', 'Industrial', 'Toy', 'Lofi', 'Techno', 'Orchestral'];
+// EXPANDED SOUND LIBRARY (Added 'Glass')
+const DRUM_STYLES = ['Standard', '808', 'Glass', 'Zap', 'Glitch', 'Game'];
 const SYNTH_STYLES = ['Saw Lead', 'Deep Bass', 'Soft Sine', 'Retro Pad', 'Pluck', 'Chords', 'Acid', 'Dream'];
 let currentDrumIdx = 0; let currentSynthIdx = 0;
 const DRUM_PADS = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
@@ -461,7 +500,9 @@ const els = {
     status: document.getElementById('status-log'),
     device: document.getElementById('device'),
     powerSwitch: document.getElementById('power-switch'),
-    scaleSwitch: document.getElementById('scale-switch')
+    scaleSwitch: document.getElementById('scale-switch'),
+    ledStrip: document.getElementById('led-strip'),
+    ledCells: Array.from(document.querySelectorAll('.led-cell'))
 };
 
 function log(msg) {
@@ -474,12 +515,15 @@ document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
 document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 document.addEventListener('touchmove', function(e) { if(e.scale !== 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+
 
 els.startBtn.addEventListener('click', async () => {
     try {
         ctx = new AudioContext();
         await ctx.resume();
         
+        // Master Bus Compression
         compressor = ctx.createDynamicsCompressor();
         compressor.threshold.value = -12;
         compressor.ratio.value = 12;
@@ -498,11 +542,23 @@ els.startBtn.addEventListener('click', async () => {
                 echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 
             }});
             micNode = ctx.createMediaStreamSource(micStream);
-            micNode.connect(analyser); 
+            
+            // NEW: DEDICATED MIC COMPRESSOR (Vocal Chain)
+            micCompressor = ctx.createDynamicsCompressor();
+            micCompressor.threshold.value = -24; // Lower threshold to catch more
+            micCompressor.knee.value = 30;       // Soft knee
+            micCompressor.ratio.value = 12;      // High ratio for consistent levels
+            micCompressor.attack.value = 0.003;  // Fast attack
+            micCompressor.release.value = 0.25;  // Moderate release
+            
+            micNode.connect(micCompressor);
+            micCompressor.connect(analyser); // Analyzer sees compressed signal
             
             micGateGain = ctx.createGain();
             micGateGain.gain.value = 0; 
-            micNode.connect(micGateGain);
+            
+            // Connect compressed mic to gate
+            micCompressor.connect(micGateGain);
             micGateGain.connect(micBus);
             
         } catch (e) { console.warn("Mic access denied."); }
@@ -540,7 +596,6 @@ function setupDualFX() {
     micBus.connect(micDelay); micDelay.connect(micFeedback); micFeedback.connect(micDelay);
     micDelay.connect(micDelayGain); micDelayGain.connect(micFXReturn);
     
-    // FIX: Monitor Gain Node to control when we hear the mic
     micMonitorGain = ctx.createGain();
     micMonitorGain.gain.value = 1.0; 
     micFXReturn.connect(micMonitorGain);
@@ -565,47 +620,90 @@ function makeOsc(type, freq, start, dur, volNode, volEnv) {
     return osc;
 }
 
+// Helper for FM Synthesis (used for Glass/Metal sounds)
+function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const outGain = ctx.createGain();
+
+    carrier.frequency.value = carrierFreq;
+    modulator.frequency.value = modFreq;
+    modGain.gain.value = modIndex;
+
+    outGain.gain.setValueAtTime(vol, time);
+    outGain.gain.exponentialRampToValueAtTime(0.01, time + decay);
+
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    carrier.connect(outGain);
+    outGain.connect(instBus);
+
+    carrier.start(time); modulator.start(time);
+    carrier.stop(time + decay); modulator.stop(time + decay);
+}
+
 function playDrum(type) {
     const t = ctx.currentTime; const gain = ctx.createGain(); gain.connect(instBus);
     const style = DRUM_STYLES[currentDrumIdx];
 
-    // Helper: Simple enveloped osc
+    // Humanize
+    const humanize = (val, amt) => val + ((Math.random() * amt * 2) - amt);
+
     const hit = (freq, decay, type='sine', vol=1) => {
         const osc = ctx.createOscillator(); osc.type = type;
-        osc.frequency.setValueAtTime(freq, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
-        gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
+        const f = humanize(freq, freq * 0.02);
+        osc.frequency.setValueAtTime(f, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
+        gain.gain.setValueAtTime(humanize(vol, 0.1), t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
         osc.connect(gain); osc.start(t); osc.stop(t + decay);
     };
 
+    // New GLASS Kit Logic using FM
+    if (style === 'Glass') {
+        if(type === 'kick') { playFM(60, 120, 200, 0.5, 0.9, t); } // Heavy thud
+        else if(type === 'snare') { playFM(400, 850, 500, 0.2, 0.7, t); makeNoise(0.15, 0.5, t, true); } // Shatter
+        else if(type === 'hat') { playFM(3000, 4100, 1000, 0.05, 0.4, t); } // Crystal click
+        else if(type === 'tom') { playFM(200, 280, 150, 0.4, 0.6, t); } // Hollow glass
+        else if(type === 'clap') { playFM(800, 1200, 300, 0.1, 0.5, t); makeNoise(0.05, 0.3, t+0.02, true); } // Shards
+        else if(type === 'crash') { playFM(1000, 234, 2000, 1.2, 0.5, t); makeNoise(0.5, 0.3, t, true); } // Big crash
+        else { playFM(1500, 2000, 400, 0.1, 0.4, t); } // Ping
+        return;
+    }
+
     if(type === 'kick') {
         if(style === '808') hit(60, 0.8, 'sine', 1);
-        else if(style === 'Industrial') { hit(100, 0.3, 'square', 0.8); }
-        else if(style === 'Techno') { hit(150, 0.15, 'sine', 1); makeNoise(0.05, 0.5, t); }
-        else if(style === 'Orchestral') { hit(40, 1.2, 'sine', 1); makeNoise(0.5, 0.2, t); }
+        else if(style === 'Zap') { hit(200, 0.2, 'sawtooth', 0.8); makeNoise(0.05, 0.2, t, true); }
+        else if(style === 'Game') { hit(120, 0.1, 'square', 0.6); }
+        else if(style === 'Glitch') { hit(100, 0.05, 'triangle', 0.8); makeNoise(0.02, 0.5, t); } 
         else hit(150, 0.3);
     } 
     else if(type === 'snare') {
         if(style === '808') { hit(200, 0.1, 'triangle', 0.5); makeNoise(0.2, 0.4, t); }
-        else if(style === 'Acoustic') { hit(250, 0.1, 'sine', 0.5); makeNoise(0.25, 0.6, t); }
-        else if(style === 'Toy') { hit(800, 0.05, 'square', 0.5); }
+        else if(style === 'Zap') { hit(400, 0.1, 'sawtooth', 0.5); makeNoise(0.1, 0.6, t, true); }
+        else if(style === 'Game') { makeNoise(0.1, 0.5, t); }
+        else if(style === 'Glitch') { makeNoise(0.01, 0.8, t); makeNoise(0.01, 0.8, t+0.02); } 
         else { hit(250, 0.1, 'triangle', 0.5); makeNoise(0.15, 0.7, t); }
     }
     else if(type === 'hat') {
-        let len = (style === '808' || style === 'Techno') ? 0.05 : 0.08;
-        if(style === 'Lofi') len = 0.12;
-        makeNoise(len, (style==='Lofi'?0.2:0.4), t, true);
+        let len = (style === '808') ? 0.05 : 0.08;
+        if(style === 'Glitch') len = 0.02;
+        if(style === 'Game') { makeNoise(0.05, 0.3, t, true); return; }
+        makeNoise(len, 0.3, t, true);
     }
     else if(type === 'tom') {
-        const freq = (style==='Toy') ? 400 : 150;
-        hit(freq, 0.4, 'sine', 0.8);
+        if(style === 'Zap') { hit(600, 0.3, 'sawtooth', 0.4); }
+        else if(style === 'Glitch') { hit(200, 0.05, 'sawtooth', 0.5); }
+        else hit(150, 0.4, 'sine', 0.8);
     }
     else if(type === 'clap') {
-        makeNoise(0.01, 0.6, t); makeNoise(0.01, 0.5, t+0.015); makeNoise(0.01, 0.4, t+0.03); makeNoise(0.1, 0.3, t+0.04);
+        if(style === 'Glitch') { makeNoise(0.01, 0.6, t); makeNoise(0.01, 0.6, t+0.05); }
+        else { makeNoise(0.01, 0.6, t); makeNoise(0.01, 0.5, t+0.015); makeNoise(0.01, 0.4, t+0.03); makeNoise(0.1, 0.3, t+0.04); }
     }
     else if(type === 'crash') {
-        makeNoise(0.8, 0.6, t, true);
+        if(style === 'Zap') { hit(800, 0.6, 'sawtooth', 0.3); makeNoise(0.5, 0.4, t, true); }
+        else makeNoise(0.8, 0.6, t, true);
     }
-    else { makeNoise(0.1, 0.5, t); } // Percs
+    else { makeNoise(0.1, 0.5, t); }
 }
 
 function makeNoise(duration, vol, time, highpass = false) {
@@ -628,7 +726,6 @@ function playSynth(rawFreq) {
     const style = SYNTH_STYLES[currentSynthIdx];
     const gain = ctx.createGain(); gain.connect(instBus);
     
-    // Scale adjustment usually happens in note selection, but freq is passed here
     let f = rawFreq; 
 
     if(style === 'Saw Lead') {
@@ -639,7 +736,6 @@ function playSynth(rawFreq) {
         osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t+0.6);
     }
     else if (style === 'Deep Bass') {
-        // Sub oscillator
         const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = f / 2;
         const osc2 = ctx.createOscillator(); osc2.type = 'square'; osc2.frequency.value = f / 2;
         const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
@@ -648,8 +744,6 @@ function playSynth(rawFreq) {
         osc1.start(t); osc1.stop(t+0.6); osc2.start(t); osc2.stop(t+0.6);
     }
     else if (style === 'Chords') {
-        // Major/Minor triad based on scale logic is hard here without key info, so we stack fixed intervals
-        // Stacking 5ths and Octaves for a "Power Chord" feel which works usually
         [f, f*1.5, f*2].forEach((fr, i) => {
             const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = fr;
             osc.detune.value = Math.random()*10 - 5;
@@ -675,7 +769,6 @@ function playSynth(rawFreq) {
         osc.start(t); osc.stop(t+1.5); osc2.start(t); osc2.stop(t+1.5);
     }
     else {
-        // Fallback/Standard
         const osc = ctx.createOscillator(); osc.type = (style==='Pluck')?'square':'triangle'; osc.frequency.value = f;
         const filter = ctx.createBiquadFilter(); filter.frequency.value = 2000;
         if(style==='Pluck') { filter.frequency.exponentialRampToValueAtTime(200, t+0.2); }
@@ -705,9 +798,18 @@ function setupRecorder() {
         if (!isRecordingState()) return;
         const input = e.inputBuffer.getChannelData(0);
         
+        // SOFT GATE: Simple Noise Floor check to silence extreme quiet (background hiss)
+        // If the RMS of the buffer is too low, we zero it out before processing
+        let rms = 0;
+        for(let i=0; i<input.length; i++) rms += input[i]*input[i];
+        rms = Math.sqrt(rms/input.length);
+        
+        if (rms < 0.001) { // Very low noise floor threshold
+             for(let i=0; i<input.length; i++) input[i] = 0;
+        }
+
         if (currentState === STATE.SAMPLING_ARMED) {
-            let sum = 0; for(let i=0; i<input.length; i++) sum += input[i]*input[i];
-            if(Math.sqrt(sum/input.length) > inputThreshold) {
+            if(rms > inputThreshold) {
                 currentState = STATE.SAMPLING_REC; sampleRecBuffer = [];
                 if (heldPadIndex !== -1) {
                     const pad = els.padsGrid.children[heldPadIndex];
@@ -720,8 +822,7 @@ function setupRecorder() {
         if (currentState === STATE.SAMPLING_REC) { sampleRecBuffer.push(new Float32Array(input)); return; }
 
         if (currentState === STATE.ARMED) {
-            let sum = 0; for(let i=0; i<input.length; i++) sum += input[i]*input[i];
-            if(Math.sqrt(sum/input.length) > inputThreshold) startFirstRecording(); else return;
+            if(rms > inputThreshold) startFirstRecording(); else return;
         }
         
         if (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB) recordingStream.push(new Float32Array(input));
@@ -873,20 +974,19 @@ function hitPad(index, el) {
 function updateMicGate() {
     if(!micGateGain || !micMonitorGain) return;
     
+    // Logic: Mic is ONLY for "Voice" mode (Looping) or "Sampling"
     const isVoiceMode = (currentMode === 'voice');
     const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
-    const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB);
-    const isRecording = isSampling || isLoopRecording || currentState === STATE.ARMED;
+    const isLoopRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED);
+    const shouldOpenMic = isSampling || (isLoopRecording && isVoiceMode);
 
-    // 1. INPUT GATE: Open whenever we need to capture audio (Sampling or Looping)
-    if(isRecording) {
+    if(shouldOpenMic) {
         micGateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.05); 
     } else {
         micGateGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05); 
     }
-
-    // 2. MONITOR GATE: Always mute real-time monitoring to prevent feedback.
-    // We only want to hear the audio AFTER it has been recorded/looped.
+    
+    // Monitor always 0
     micMonitorGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05);
 }
 
@@ -894,7 +994,6 @@ function switchMode(newMode) {
     if(!isPowered) return;
     const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
     
-    // Cycle sounds if clicking active mode
     if(btn.classList.contains('active')) {
         if(newMode === 'drums') { currentDrumIdx = (currentDrumIdx + 1) % DRUM_STYLES.length; log("DRUMS: " + DRUM_STYLES[currentDrumIdx]); } 
         else if(newMode === 'synth') { currentSynthIdx = (currentSynthIdx + 1) % SYNTH_STYLES.length; log("SYNTH: " + SYNTH_STYLES[currentSynthIdx]); }
@@ -965,13 +1064,45 @@ function setupKnob(el, callback, magnet = false) {
     });
 }
 
+// UPDATE: 8 LEDs
+function updateLedBar(micLevel) {
+    const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.ARMED);
+    const isPlaying = (currentState === STATE.PLAYING || currentState === STATE.OVERDUB);
+    
+    els.ledCells.forEach(led => led.className = 'led-cell');
+
+    if (isRecording) {
+        // VU Meter Mode (Scaled to 8)
+        const level = Math.min(8, Math.floor(micLevel / 10)); 
+        for(let i=0; i<level; i++) {
+            els.ledCells[i].classList.add('active-red');
+        }
+    } 
+    else if (isPlaying && loopBuffer) {
+        // Loop Progress Mode (Scaled to 8)
+        const duration = loopBuffer.duration;
+        const current = ((ctx.currentTime - loopStartTime) * Math.abs(playbackRate)) % duration;
+        const progress = current / duration; 
+        const activeIdx = Math.floor(progress * 8); // 0 to 7
+
+        const colorClass = (currentState === STATE.OVERDUB) ? 'active-red' : 'active-green';
+        
+        for(let i=0; i<=activeIdx; i++) {
+            if(i < 8) els.ledCells[i].classList.add(colorClass);
+        }
+    }
+}
+
 function updateLoop() {
+    let micLevel = 0;
     if(isPowered) {
         if (analyser) {
             const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
             let sum = 0; for(let v of data) sum += v;
-            if ((sum/data.length) > 10) els.micLed.classList.add('active'); else els.micLed.classList.remove('active');
+            micLevel = sum / data.length;
+            if (micLevel > 10) els.micLed.classList.add('active'); else els.micLed.classList.remove('active');
         }
+        updateLedBar(micLevel);
     } else { els.micLed.classList.remove('active'); }
     requestAnimationFrame(updateLoop);
 }
@@ -986,18 +1117,15 @@ function setupKeys() {
         if(!isPowered) return;
         if(e.repeat) return;
         
-        // Mode Switches
         if(e.key === '1') switchMode('synth');
         if(e.key === '2') switchMode('voice');
         if(e.key === '3') switchMode('drums');
 
-        // Undo (Ctrl) - Trigger on Press
         if(e.key === 'Control') {
             if(!undoKeyDown) {
                 undoKeyDown = true;
                 els.undoBtn.classList.add('active-key');
-                // Simulate hold for clear logic
-                startUndoTimer({ pointerId: -1 }); // Dummy ID for key
+                startUndoTimer({ pointerId: -1 }); 
             }
         }
 
@@ -1050,11 +1178,9 @@ function endUndoTimer(e) {
 function saveUndoState() { if(!loopBuffer) return; const copy = new Float32Array(loopBuffer.getChannelData(0)); undoStack.push(copy); if(undoStack.length > 5) undoStack.shift(); }
 
 function performUndo() {
-    // Delete Sample
     if(currentMode === 'voice' && heldPadIndex !== -1) {
         if(userSamples[heldPadIndex]) { userSamples[heldPadIndex] = null; updatePadVisuals(); log("SAMPLE DELETED"); return; }
     }
-    // Undo Loop
     if(undoStack.length > 0 && loopBuffer) {
         const prev = undoStack.pop();
         if(prev === 'RESET') resetDevice();
