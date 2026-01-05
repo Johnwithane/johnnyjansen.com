@@ -476,7 +476,7 @@ let loopStartTime = 0; let loopLengthSamples = 0;
 let inputThreshold = 0.04;
 let undoStack = []; let undoTimeout; let hasReset = false;
 let minLoopLength = 2000;
-const LATENCY_COMPENSATION_SAMPLES = 5120; 
+const LATENCY_COMPENSATION_SAMPLES = 2048; 
 
 let userSamples = new Array(8).fill(null);
 let heldPadIndex = -1;
