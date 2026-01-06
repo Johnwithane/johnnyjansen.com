@@ -176,6 +176,28 @@
         .led-cell.active-gold { background-color: var(--accent-gold); box-shadow: 0 0 8px var(--accent-gold), inset 0 1px 2px rgba(255,255,255,0.4); }
         .led-cell.active-yellow { background-color: var(--led-yellow); box-shadow: 0 0 8px var(--led-yellow), inset 0 1px 2px rgba(255,255,255,0.4); }
 
+        /* --- New Knob LEDs --- */
+        .knob-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .knob-led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #111;
+            margin-bottom: 5px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        /* LED States */
+        .knob-led.led-green { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+        .knob-led.led-red   { background-color: var(--led-red);   box-shadow: 0 0 8px var(--led-red); }
+        .knob-led.led-blue  { background-color: var(--led-blue);  box-shadow: 0 0 8px var(--led-blue); }
+
         /* --- Top: Knobs --- */
         .top-section {
             flex: 1; display: flex; justify-content: center; gap: 40px;
@@ -194,6 +216,14 @@
             transform: translateX(-50%); width: 4px; height: 12px;
             background-color: #333; border-radius: 2px;
         }
+
+        /* --- Knob Animation (Shadow Only) --- */
+        .knob.pushed {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.8) !important; /* Flatten shadow */
+            cursor: grabbing;
+        }
+
+
         .knurled { border: 2px dashed #666; }
 
         .mic-grille {
@@ -456,13 +486,21 @@
 
     <div class="top-section">
         <div class="knob-container">
-            <div class="knob-label">REV / DELAY</div>
-            <div class="knob knurled" id="knob-glitch"></div>
+            <div class="knob-wrapper">
+                <div class="knob-led" id="led-fx"></div>
+                <div class="knob-label">PRE FX</div>
+                <div class="knob knurled" id="knob-left"></div>
+            </div>
         </div>
+
         <div class="mic-grille"></div>
+
         <div class="knob-container">
-            <div class="knob-label">SLOW / FAST</div>
-            <div class="knob knurled" id="knob-speed"></div>
+            <div class="knob-wrapper">
+                <div class="knob-led" id="led-master"></div>
+                <div class="knob-label">POST FX</div>
+                <div class="knob knurled" id="knob-right"></div>
+            </div>
         </div>
     </div>
 
@@ -524,6 +562,16 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let ctx;
 let masterGain, compressor;
+// --- NEW KNOB STATE VARIABLES ---
+let masterFilter; // The node
+let distortionNode; // The node
+let distortionGain; // To control amount
+let masterHighPass; // New variable
+
+// 0=OFF, 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
+let rightKnobMode = 0; 
+// 0=OFF, 1=Reverb(Green), 2=Delay(Blue), 3=Distortion(Red)
+let leftKnobMode = 0;
 // NEW BUSES
 let loopBus, liveBus;
 
@@ -656,12 +704,28 @@ els.startBtn.addEventListener('click', async () => {
         // --- MASTER BUS SETUP ---
         masterGain = ctx.createGain();
         masterGain.gain.value = 0.9;
-        masterGain.connect(ctx.destination);
         
+        // 1. Master Lowpass (Cuts highs)
+        masterFilter = ctx.createBiquadFilter();
+        masterFilter.type = 'lowpass';
+        masterFilter.frequency.value = 22000; // Open
+        masterFilter.Q.value = 1;
+
+        // 2. New: Master Highpass (Cuts lows)
+        masterHighPass = ctx.createBiquadFilter();
+        masterHighPass.type = 'highpass';
+        masterHighPass.frequency.value = 0; // Open
+        masterHighPass.Q.value = 1;
+
         compressor = ctx.createDynamicsCompressor();
         compressor.threshold.value = -12;
         compressor.ratio.value = 12;
-        compressor.connect(masterGain);
+        
+        // Chain: Compressor -> HighPass -> LowPass -> Master -> Dest
+        compressor.connect(masterHighPass);
+        masterHighPass.connect(masterFilter);
+        masterFilter.connect(masterGain);
+        masterGain.connect(ctx.destination);
 
         // NEW: Separate Buses
         loopBus = ctx.createGain(); // Loops go here
@@ -701,6 +765,9 @@ els.startBtn.addEventListener('click', async () => {
 
         // FX Bus
         setupSharedFX();
+
+        // Distortion Setup
+        setupDistortion();
 
         // Connect Track Buses to FX
         TRACKS.forEach(track => {
@@ -791,6 +858,41 @@ function setupSharedFX() {
     voiceDelay.connect(voiceDelayFeedback); voiceDelayFeedback.connect(voiceDelay);
     voiceDelay.connect(voiceDelayGain);
     // Note: Connections to voiceRecordingBus happen in Mic Setup to ensure chain order
+}
+
+function setupDistortion() {
+    distortionNode = ctx.createWaveShaper();
+    distortionNode.curve = makeDistortionCurve(400); // 400 = amount
+    distortionNode.oversample = '4x';
+    
+    distortionGain = ctx.createGain();
+    distortionGain.gain.value = 0;
+
+    // Connect to FX Bus
+    fxBus.connect(distortionNode);
+    distortionNode.connect(distortionGain);
+    distortionGain.connect(fxReturn);
+}
+
+function makeDistortionCurve(amount) {
+    const k = typeof amount === 'number' ? amount : 50;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+        const x = i * 2 / n_samples - 1;
+        curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+}
+
+function updateKnobLed(elementId, mode, colorMap) {
+    const el = document.getElementById(elementId);
+    el.className = 'knob-led'; // Reset
+    if (mode === 0) return; // OFF
+    
+    // colorMap example: {1: 'led-green', 2: 'led-red', 3: 'led-blue'}
+    if (colorMap[mode]) el.classList.add(colorMap[mode]);
 }
 
 function createReverbBuffer() {
@@ -1646,34 +1748,141 @@ function initUI() {
     els.recBtn.addEventListener('pointercancel', (e) => { onRecRelease(); els.recBtn.releasePointerCapture(e.pointerId); });
     els.powerSwitch.addEventListener('click', togglePower);
 
-    setupKnob(els.knobSpeed, (val) => {
-        if(!isPowered) return;
-        if (val > 0.45 && val < 0.55) { playbackRate = 1.0; }
-        else if (val >= 0.55) { if (val < 0.9) { playbackRate = 1.0 + ((val-0.55)/0.35)*1.5; } else { playbackRate = -2.0; } } 
-        else if (val <= 0.45) { playbackRate = 1.0 - ((0.45 - val) / 0.225); }
-        if (Math.abs(playbackRate) < 0.001) playbackRate = 0.001;
-        
-        TRACKS.forEach(t => { if(trackCtx[t].source) trackCtx[t].source.playbackRate.value = playbackRate; });
-        
-    }, true); 
+    
+// --- RIGHT KNOB (MASTER / POST FX) ---
+    // Cycle: 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
+    // Default Start: 1 (Filter)
+    rightKnobMode = 1; 
+    updateKnobLed('led-master', 1, {1:'led-green', 2:'led-red', 3:'led-blue'});
 
-    setupKnob(els.knobGlitch, (val) => {
-        if(!isPowered || !instReverb) return;
-        let rGain, dGain, dFeed;
-        if (val > 0.45 && val < 0.55) { rGain=0; dGain=0; dFeed=0; }
-        else if (val >= 0.55) { rGain=0; const norm = (val-0.55)/0.45; dGain=norm*0.8; dFeed=0.2+(norm*0.5); } 
-        else if (val <= 0.45) { dGain=0; dFeed=0; const norm = (0.45-val)/0.45; rGain=norm*1.5; }
+    const knobRightEl = document.getElementById('knob-right');
+    
+    // Define Audio Logic
+    const onRightRotate = (val) => {
+        if (rightKnobMode === 1) { 
+            // FILTER (Green) - DJ Style
+            // 0.0 - 0.45: Low Pass (Left = Low End)
+            // 0.45 - 0.55: Open (Center)
+            // 0.55 - 1.0: High Pass (Right = High End)
+            
+            // Reset both first (Open)
+            if(masterFilter) masterFilter.frequency.setTargetAtTime(22000, ctx.currentTime, 0.05);
+            if(masterHighPass) masterHighPass.frequency.setTargetAtTime(0, ctx.currentTime, 0.05);
+
+            if (val < 0.45) {
+                // Low Pass closing down
+                // Map 0.45 -> 0.0 to 20000Hz -> 100Hz
+                const norm = val / 0.45; 
+                const freq = 100 + (Math.pow(norm, 3) * 20000); 
+                if(masterFilter) masterFilter.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
+            } 
+            else if (val > 0.55) {
+                // High Pass opening up
+                // Map 0.55 -> 1.0 to 100Hz -> 5000Hz
+                const norm = (val - 0.55) / 0.45;
+                const freq = 50 + (Math.pow(norm, 2) * 5000);
+                if(masterHighPass) masterHighPass.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
+            }
+        }
+        else if (rightKnobMode === 2) { 
+            // BEAT REPEAT (Red) - EXTREME
+            // Left (0) = Normal loop. 
+            // Right (1) = 1/64th note stutter.
+            let div = 1;
+            
+            if (val < 0.1) div = 1;         // Off
+            else if (val < 0.3) div = 0.5;  // 1/2
+            else if (val < 0.5) div = 0.25; // 1/4
+            else if (val < 0.7) div = 0.125;// 1/8
+            else if (val < 0.9) div = 0.0625; // 1/16
+            else div = 0.03125; // 1/32 (Extreme Stutter)
+
+            applyBeatRepeat(div);
+        }
+        else if (rightKnobMode === 3) { 
+            // SPEED (Blue)
+            if (val > 0.45 && val < 0.55) { playbackRate = 1.0; }
+            else if (val >= 0.55) { if (val < 0.9) { playbackRate = 1.0 + ((val-0.55)/0.35)*1.5; } else { playbackRate = -2.0; } } 
+            else if (val <= 0.45) { playbackRate = 1.0 - ((0.45 - val) / 0.225); }
+            if (Math.abs(playbackRate) < 0.001) playbackRate = 0.001;
+            updatePlaybackRate();
+        }
+    };
+
+    // Initialize Wrapper
+const rightKnobCtrl = setupKnob(knobRightEl, onRightRotate, () => {
+        // CLICK LOGIC
+        rightKnobMode = (rightKnobMode % 3) + 1;
+        updateKnobLed('led-master', rightKnobMode, {1:'led-green', 2:'led-red', 3:'led-blue'});
         
-        instReverb.gainNode.gain.value = rGain; 
-        instDelayGain.gain.value = dGain; 
-        instFeedback.gain.value = dFeed; 
-        
-        // Update Voice FX Gains as well
-        if(voiceReverbGain) voiceReverbGain.gain.value = rGain;
-        if(voiceDelayGain) voiceDelayGain.gain.value = dGain;
-        if(voiceDelayFeedback) voiceDelayFeedback.gain.value = dFeed;
+        // RESET LOGIC
+        playbackRate = 1.0; updatePlaybackRate();
+        if(masterFilter) masterFilter.frequency.setTargetAtTime(22000, ctx.currentTime, 0.1);
+        if(masterHighPass) masterHighPass.frequency.setTargetAtTime(0, ctx.currentTime, 0.1);
+        resetLoopPoints();
+
+        // 2. Reset Knob Position (INSTANT SNAP)
+        if (rightKnobMode === 1 || rightKnobMode === 3) {
+            rightKnobCtrl.setValue(0.5, true); // <--- TRUE = Instant
+            onRightRotate(0.5);
+        } else {
+            rightKnobCtrl.setValue(0.0, true); // <--- TRUE = Instant
+            onRightRotate(0.0);
+        }
     }, true);
-}
+    
+    // Initial State
+    rightKnobCtrl.setValue(0.5, true);
+
+
+    // --- LEFT KNOB (PRE FX) ---
+    // Cycle: 1=Reverb(Green), 2=Delay(Blue), 3=Distortion(Red)
+    leftKnobMode = 1;
+    updateKnobLed('led-fx', 1, {1:'led-green', 2:'led-blue', 3:'led-red'});
+    
+    const knobLeftEl = document.getElementById('knob-left');
+
+    const onLeftRotate = (val) => {
+        if(!instReverb) return;
+        // Reset all momentarily to avoid bleed
+        instReverb.gainNode.gain.value = 0;
+        instDelayGain.gain.value = 0;
+        distortionGain.gain.value = 0;
+
+        if (leftKnobMode === 1) { 
+            instReverb.gainNode.gain.value = val * 1.5; 
+        }
+        else if (leftKnobMode === 2) { 
+            instDelayGain.gain.value = val;
+            instFeedback.gain.value = 0.3 + (val * 0.4); 
+        }
+        else if (leftKnobMode === 3) { 
+            distortionGain.gain.value = val * 0.8; 
+        }
+    };
+
+    const leftKnobCtrl = setupKnob(knobLeftEl, onLeftRotate, () => {
+        // CLICK LOGIC
+        leftKnobMode = (leftKnobMode % 3) + 1;
+        updateKnobLed('led-fx', leftKnobMode, {1:'led-green', 2:'led-blue', 3:'led-red'});
+
+        // RESET LOGIC (INSTANT SNAP)
+        leftKnobCtrl.setValue(0.0, true); // <--- TRUE = Instant
+        
+        // Clear audio
+        if(instReverb) instReverb.gainNode.gain.value = 0;
+        if(instDelayGain) instDelayGain.gain.value = 0;
+        if(distortionGain) distortionGain.gain.value = 0;
+        
+    }, true);
+    
+    // Initial State
+    leftKnobCtrl.setValue(0.0, true);
+    
+    // Set Initial State (Left/Off)
+    leftKnobCtrl.setValue(0.0);
+
+    }
 
 function togglePower() {
     isPowered = !isPowered;
@@ -1682,18 +1891,82 @@ function togglePower() {
     updateRecBtnVisual();
 }
 
-function setupKnob(el, callback, magnet = false) {
-    let startY = 0; let currentDeg = 0;
-    const update = (y) => {
-        const delta = startY - y; currentDeg += delta * 2; currentDeg = Math.min(135, Math.max(-135, currentDeg));
-        let visualDeg = currentDeg; if (magnet && Math.abs(currentDeg) < 15) visualDeg = 0;
-        el.style.transform = `rotate(${visualDeg}deg)`; callback((visualDeg + 135) / 270); startY = y;
+function setupKnob(el, onValueChange, onClick = null, magnet = false) {
+    let startY = 0;
+    let initialY = 0;
+    let currentDeg = -135; 
+    let isPushed = false;
+
+    // Internal Render: Combines Rotation AND Scale
+    const render = () => {
+        let visualDeg = currentDeg; 
+        if (magnet && Math.abs(currentDeg) < 15) visualDeg = 0;
+        
+        // Add scale to the transform string so we don't overwrite rotation
+        const scale = isPushed ? 0.9 : 1.0;
+        el.style.transform = `rotate(${visualDeg}deg) scale(${scale})`;
     };
-    el.addEventListener('pointerdown', e => { if(!isPowered) return; startY = e.clientY; el.setPointerCapture(e.pointerId);
-        const move = e => update(e.clientY);
-        const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.releasePointerCapture(e.pointerId); };
-        el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
+
+    el.addEventListener('pointerdown', e => { 
+        if(!isPowered) return; 
+        startY = e.clientY; 
+        initialY = e.clientY;
+        el.setPointerCapture(e.pointerId);
+        
+        // Visuals
+        isPushed = true;
+        el.classList.add('pushed');
+        render(); // Re-render to show push immediately
+
+        const move = e => {
+            const delta = startY - e.clientY; 
+            // Update rotation
+            currentDeg = Math.min(135, Math.max(-135, currentDeg + (delta * 2.5)));
+            render();
+            startY = e.clientY;
+            
+            // Calculate value and callback
+            const val = (currentDeg + 135) / 270;
+            onValueChange(val);
+        };
+        
+        const up = (e) => { 
+            isPushed = false;
+            el.classList.remove('pushed');
+            render(); // Re-render to show release
+
+            el.removeEventListener('pointermove', move); 
+            el.removeEventListener('pointerup', up); 
+            el.releasePointerCapture(e.pointerId);
+            
+            if (Math.abs(e.clientY - initialY) < 3 && onClick) {
+                onClick();
+            }
+        };
+        
+        el.addEventListener('pointermove', move); 
+        el.addEventListener('pointerup', up);
     });
+
+    return {
+        // Updated setValue with Instant Snap option
+        setValue: (val, instant = false) => {
+            const deg = (val * 270) - 135;
+            currentDeg = deg;
+            
+            if(instant) {
+                el.style.transition = 'none'; // Disable animation
+            }
+            
+            render();
+            
+            if(instant) {
+                // Force browser to apply 'no transition' immediately
+                void el.offsetWidth; 
+                el.style.transition = ''; // Restore CSS transition
+            }
+        }
+    };
 }
 
 function updateLedBar(micLevel) {
@@ -1906,6 +2179,29 @@ function updateUI() {
         
         if (mode !== currentMode && !trackCtx[mode].mute && trackCtx[mode].buffer) {
             if (masterLoopLength > 0) btn.classList.add('has-audio');
+        }
+    });
+}
+
+function updatePlaybackRate() {
+    TRACKS.forEach(t => { if(trackCtx[t].source) trackCtx[t].source.playbackRate.value = playbackRate; });
+}
+
+function resetLoopPoints() {
+    TRACKS.forEach(t => {
+        if(trackCtx[t].source && trackCtx[t].buffer) {
+            trackCtx[t].source.loopEnd = trackCtx[t].buffer.duration;
+        }
+    });
+}
+
+function applyBeatRepeat(division) {
+    TRACKS.forEach(t => {
+        if(trackCtx[t].source && trackCtx[t].buffer) {
+            const dur = trackCtx[t].buffer.duration;
+            // "Lock" the beat based on current time
+            // Note: This is a simple implementation. It shortens the loop length.
+            trackCtx[t].source.loopEnd = dur * division;
         }
     });
 }
