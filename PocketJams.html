@@ -608,8 +608,6 @@ let heldInstrument = null;
 let instHoldStartTime = 0;
 
 // SOUND LIBRARY
-const DRUM_STYLES = ['Standard', '808', 'Glass', 'Zap', 'Glitch', 'Game', 'Custom 1', 'Custom 2'];
-const SYNTH_STYLES = ['Saw Lead', 'Deep Bass', 'Soft Sine', 'Retro Pad', 'Pluck', 'Chords', 'Acid', 'Dream'];
 let currentDrumIdx = 0; let currentSynthIdx = 0;
 const DRUM_PADS = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
 
@@ -841,7 +839,8 @@ function createReverbBuffer() {
     return buffer;
 }
 
-// --- Sound Engine ---
+const DRUM_STYLES = ['Greatest hit', '808', 'History', 'Command', 'Option', 'GAMEBOY', 'Custom Beat', 'ANOTHER Custom Beat'];
+
 function playDrum(type) {
     const t = ctx.currentTime;
     const gain = ctx.createGain();
@@ -870,21 +869,21 @@ function playDrum(type) {
     };
 
     if (false) {} // placeholder
-// KIT 0: Standard
+// KIT 0: Greatest hit
 else if (currentDrumIdx === 0) {
   
   if (type === 'kick') {
     hit(150, 0.3, 'sine', 1);
   }
   else if (type === 'snare') {
-    hit(250, 0.15, 'triangle', 0.19999999999999996);
-    noise(0.2, 0.8, t, 1000);
+    playFM(250, 150, 70, 0.16, 0.8, t);
+    noise(0.16, 0.9, t, 1000);
   }
   else if (type === 'hat') {
     noise(0.05, 0.6, t, 6000);
   }
   else if (type === 'tom') {
-    hit(200, 0.4, 'sine', 1);
+    hit(200, 0.31, 'sine', 1);
   }
   else if (type === 'clap') {
     hit(800, 0.15, 'triangle', 0.09999999999999998);
@@ -894,17 +893,17 @@ else if (currentDrumIdx === 0) {
     playFM(800, 2000, 200, 0.1, 0.8, t);
   }
   else if (type === 'perc2') {
-    hit(1200, 0.2, 'sine', 1);
+    hit(1200, 0.07, 'sine', 1);
   }
   else if (type === 'crash') {
-    noise(1.2, 0.6, t, 3000);
+    noise(0.74, 0.6, t, 1100);
   }
 }
 // KIT 1: 808
 else if (currentDrumIdx === 1) {
   
   if (type === 'kick') {
-    hit(150, 0.8, 'sine', 1);
+    hit(150, 0.57, 'sine', 1);
   }
   else if (type === 'snare') {
     hit(200, 0.15, 'triangle', 0.19999999999999996);
@@ -917,50 +916,50 @@ else if (currentDrumIdx === 1) {
     hit(200, 0.4, 'sine', 1);
   }
   else if (type === 'clap') {
-    hit(800, 0.15, 'triangle', 0.09999999999999998);
-    noise(0.15, 0.9, t, 1500);
+    hit(640, 0.15, 'triangle', 0.6);
+    noise(0.22, 0.4, t, 100);
   }
   else if (type === 'perc1') {
-    playFM(800, 2000, 200, 0.1, 0.8, t);
+    playFM(800, 2000, 200, 0.5, 0.8, t);
   }
   else if (type === 'perc2') {
-    hit(1200, 0.2, 'sine', 1);
+    playFM(2000, 3600, 180, 0.06, 0.8, t);
   }
   else if (type === 'crash') {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 2: Glass
+// KIT 2: History
 else if (currentDrumIdx === 2) {
   
   if (type === 'kick') {
-    playFM(150, 225, 200, 0.3, 0.8, t);
+    playFM(50, 75, 290, 0.39, 0.8, t);
   }
   else if (type === 'snare') {
     hit(250, 0.15, 'triangle', 0.19999999999999996);
     noise(0.2, 0.8, t, 1000);
   }
   else if (type === 'hat') {
-    playFM(1500, 6300, 300, 0.05, 0.8, t);
+    playFM(256.25, 281.875, 30, 0.14, 0.8, t);
   }
   else if (type === 'tom') {
     hit(200, 0.4, 'sine', 1);
   }
   else if (type === 'clap') {
-    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    hit(240, 0.15, 'triangle', 0.09999999999999998);
     noise(0.15, 0.9, t, 1500);
   }
   else if (type === 'perc1') {
     playFM(800, 2000, 500, 0.1, 0.8, t);
   }
   else if (type === 'perc2') {
-    hit(1200, 0.2, 'sine', 1);
+    hit(1200, 0.14, 'sine', 1);
   }
   else if (type === 'crash') {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 3: Zap
+// KIT 3: Command
 else if (currentDrumIdx === 3) {
   
   if (type === 'kick') {
@@ -978,7 +977,7 @@ else if (currentDrumIdx === 3) {
   }
   else if (type === 'clap') {
     hit(800, 0.15, 'triangle', 0.09999999999999998);
-    noise(0.15, 0.9, t, 1500);
+    noise(0.15, 0.9, t, 500);
   }
   else if (type === 'perc1') {
     playFM(800, 2000, 200, 0.1, 0.8, t);
@@ -990,18 +989,18 @@ else if (currentDrumIdx === 3) {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 4: Glitch
+// KIT 4: Option
 else if (currentDrumIdx === 4) {
   
   if (type === 'kick') {
-    hit(150, 0.05, 'sine', 1);
+    hit(150, 0.11, 'sine', 1);
   }
   else if (type === 'snare') {
     hit(250, 0.15, 'triangle', 0);
-    noise(0.02, 1, t, 1000);
+    noise(0.1, 1, t, 1000);
   }
   else if (type === 'hat') {
-    noise(0.01, 0.6, t, 8000);
+    noise(0.04, 0.6, t, 8000);
   }
   else if (type === 'tom') {
     hit(200, 0.4, 'sine', 1);
@@ -1020,7 +1019,7 @@ else if (currentDrumIdx === 4) {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 5: Game
+// KIT 5: GAMEBOY
 else if (currentDrumIdx === 5) {
   
   if (type === 'kick') {
@@ -1050,7 +1049,7 @@ else if (currentDrumIdx === 5) {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 6: Custom 1
+// KIT 6: Custom Beat
 else if (currentDrumIdx === 6) {
   
   if (type === 'kick') {
@@ -1080,7 +1079,7 @@ else if (currentDrumIdx === 6) {
     noise(1.2, 0.6, t, 3000);
   }
 }
-// KIT 7: Custom 2
+// KIT 7: ANOTHER Custom Beat
 else if (currentDrumIdx === 7) {
   
   if (type === 'kick') {
@@ -1148,6 +1147,8 @@ function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
     carrier.start(time); modulator.start(time);
     carrier.stop(time + decay); modulator.stop(time + decay);
 }
+
+const SYNTH_STYLES = ['Saw Lead', 'Deep Bass', 'Soft Sine', 'Retro Pad', 'Pluck', 'Chords', 'Acid', 'Dream', 'CRAZYTRAIN', 'WOW','Riser Bass', 'spooky'];
 
 function playSynth(rawFreq) {
     const t = ctx.currentTime;
@@ -1273,6 +1274,73 @@ else if (currentSynthIdx === 7) {
     gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
     osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
 }
+
+// STYLE 8: CRAZYTRAIN
+else if (currentSynthIdx === 8) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 0.125; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(2000, t);
+    filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(2000, t + 2);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.1;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 1000; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 2);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 2 + 0.5);
+}
+
+// STYLE 9: WOW
+else if (currentSynthIdx === 9) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 0.5; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
+    filter.frequency.setValueAtTime(260, t);
+    filter.frequency.linearRampToValueAtTime(3700, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(260, t + 0.4);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 6.2;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 30; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
+}
+
+// STYLE 10: Riser Bass
+else if (currentSynthIdx === 10) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 0.125; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 5;
+    filter.frequency.setValueAtTime(850, t);
+    filter.frequency.linearRampToValueAtTime(7900, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(850, t + 0.5);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.5 + 0.5);
+}
+
+// STYLE 11: Spooky
+else if (currentSynthIdx === 11) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 0.25; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(1490, t);
+    filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(1490, t + 1);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 5.9;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 560; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1 + 0.5);
+}
+
 }
 
 function playSample(index) {
