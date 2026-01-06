@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forest's Sound Lab v4.1</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 { color: #c5a059; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* --- Top Controls --- */
+        .controls-top {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: #222;
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid #444;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .section-label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; }
+
+        button.toggle-btn {
+            background: #333;
+            color: #888;
+            border: 2px solid #555;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 20px;
+            transition: all 0.1s;
+            font-size: 12px;
+        }
+        button.toggle-btn:hover { background: #444; }
+        button.toggle-btn.active {
+            background: #c5a059;
+            color: #111;
+            border-color: #c5a059;
+            box-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+        }
+
+        .style-control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid #333;
+        }
+
+        .style-name-input {
+            background: #111;
+            border: 1px solid #555;
+            color: #c5a059;
+            font-family: inherit;
+            padding: 5px 10px;
+            border-radius: 4px;
+            width: 150px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* --- Tabs --- */
+        .style-tabs { display: flex; gap: 5px; }
+        .style-tab {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            color: #666;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .style-tab:hover { border-color: #888; color: #aaa; }
+        .style-tab.active {
+            background: #c5a059; color: #000; border-color: #c5a059;
+            box-shadow: 0 0 8px rgba(197, 160, 89, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* --- PADS --- */
+        .pad-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .pad {
+            aspect-ratio: 1.2;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.05s, background 0.05s, box-shadow 0.05s;
+            color: #ccc;
+            box-shadow: 0 4px 0 #111;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Active State (Flash) */
+        .pad.active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #111;
+            color: #fff;
+        }
+
+        /* Mode Colors */
+        .mode-synth .pad.active { background: #4466aa; border-color: #6688cc; box-shadow: 0 0 15px #4466aa; }
+        .mode-drums .pad.active { background: #aa4444; border-color: #cc6666; box-shadow: 0 0 15px #aa4444; }
+
+        /* Drum Selection State */
+        .pad.selected-for-edit {
+            border-color: #fff;
+            background: #333;
+            box-shadow: 0 4px 0 #111, inset 0 0 10px rgba(255,255,255,0.1);
+        }
+        .pad.selected-for-edit.active {
+            box-shadow: 0 0 0 #111, inset 0 0 10px rgba(255,255,255,0.2);
+        }
+        
+        .shortcut-label { 
+            font-size: 10px; 
+            color: #c5a059; /* High contrast gold */
+            margin-top: 4px; 
+            text-transform: uppercase; 
+            font-weight: normal;
+            opacity: 0.8;
+        }
+
+        /* --- Sliders --- */
+        .editor-panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        .editor-title {
+            color: #888; font-size: 12px; text-transform: uppercase;
+            border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 15px;
+            display: flex; justify-content: space-between;
+        }
+        .slider-group-title {
+            color: #c5a059; font-size: 10px; margin-top: 15px; margin-bottom: 5px;
+            border-bottom: 1px dashed #444;
+        }
+        .slider-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; font-size: 12px;
+        }
+        .slider-row label { width: 120px; color: #ccc; }
+        .slider-row input[type=range] { flex: 1; margin: 0 10px; cursor: pointer; accent-color: #c5a059; }
+        .slider-row span { width: 50px; text-align: right; color: #c5a059; }
+
+        /* Waveform Toggles */
+        .wave-toggles { display: flex; gap: 5px; flex: 1; }
+        .wave-btn {
+            flex: 1; background: #333; border: 1px solid #555; color: #888;
+            font-size: 10px; padding: 4px; cursor: pointer; border-radius: 4px;
+        }
+        .wave-btn.active { background: #4466aa; color: #fff; border-color: #6688cc; }
+
+        /* --- Code --- */
+        .code-panel { width: 100%; max-width: 600px; position: relative; }
+        textarea {
+            width: 100%; height: 250px; background: #000; color: #0f0;
+            border: 1px solid #333; border-radius: 5px; padding: 15px;
+            font-family: monospace; font-size: 11px; resize: vertical; white-space: pre;
+        }
+        .btn-row { display: flex; gap: 10px; position: absolute; top: 10px; right: 10px; }
+        .copy-btn {
+            background: rgba(255,255,255,0.2); border: none; color: #fff;
+            padding: 5px 10px; cursor: pointer; font-size: 10px; border-radius: 4px;
+        }
+        .copy-btn:hover { background: rgba(255,255,255,0.4); }
+        .copy-all { background: #c5a059; color: #000; font-weight: bold; }
+        .copy-all:hover { background: #e5c079; }
+
+        #init-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #init-btn {
+            padding: 20px 40px; background: #c5a059; border: none; 
+            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="init-overlay"><button id="init-btn">CLICK TO START LAB</button></div>
+
+    <h2>Sound Lab v4.1</h2>
+
+    <!-- Controls -->
+    <div class="controls-top">
+        <button class="toggle-btn active" id="btn-mode-synth" onclick="setMode('synth')">SYNTH</button>
+        <button class="toggle-btn" id="btn-mode-drums" onclick="setMode('drums')">DRUMS</button>
+        
+        <div style="width: 1px; height: 20px; background: #444; margin: 0 10px;"></div>
+        
+        <div class="style-tabs" id="style-tabs">
+            <!-- JS Generates 1-8 -->
+        </div>
+
+        <div class="style-control-row">
+            <span class="section-label">STYLE NAME:</span>
+            <input type="text" class="style-name-input" id="style-name-input" value="Style 1" oninput="updateStyleName(this.value)">
+        </div>
+    </div>
+
+    <!-- PADS (QWER / ASDF) -->
+    <div class="pad-container mode-synth" id="pad-container"></div>
+
+    <!-- EDITORS -->
+    <div class="editor-panel">
+        <div class="editor-title">
+            <span id="edit-target-name">SETTINGS</span>
+            <span style="color:#555">Editing <span id="current-style-display">1</span></span>
+        </div>
+        <div id="sliders-container"></div>
+    </div>
+
+    <!-- CODE OUT -->
+    <div class="code-panel">
+        <div class="btn-row">
+            <button class="copy-btn copy-all" onclick="copyCode(true)">COPY FULL CODEBLOCK</button>
+        </div>
+        <textarea id="code-output" readonly></textarea>
+        <p style="color: #666; font-size: 10px; margin-top:5px; text-align: center;">
+            Use this code to replace the existing logic in your main project.
+        </p>
+    </div>
+
+<script>
+    let ctx;
+    let masterGain;
+
+    // --- State ---
+    let currentMode = 'synth'; 
+    let selectedDrum = 'kick'; 
+    let currentStyleIndex = 0; 
+
+    const DRUM_TYPES = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
+    // Top row (0-3), Bottom row (4-7)
+    const KEY_MAP = ['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'];
+
+    // --- PRESET DATA ---
+    const SYNTH_PRESETS = [
+        { name: "Saw Lead", wave: 'sawtooth', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 200, filterEnd: 3000, resonance: 2 },
+        { name: "Deep Bass", wave: 'triangle', octave: -2, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.6, filterStart: 50, filterEnd: 300, resonance: 1 },
+        { name: "Soft Sine", wave: 'sine', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.2, decay: 0.8, filterStart: 100, filterEnd: 1000, resonance: 1 },
+        { name: "Retro Pad", wave: 'square', octave: 0, lfoDepth: 2, lfoRate: 3, attack: 0.3, decay: 1.0, filterStart: 300, filterEnd: 1500, resonance: 1 },
+        { name: "Pluck", wave: 'square', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.01, decay: 0.3, filterStart: 2000, filterEnd: 200, resonance: 8 },
+        { name: "Chords", wave: 'sawtooth', octave: 0, lfoDepth: 5, lfoRate: 0.5, attack: 0.1, decay: 1.5, filterStart: 200, filterEnd: 2000, resonance: 3 },
+        { name: "Acid", wave: 'sawtooth', octave: -1, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 100, filterEnd: 2500, resonance: 15 },
+        { name: "Dream", wave: 'triangle', octave: 1, lfoDepth: 8, lfoRate: 4, attack: 0.4, decay: 1.5, filterStart: 100, filterEnd: 800, resonance: 1 }
+    ];
+
+    const DRUM_TEMPLATE = {
+        kick:  { startFreq: 150, endFreq: 10, decay: 0.3, fmAmount: 0, fmRatio: 0.5 },
+        tom:   { startFreq: 200, endFreq: 50, decay: 0.4, fmAmount: 0, fmRatio: 1.5 },
+        perc1: { startFreq: 800, endFreq: 200, decay: 0.1, fmAmount: 200, fmRatio: 2.5 },
+        perc2: { startFreq: 1200, endFreq: 100, decay: 0.2, fmAmount: 0, fmRatio: 1.0 },
+        snare: { tuneFreq: 250, noiseBal: 0.8, decay: 0.2, filter: 1000, fmAmount: 0, fmRatio: 1 },
+        clap:  { tuneFreq: 800, noiseBal: 0.9, decay: 0.15, filter: 1500, fmAmount: 0, fmRatio: 1 },
+        hat:   { freq: 6000, decay: 0.05, fmAmount: 0, fmRatio: 1 },
+        crash: { freq: 3000, decay: 1.2, fmAmount: 0, fmRatio: 1 }
+    };
+
+    const makeKit = (name, mods) => {
+        const kit = JSON.parse(JSON.stringify(DRUM_TEMPLATE));
+        kit.name = name;
+        if(mods) mods(kit);
+        return kit;
+    };
+
+    const DRUM_PRESETS = [
+        makeKit("Standard"),
+        makeKit("808", k => { k.kick.decay=0.8; k.kick.endFreq=30; k.snare.tuneFreq=200; k.hat.decay=0.05; }),
+        makeKit("Glass", k => { k.kick.fmAmount=200; k.kick.fmRatio=1.5; k.perc1.fmAmount=500; k.hat.fmAmount=300; k.hat.fmRatio=4.2; }),
+        makeKit("Zap", k => { k.kick.startFreq=300; k.kick.decay=0.15; k.snare.filter=2000; k.tom.fmAmount=200; k.tom.decay=0.1; }),
+        makeKit("Glitch", k => { k.kick.decay=0.05; k.snare.noiseBal=1; k.snare.decay=0.02; k.hat.freq=8000; k.hat.decay=0.01; }),
+        makeKit("Game", k => { k.kick.fmAmount=50; k.kick.fmRatio=0.5; k.snare.noiseBal=0.5; k.snare.tuneFreq=400; k.perc1.startFreq=1500; }),
+        makeKit("Custom 1"),
+        makeKit("Custom 2")
+    ];
+
+    let synthStyles = JSON.parse(JSON.stringify(SYNTH_PRESETS));
+    let drumStyles = JSON.parse(JSON.stringify(DRUM_PRESETS));
+
+    // --- Init ---
+    document.getElementById('init-btn').addEventListener('click', async () => {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.4;
+        masterGain.connect(ctx.destination);
+        document.getElementById('init-overlay').style.display = 'none';
+        
+        setupKeyboard();
+        renderStyleTabs();
+        setMode('synth'); 
+    });
+
+    // --- Logic ---
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('btn-mode-synth').className = mode === 'synth' ? 'toggle-btn active' : 'toggle-btn';
+        document.getElementById('btn-mode-drums').className = mode === 'drums' ? 'toggle-btn active' : 'toggle-btn';
+        document.getElementById('pad-container').className = `pad-container mode-${mode}`;
+        setStyle(currentStyleIndex); 
+    }
+
+    function setStyle(index) {
+        currentStyleIndex = index;
+        const styleName = (currentMode === 'synth') ? synthStyles[index].name : drumStyles[index].name;
+        document.getElementById('current-style-display').innerText = `${index + 1}: ${styleName}`;
+        document.getElementById('style-name-input').value = styleName;
+        
+        renderStyleTabs();
+        renderPads(); // Re-render pads to reflect selection or mode change
+        renderControls();
+        updateCodeView();
+    }
+
+    function updateStyleName(val) {
+        if(currentMode === 'synth') synthStyles[currentStyleIndex].name = val;
+        else drumStyles[currentStyleIndex].name = val;
+        document.getElementById('current-style-display').innerText = `${currentStyleIndex + 1}: ${val}`;
+        updateCodeView();
+    }
+
+    function renderStyleTabs() {
+        const wrapper = document.getElementById('style-tabs');
+        wrapper.innerHTML = '';
+        for(let i=0; i<8; i++) {
+            const div = document.createElement('div');
+            div.className = (i === currentStyleIndex) ? 'style-tab active' : 'style-tab';
+            div.innerText = i + 1;
+            div.onclick = () => setStyle(i);
+            wrapper.appendChild(div);
+        }
+    }
+
+    // --- Pad Rendering (QWER / ASDF) ---
+    function renderPads() {
+        const container = document.getElementById('pad-container');
+        container.innerHTML = '';
+
+        if (currentMode === 'synth') {
+            const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+            const labels = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C2'];
+            labels.forEach((lbl, i) => {
+                const div = document.createElement('div');
+                div.className = 'pad';
+                div.innerHTML = `<span>${lbl}</span><span class="shortcut-label">${KEY_MAP[i]}</span>`;
+                div.onmousedown = () => { triggerSynth(notes[i]); visualFlash(div); };
+                container.appendChild(div);
+            });
+        } else {
+            DRUM_TYPES.forEach((type, i) => {
+                const div = document.createElement('div');
+                // Persist selection visual
+                div.className = `pad ${type === selectedDrum ? 'selected-for-edit' : ''}`;
+                div.innerHTML = `<span>${type.toUpperCase()}</span><span class="shortcut-label">${KEY_MAP[i]}</span>`;
+                
+                div.onmousedown = () => {
+                    selectedDrum = type;
+                    triggerDrum(type);
+                    visualFlash(div);
+                    updateDrumSelectionVisuals(type); // Update class instead of full re-render
+                    renderControls(); 
+                };
+                container.appendChild(div);
+            });
+        }
+    }
+
+    function updateDrumSelectionVisuals(selectedType) {
+        const pads = document.getElementById('pad-container').children;
+        DRUM_TYPES.forEach((type, i) => {
+            if (type === selectedType) pads[i].classList.add('selected-for-edit');
+            else pads[i].classList.remove('selected-for-edit');
+        });
+    }
+
+    function visualFlash(el) {
+        // Force reflow to restart animation if needed
+        el.classList.remove('active');
+        void el.offsetWidth;
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 100);
+    }
+
+    function setupKeyboard() {
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return; 
+            const key = e.key.toLowerCase();
+            const index = KEY_MAP.indexOf(key);
+            if (index !== -1) {
+                const pads = document.getElementById('pad-container').children;
+                if (pads[index]) {
+                    // Manually trigger the handler to ensure sound + visual + selection
+                    const event = new MouseEvent('mousedown');
+                    pads[index].dispatchEvent(event);
+                }
+            }
+        });
+    }
+
+    // --- Slider Rendering ---
+    function renderControls() {
+        const container = document.getElementById('sliders-container');
+        container.innerHTML = '';
+
+        if (currentMode === 'synth') {
+            const params = synthStyles[currentStyleIndex];
+            
+            addGroup(container, "TONE");
+            addSlider(container, "Octave", -4, 2, 1, params.octave, v => params.octave = v);
+            
+            const row = document.createElement('div');
+            row.className = 'slider-row';
+            row.innerHTML = `<label>Waveform</label>`;
+            const toggleDiv = document.createElement('div');
+            toggleDiv.className = 'wave-toggles';
+            ['sawtooth', 'square', 'triangle', 'sine'].forEach(w => {
+                const btn = document.createElement('div');
+                btn.className = (params.wave === w) ? 'wave-btn active' : 'wave-btn';
+                btn.innerText = w.toUpperCase();
+                btn.onclick = () => { params.wave = w; updateCodeView(); renderControls(); };
+                toggleDiv.appendChild(btn);
+            });
+            row.appendChild(toggleDiv);
+            container.appendChild(row);
+
+            addGroup(container, "LFO (WOBBLE)");
+            addSlider(container, "LFO Depth", 0, 100, 1, params.lfoDepth, v => params.lfoDepth = v);
+            addSlider(container, "LFO Rate", 0.1, 20, 0.1, params.lfoRate, v => params.lfoRate = v);
+
+            addGroup(container, "ENVELOPE & FILTER");
+            addSlider(container, "Attack", 0.001, 0.5, 0.001, params.attack, v => params.attack = v);
+            addSlider(container, "Decay", 0.1, 2.0, 0.1, params.decay, v => params.decay = v);
+            addSlider(container, "Filter Start", 50, 2000, 10, params.filterStart, v => params.filterStart = v);
+            addSlider(container, "Filter End", 500, 10000, 100, params.filterEnd, v => params.filterEnd = v);
+            addSlider(container, "Resonance", 1, 20, 1, params.resonance, v => params.resonance = v);
+
+        } else {
+            const p = drumStyles[currentStyleIndex][selectedDrum];
+
+            addGroup(container, `${selectedDrum.toUpperCase()} - FM SYNTHESIS`);
+            addSlider(container, "FM Amount", 0, 1000, 10, p.fmAmount, v => p.fmAmount = v);
+            addSlider(container, "FM Tune Ratio", 0.1, 5.0, 0.1, p.fmRatio, v => p.fmRatio = v);
+
+            addGroup(container, "BASE SOUND");
+            if (['kick', 'tom', 'perc1', 'perc2'].includes(selectedDrum)) {
+                addSlider(container, "Start Freq", 50, 2000, 10, p.startFreq, v => p.startFreq = v);
+                addSlider(container, "End Freq", 1, 500, 1, p.endFreq, v => p.endFreq = v);
+                addSlider(container, "Decay", 0.05, 1.0, 0.01, p.decay, v => p.decay = v);
+            }
+            else if (['snare', 'clap'].includes(selectedDrum)) {
+                addSlider(container, "Tone Freq", 100, 1000, 10, p.tuneFreq, v => p.tuneFreq = v);
+                addSlider(container, "Noise Mix", 0, 1, 0.1, p.noiseBal, v => p.noiseBal = v);
+                addSlider(container, "Decay", 0.05, 0.5, 0.01, p.decay, v => p.decay = v);
+                addSlider(container, "Filter Freq", 100, 5000, 100, p.filter, v => p.filter = v);
+            }
+            else if (['hat', 'crash'].includes(selectedDrum)) {
+                addSlider(container, "Pitch (HPF)", 500, 12000, 100, p.freq, v => p.freq = v);
+                addSlider(container, "Decay", 0.01, 2.0, 0.01, p.decay, v => p.decay = v);
+            }
+        }
+    }
+
+    function addGroup(parent, text) {
+        const div = document.createElement('div');
+        div.className = 'slider-group-title';
+        div.innerText = text;
+        parent.appendChild(div);
+    }
+
+    function addSlider(parent, label, min, max, step, val, callback) {
+        const row = document.createElement('div');
+        row.className = 'slider-row';
+        row.innerHTML = `<label>${label}</label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}"><span>${val}</span>`;
+        const inp = row.querySelector('input');
+        const sp = row.querySelector('span');
+        inp.oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            sp.innerText = v;
+            callback(v);
+            updateCodeView();
+        };
+        parent.appendChild(row);
+    }
+
+    // --- Audio Engine ---
+    function triggerSynth(rawFreq) {
+        if(!ctx) return;
+        const p = synthStyles[currentStyleIndex];
+        const t = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(masterGain);
+
+        const freq = rawFreq * Math.pow(2, p.octave);
+        const osc = ctx.createOscillator();
+        osc.type = p.wave;
+        osc.frequency.setValueAtTime(freq, t);
+
+        if (p.lfoDepth > 0) {
+            const lfo = ctx.createOscillator();
+            lfo.frequency.value = p.lfoRate;
+            const lfoGain = ctx.createGain();
+            lfoGain.gain.value = p.lfoDepth * 10; 
+            lfo.connect(lfoGain); lfoGain.connect(osc.detune);
+            lfo.start(t);
+        }
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.Q.value = p.resonance;
+        filter.frequency.setValueAtTime(p.filterStart, t);
+        filter.frequency.linearRampToValueAtTime(p.filterEnd, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(p.filterStart, t + p.decay);
+
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + p.attack);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + p.decay);
+
+        osc.connect(filter); filter.connect(gain);
+        osc.start(t); osc.stop(t + p.decay + 0.5);
+    }
+
+    function triggerDrum(type) {
+        if(!ctx) return;
+        const t = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(masterGain);
+        const p = drumStyles[currentStyleIndex][type];
+
+        if (p.fmAmount > 0) {
+            let baseFreq = 200;
+            if (p.startFreq) baseFreq = p.startFreq; else if (p.tuneFreq) baseFreq = p.tuneFreq; else if (p.freq) baseFreq = p.freq / 4;
+            playFM(baseFreq, baseFreq * p.fmRatio, p.fmAmount, p.decay, 0.8, t, gain);
+            if (['snare', 'clap'].includes(type) && p.noiseBal > 0) {
+                 const noise = makeNoiseBuffer(p.decay);
+                 const nSrc = ctx.createBufferSource(); nSrc.buffer = noise;
+                 const nFilt = ctx.createBiquadFilter(); nFilt.type='highpass'; nFilt.frequency.value=p.filter;
+                 const nGain = ctx.createGain(); nGain.gain.setValueAtTime(p.noiseBal, t); nGain.gain.exponentialRampToValueAtTime(0.01, t+p.decay);
+                 nSrc.connect(nFilt); nFilt.connect(nGain); nGain.connect(gain); nSrc.start(t);
+            }
+            return;
+        }
+
+        if (['kick', 'tom', 'perc1', 'perc2'].includes(type)) {
+            const osc = ctx.createOscillator();
+            osc.frequency.setValueAtTime(p.startFreq, t);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(1, p.endFreq), t + p.decay);
+            gain.gain.setValueAtTime(1, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + p.decay);
+            osc.connect(gain); osc.start(t); osc.stop(t + p.decay);
+        }
+        else if (['snare', 'clap'].includes(type)) {
+            const osc = ctx.createOscillator(); osc.type = 'triangle';
+            osc.frequency.setValueAtTime(p.tuneFreq, t);
+            const oGain = ctx.createGain(); oGain.gain.setValueAtTime(1 - p.noiseBal, t); oGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.connect(oGain); oGain.connect(gain); osc.start(t); osc.stop(t + 0.15);
+            const noise = makeNoiseBuffer(p.decay);
+            const nSrc = ctx.createBufferSource(); nSrc.buffer = noise;
+            const nFilt = ctx.createBiquadFilter(); nFilt.type='highpass'; nFilt.frequency.value=p.filter;
+            const nGain = ctx.createGain(); nGain.gain.setValueAtTime(p.noiseBal, t); nGain.gain.exponentialRampToValueAtTime(0.01, t + p.decay);
+            nSrc.connect(nFilt); nFilt.connect(nGain); nGain.connect(gain); nSrc.start(t);
+        }
+        else if (['hat', 'crash'].includes(type)) {
+            const noise = makeNoiseBuffer(p.decay);
+            const src = ctx.createBufferSource(); src.buffer = noise;
+            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = p.freq;
+            const env = ctx.createGain(); env.gain.setValueAtTime(0.6, t); env.gain.exponentialRampToValueAtTime(0.01, t + p.decay);
+            src.connect(filter); filter.connect(env); env.connect(gain); src.start(t);
+        }
+    }
+
+    function makeNoiseBuffer(len) {
+        const bs = ctx.sampleRate * len; const b = ctx.createBuffer(1, bs, ctx.sampleRate);
+        const d = b.getChannelData(0); for(let i=0; i<bs; i++) d[i] = Math.random() * 2 - 1; return b;
+    }
+    function playFM(carFreq, modFreq, modIdx, decay, vol, time, dest) {
+        const car = ctx.createOscillator(); const mod = ctx.createOscillator(); const mGain = ctx.createGain(); const out = ctx.createGain();
+        car.frequency.value = carFreq; mod.frequency.value = modFreq; mGain.gain.value = modIdx;
+        out.gain.setValueAtTime(vol, time); out.gain.exponentialRampToValueAtTime(0.01, time + decay);
+        mod.connect(mGain); mGain.connect(car.frequency); car.connect(out); out.connect(dest);
+        car.start(time); mod.start(time); car.stop(time+decay); mod.stop(time+decay);
+    }
+
+    // --- CODE GEN ---
+    function generateSynthCode(params, index) {
+        let lfoBlock = '';
+        if (params.lfoDepth > 0) {
+            lfoBlock = `    const lfo = ctx.createOscillator(); lfo.frequency.value = ${params.lfoRate};
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = ${params.lfoDepth * 10}; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);`;
+        }
+        return `// STYLE ${index}: ${params.name}
+else if (currentSynthIdx === ${index}) {
+    const osc = ctx.createOscillator(); osc.type = '${params.wave}';
+    osc.frequency.value = rawFreq * ${Math.pow(2, params.octave)}; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = ${params.resonance};
+    filter.frequency.setValueAtTime(${params.filterStart}, t);
+    filter.frequency.linearRampToValueAtTime(${params.filterEnd}, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(${params.filterStart}, t + ${params.decay});
+    ${lfoBlock}
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + ${params.attack});
+    gain.gain.exponentialRampToValueAtTime(0.01, t + ${params.decay});
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + ${params.decay} + 0.5);
+}`;
+    }
+
+    function generateDrumCode(kitParams, index) {
+        let drumLogic = '';
+        DRUM_TYPES.forEach(type => {
+            const p = kitParams[type];
+            let block = '';
+            if (p.fmAmount > 0) {
+                let baseFreq = 200;
+                if (p.startFreq) baseFreq = p.startFreq; else if (p.tuneFreq) baseFreq = p.tuneFreq; else if (p.freq) baseFreq = p.freq / 4;
+                block += `    playFM(${baseFreq}, ${baseFreq * p.fmRatio}, ${p.fmAmount}, ${p.decay}, 0.8, t);`;
+                if (['snare', 'clap'].includes(type) && p.noiseBal > 0) block += `\n    noise(${p.decay}, ${p.noiseBal}, t, ${p.filter});`;
+            } else {
+                if (['kick', 'tom', 'perc1', 'perc2'].includes(type)) block += `    hit(${p.startFreq}, ${p.decay}, 'sine', 1);`;
+                else if (['snare', 'clap'].includes(type)) block += `    hit(${p.tuneFreq}, 0.15, 'triangle', ${1 - p.noiseBal});\n    noise(${p.decay}, ${p.noiseBal}, t, ${p.filter});`;
+                else if (['hat', 'crash'].includes(type)) block += `    noise(${p.decay}, 0.6, t, ${p.freq});`;
+            }
+            drumLogic += `
+  else if (type === '${type}') {
+${block}
+  }`;
+        });
+        return `// KIT ${index}: ${kitParams.name}
+else if (currentDrumIdx === ${index}) {
+  ${drumLogic.replace('else if', 'if')}
+}`;
+    }
+
+    function copyCode(all) {
+        let output = '';
+        const ta = document.getElementById('code-output');
+
+        if (currentMode === 'synth') {
+            const arrayDef = `const SYNTH_STYLES = [${synthStyles.map(s => `'${s.name}'`).join(', ')}];`;
+            if (all) {
+                output = `${arrayDef}\n\nfunction playSynth(rawFreq) {
+    const t = ctx.currentTime;
+    const gain = ctx.createGain(); 
+    gain.connect(trackCtx.synth.bus); 
+    
+    if (false) {} // placeholder\n${synthStyles.map((s, i) => generateSynthCode(s, i)).join('\n')}
+}`;
+            } else {
+                output = generateSynthCode(synthStyles[currentStyleIndex], currentStyleIndex);
+            }
+        } else {
+            const arrayDef = `const DRUM_STYLES = [${drumStyles.map(s => `'${s.name}'`).join(', ')}];`;
+            if (all) {
+                output = `${arrayDef}\n\nfunction playDrum(type) {
+    const t = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(trackCtx.drums.bus);
+
+    const hit = (freq, decay, type, vol) => {
+       const osc = ctx.createOscillator(); osc.type = type;
+       osc.frequency.setValueAtTime(freq, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
+       gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
+       osc.connect(gain); osc.start(t); osc.stop(t + decay);
+    };
+    const noise = (dur, vol, time, hpFreq) => {
+       const bSize = ctx.sampleRate * dur; const buf = ctx.createBuffer(1, bSize, ctx.sampleRate);
+       const d = buf.getChannelData(0); for(let i=0; i<bSize; i++) d[i] = Math.random() * 2 - 1;
+       const src = ctx.createBufferSource(); src.buffer = buf;
+       const nGain = ctx.createGain(); nGain.gain.setValueAtTime(vol, time); nGain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       if(hpFreq) { const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hpFreq; src.connect(f); f.connect(nGain); }
+       else { src.connect(nGain); } nGain.connect(gain); src.start(time);
+    };
+    const playFM = (c, mRatio, idx, dur, vol, time) => {
+       const car = ctx.createOscillator(); const mod = ctx.createOscillator(); const mGain = ctx.createGain(); const out = ctx.createGain();
+       car.frequency.value = c; mod.frequency.value = c * mRatio; mGain.gain.value = idx;
+       out.gain.setValueAtTime(vol, time); out.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       mod.connect(mGain); mGain.connect(car.frequency); car.connect(out); out.connect(gain);
+       car.start(time); mod.start(time); car.stop(time+dur); mod.stop(time+dur);
+    };
+
+    if (false) {} // placeholder\n${drumStyles.map((s, i) => generateDrumCode(s, i)).join('\n')}
+}`;
+            } else {
+                output = generateDrumCode(drumStyles[currentStyleIndex], currentStyleIndex);
+            }
+        }
+
+        ta.value = output;
+        ta.select();
+        document.execCommand('copy');
+    }
+
+    function updateCodeView() {
+        const ta = document.getElementById('code-output');
+        let output = '';
+        if (currentMode === 'synth') {
+            output = generateSynthCode(synthStyles[currentStyleIndex], currentStyleIndex);
+        } else {
+            output = generateDrumCode(drumStyles[currentStyleIndex], currentStyleIndex);
+        }
+        if(output.startsWith('else ')) output = output.substring(5);
+        ta.value = output;
+    }
+</script>
+</body>
+</html>

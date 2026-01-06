@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Forest's Pocket Jams v17.8</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Pangolin&family=Permanent+Marker&display=block" rel="stylesheet">
+
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -17,6 +21,9 @@
             --led-yellow: #ffcc33;
             --accent-gold: #c5a059;
             --knob-silver: #ddd;
+            --font-marker: 'Permanent Marker', cursive;
+            --font-hand: 'Gloria Hallelujah', cursive;
+            --font-ui: 'Pangolin', cursive;
         }
 
         * { 
@@ -630,7 +637,8 @@ let currentMode = 'drums';
 let lastInstrumentMode = 'drums'; 
 let isPowered = true;
 let isMinorScale = false;
-let isGlobalMuted = false;
+let isPaused = false;
+let pauseStart = 0;
 
 // Interaction State
 let heldInstrument = null; 
@@ -1230,13 +1238,11 @@ function updateRecBtnVisual() {
     }
 }
 
-// --- Control Logic ---
 function onRecPress() {
     if(!isPowered) return;
     
-    // FIX 4: CLEAR ALL GESTURE (Hold Undo + Hold Rec for 1.5s)
+    // FIX 4: CLEAR ALL GESTURE
     if (isUndoHeld) {
-        // Start Hold Timer for Delete
         els.recBtn.classList.add('state-finishing'); 
         log("HOLD TO CLEAR...");
         clearAllTimer = setTimeout(() => {
@@ -1246,15 +1252,27 @@ function onRecPress() {
         return;
     }
     
-    // NEW: Auto-Unpause when Record is pressed
-    if (isGlobalMuted) {
-        // Trigger the pause button logic directly
-        loopBus.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
-        pauseBtn.classList.remove('paused');
-        pauseBtn.innerText = "❚❚";
-        isGlobalMuted = false;
+    // --- FIX: AUTO-UNPAUSE & RESET TO START ---
+    if (isPaused) {
+        if (masterLoopLength > 0) {
+            // A. UNMUTE EVERYTHING
+            TRACKS.forEach(t => trackCtx[t].mute = false);
+            updateBackingTrackVolume();
+            updateUI();
+
+            // B. RESET CLOCK
+            loopStartTime = ctx.currentTime;
+            startPlayback(); 
+        }
+        isPaused = false;
+        els.pauseBtn = document.getElementById('btn-pause'); 
+        if(els.pauseBtn) {
+            els.pauseBtn.classList.remove('paused');
+            els.pauseBtn.innerText = "❚❚";
+        }
     }
     
+    // Normal Mute Toggle if pressing instrument button
     if (trackCtx[currentMode].mute) toggleMute(currentMode);
 
     if (currentMode === 'voice' && heldPadIndex !== -1) {
@@ -1291,7 +1309,6 @@ function onRecPress() {
         handleOverdubStop(); 
     }
     else if (currentState === STATE.WAITING_FOR_SYNC) {
-        // User pressed again while waiting? Force finish.
         log("FORCE FINISH");
         performStopOverdub(true);
     }
@@ -2206,29 +2223,45 @@ function applyBeatRepeat(division) {
     });
 }
 
-// Pause Button Logic
+// --- UPDATED PAUSE BUTTON (Stop, Reset & Unmute All) ---
 const pauseBtn = document.getElementById('btn-pause');
 
-// CHANGE: Use pointerdown for responsive mute shortcut
 pauseBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault(); // Prevent double firing
+    e.preventDefault(); 
     
-    // SHORTCUT CHECK: Is an instrument held?
+    // 1. SHORTCUT CHECK: Is an instrument held? (Mute/Unmute Track)
     if (heldInstrument) {
         toggleMute(heldInstrument);
         return;
     }
 
-    isGlobalMuted = !isGlobalMuted;
-    if (isGlobalMuted) {
-        // Only mute the LOOP bus, keep LIVE bus (pads) active
-        loopBus.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
-        pauseBtn.classList.add('paused');
-        pauseBtn.innerText = "▶"; // Visual Fix
-    } else {
-        loopBus.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
+    // 2. MAIN PAUSE LOGIC
+    if (isPaused) {
+        // --- UNPAUSE (PLAY FROM START) ---
+        if (masterLoopLength > 0) {
+            
+            // A. UNMUTE EVERYTHING
+            TRACKS.forEach(t => trackCtx[t].mute = false);
+            updateBackingTrackVolume(); // Apply volume change
+            updateUI(); // Update button visuals (remove red X)
+
+            // B. RESET CLOCK
+            loopStartTime = ctx.currentTime;
+            
+            // C. RESTART ENGINE
+            startPlayback(); 
+        }
+        
+        isPaused = false;
         pauseBtn.classList.remove('paused');
         pauseBtn.innerText = "❚❚";
+        
+    } else {
+        // --- PAUSE (STOP) ---
+        stopAllSources(); 
+        isPaused = true;
+        pauseBtn.classList.add('paused');
+        pauseBtn.innerText = "▶";
     }
 });
 </script>
