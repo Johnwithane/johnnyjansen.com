@@ -638,7 +638,7 @@ let heldInstrument = null;
 let instHoldStartTime = 0;
 
 // EXPANDED SOUND LIBRARY
-const DRUM_STYLES = ['Standard', '808', 'Glass', 'Zap', 'Glitch', 'Game'];
+const DRUM_STYLES = ['Standard', '808', 'Glass', 'Zap', 'Glitch', 'Game', 'Custom 1', 'Custom 2'];
 const SYNTH_STYLES = ['Saw Lead', 'Deep Bass', 'Soft Sine', 'Retro Pad', 'Pluck', 'Chords', 'Acid', 'Dream'];
 let currentDrumIdx = 0; let currentSynthIdx = 0;
 const DRUM_PADS = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
@@ -880,67 +880,273 @@ function createReverbBuffer() {
 
 // --- Sound Engine ---
 function playDrum(type) {
-    const t = ctx.currentTime; const gain = ctx.createGain(); 
+    const t = ctx.currentTime;
+    const gain = ctx.createGain();
     gain.connect(trackCtx.drums.bus);
-    const style = DRUM_STYLES[currentDrumIdx];
 
-    const humanize = (val, amt) => val + ((Math.random() * amt * 2) - amt);
-
-    const hit = (freq, decay, type='sine', vol=1) => {
-        const osc = ctx.createOscillator(); osc.type = type;
-        const f = humanize(freq, freq * 0.02);
-        osc.frequency.setValueAtTime(f, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
-        gain.gain.setValueAtTime(humanize(vol, 0.1), t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
-        osc.connect(gain); osc.start(t); osc.stop(t + decay);
+    const hit = (freq, decay, type, vol) => {
+       const osc = ctx.createOscillator(); osc.type = type;
+       osc.frequency.setValueAtTime(freq, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
+       gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
+       osc.connect(gain); osc.start(t); osc.stop(t + decay);
     };
-    
-    const noise = (dur, vol, time, hp) => makeNoise(dur, vol, time, hp, trackCtx.drums.bus);
+    const noise = (dur, vol, time, hpFreq) => {
+       const bSize = ctx.sampleRate * dur; const buf = ctx.createBuffer(1, bSize, ctx.sampleRate);
+       const d = buf.getChannelData(0); for(let i=0; i<bSize; i++) d[i] = Math.random() * 2 - 1;
+       const src = ctx.createBufferSource(); src.buffer = buf;
+       const nGain = ctx.createGain(); nGain.gain.setValueAtTime(vol, time); nGain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       if(hpFreq) { const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hpFreq; src.connect(f); f.connect(nGain); }
+       else { src.connect(nGain); } nGain.connect(gain); src.start(time);
+    };
+    const playFM = (c, mRatio, idx, dur, vol, time) => {
+       const car = ctx.createOscillator(); const mod = ctx.createOscillator(); const mGain = ctx.createGain(); const out = ctx.createGain();
+       car.frequency.value = c; mod.frequency.value = c * mRatio; mGain.gain.value = idx;
+       out.gain.setValueAtTime(vol, time); out.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       mod.connect(mGain); mGain.connect(car.frequency); car.connect(out); out.connect(gain);
+       car.start(time); mod.start(time); car.stop(time+dur); mod.stop(time+dur);
+    };
 
-    if (style === 'Glass') {
-        if(type === 'kick') { playFM(60, 120, 200, 0.5, 0.9, t); } 
-        else if(type === 'snare') { playFM(400, 850, 500, 0.2, 0.7, t); noise(0.15, 0.5, t, true); } 
-        else if(type === 'hat') { playFM(3000, 4100, 1000, 0.05, 0.4, t); } 
-        else if(type === 'tom') { playFM(200, 280, 150, 0.4, 0.6, t); } 
-        else if(type === 'clap') { playFM(800, 1200, 300, 0.1, 0.5, t); noise(0.05, 0.3, t+0.02, true); } 
-        else if(type === 'crash') { playFM(1000, 234, 2000, 1.2, 0.5, t); noise(0.5, 0.3, t, true); } 
-        else { playFM(1500, 2000, 400, 0.1, 0.4, t); } 
-        return;
-    }
-
-    if(type === 'kick') {
-        if(style === '808') hit(60, 0.8, 'sine', 1);
-        else if(style === 'Zap') { hit(200, 0.2, 'sawtooth', 0.8); noise(0.05, 0.2, t, true); }
-        else if(style === 'Game') { hit(120, 0.1, 'square', 0.6); }
-        else if(style === 'Glitch') { hit(100, 0.05, 'triangle', 0.8); noise(0.02, 0.5, t); } 
-        else hit(150, 0.3);
-    } 
-    else if(type === 'snare') {
-        if(style === '808') { hit(200, 0.1, 'triangle', 0.5); noise(0.2, 0.4, t); }
-        else if(style === 'Zap') { hit(400, 0.1, 'sawtooth', 0.5); noise(0.1, 0.6, t, true); }
-        else if(style === 'Game') { noise(0.1, 0.5, t); }
-        else if(style === 'Glitch') { noise(0.01, 0.8, t); noise(0.01, 0.8, t+0.02); } 
-        else { hit(250, 0.1, 'triangle', 0.5); noise(0.15, 0.7, t); }
-    }
-    else if(type === 'hat') {
-        let len = (style === '808') ? 0.05 : 0.08;
-        if(style === 'Glitch') len = 0.02;
-        if(style === 'Game') { noise(0.05, 0.3, t, true); return; }
-        noise(len, 0.3, t, true);
-    }
-    else if(type === 'tom') {
-        if(style === 'Zap') { hit(600, 0.3, 'sawtooth', 0.4); }
-        else if(style === 'Glitch') { hit(200, 0.05, 'sawtooth', 0.5); }
-        else hit(150, 0.4, 'sine', 0.8);
-    }
-    else if(type === 'clap') {
-        if(style === 'Glitch') { noise(0.01, 0.6, t); noise(0.01, 0.6, t+0.05); }
-        else { noise(0.01, 0.6, t); noise(0.01, 0.5, t+0.015); noise(0.01, 0.4, t+0.03); noise(0.1, 0.3, t+0.04); }
-    }
-    else if(type === 'crash') {
-        if(style === 'Zap') { hit(800, 0.6, 'sawtooth', 0.3); noise(0.5, 0.4, t, true); }
-        else noise(0.8, 0.6, t, true);
-    }
-    else { noise(0.1, 0.5, t); }
+    if (false) {} // placeholder
+// KIT 0: Standard
+else if (currentDrumIdx === 0) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 1: 808
+else if (currentDrumIdx === 1) {
+  
+  if (type === 'kick') {
+    hit(150, 0.8, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(200, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 2: Glass
+else if (currentDrumIdx === 2) {
+  
+  if (type === 'kick') {
+    playFM(150, 225, 200, 0.3, 0.8, t);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    playFM(1500, 6300, 300, 0.05, 0.8, t);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 500, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 3: Zap
+else if (currentDrumIdx === 3) {
+  
+  if (type === 'kick') {
+    hit(300, 0.15, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 2000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    playFM(200, 300, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 4: Glitch
+else if (currentDrumIdx === 4) {
+  
+  if (type === 'kick') {
+    hit(150, 0.05, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0);
+    noise(0.02, 1, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.01, 0.6, t, 8000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 5: Game
+else if (currentDrumIdx === 5) {
+  
+  if (type === 'kick') {
+    playFM(150, 75, 50, 0.3, 0.8, t);
+  }
+  else if (type === 'snare') {
+    hit(400, 0.15, 'triangle', 0.5);
+    noise(0.2, 0.5, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(1500, 3750, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 6: Custom 1
+else if (currentDrumIdx === 6) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 7: Custom 2
+else if (currentDrumIdx === 7) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
 }
 
 function makeNoise(duration, vol, time, highpass = false, dest) {
@@ -982,59 +1188,128 @@ function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
 
 function playSynth(rawFreq) {
     const t = ctx.currentTime;
-    const style = SYNTH_STYLES[currentSynthIdx];
     const gain = ctx.createGain(); 
-    gain.connect(trackCtx.synth.bus);
+    gain.connect(trackCtx.synth.bus); 
     
-    let f = rawFreq; 
-
-    if(style === 'Saw Lead') {
-        const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = f;
-        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(200, t); filter.frequency.exponentialRampToValueAtTime(4000, t + 0.1);
-        gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.4, t+0.02); gain.gain.exponentialRampToValueAtTime(0.01, t+0.6);
-        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t+0.6);
-    }
-    else if (style === 'Deep Bass') {
-        const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = f / 2;
-        const osc2 = ctx.createOscillator(); osc2.type = 'square'; osc2.frequency.value = f / 2;
-        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
-        osc1.connect(gain); osc2.connect(filter); filter.connect(gain);
-        gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.6);
-        osc1.start(t); osc1.stop(t+0.6); osc2.start(t); osc2.stop(t+0.6);
-    }
-    else if (style === 'Chords') {
-        [f, f*1.5, f*2].forEach((fr, i) => {
-            const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = fr;
-            osc.detune.value = Math.random()*10 - 5;
-            const lg = ctx.createGain(); lg.gain.value = 0.2 / (i+1);
-            osc.connect(lg); lg.connect(gain);
-            osc.start(t); osc.stop(t+0.6);
-        });
-        gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(1, t+0.05); gain.gain.exponentialRampToValueAtTime(0.01, t+0.6);
-    }
-    else if (style === 'Acid') {
-        const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = f;
-        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 20;
-        filter.frequency.setValueAtTime(300, t); filter.frequency.linearRampToValueAtTime(2000, t+0.2); filter.frequency.linearRampToValueAtTime(300, t+0.5);
-        osc.connect(filter); filter.connect(gain);
-        gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.5);
-        osc.start(t); osc.stop(t+0.5);
-    }
-    else if (style === 'Dream') {
-        const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = f;
-        const osc2 = ctx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.value = f; osc2.detune.value = 15;
-        gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.4, t+0.3); gain.gain.linearRampToValueAtTime(0, t+1.5);
-        osc.connect(gain); osc2.connect(gain);
-        osc.start(t); osc.stop(t+1.5); osc2.start(t); osc2.stop(t+1.5);
-    }
-    else {
-        const osc = ctx.createOscillator(); osc.type = (style==='Pluck')?'square':'triangle'; osc.frequency.value = f;
-        const filter = ctx.createBiquadFilter(); filter.frequency.value = 2000;
-        if(style==='Pluck') { filter.frequency.exponentialRampToValueAtTime(200, t+0.2); }
-        gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t+0.4);
-        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t+0.4);
-    }
+    if (false) {} // placeholder
+// STYLE 0: Saw Lead
+else if (currentSynthIdx === 0) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 2;
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.linearRampToValueAtTime(3000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
+}
+// STYLE 1: Deep Bass
+else if (currentSynthIdx === 1) {
+    const osc = ctx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.value = rawFreq * 0.25; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(50, t);
+    filter.frequency.linearRampToValueAtTime(300, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(50, t + 0.6);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.6 + 0.5);
+}
+// STYLE 2: Soft Sine
+else if (currentSynthIdx === 2) {
+    const osc = ctx.createOscillator(); osc.type = 'sine';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(1000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 0.8);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.8 + 0.5);
+}
+// STYLE 3: Retro Pad
+else if (currentSynthIdx === 3) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(300, t);
+    filter.frequency.linearRampToValueAtTime(1500, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(300, t + 1);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 3;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 20; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1 + 0.5);
+}
+// STYLE 4: Pluck
+else if (currentSynthIdx === 4) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 8;
+    filter.frequency.setValueAtTime(2000, t);
+    filter.frequency.linearRampToValueAtTime(200, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(2000, t + 0.3);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.3 + 0.5);
+}
+// STYLE 5: Chords
+else if (currentSynthIdx === 5) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.linearRampToValueAtTime(2000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(200, t + 1.5);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.5;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 50; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
+}
+// STYLE 6: Acid
+else if (currentSynthIdx === 6) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 0.5; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 15;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(2500, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 0.4);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
+}
+// STYLE 7: Dream
+else if (currentSynthIdx === 7) {
+    const osc = ctx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.value = rawFreq * 2; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(800, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 1.5);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 4;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 80; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
+}
 }
 
 function playSample(index) {
