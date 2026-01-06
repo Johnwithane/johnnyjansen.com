@@ -1606,7 +1606,23 @@ function onRecPress() {
         return;
     }
     
-    // --- 2. AUTO-UNPAUSE ---
+    // --- 2. PRIORITY: SAMPLING (Check this BEFORE unpausing) ---
+    // A. Sampling (Holding Pad + Rec)
+    if (currentMode === 'voice' && heldPadIndex !== -1) {
+        enableMic(); // <--- ACTIVATE MIC
+        recordingPadIndex = heldPadIndex;
+        currentState = STATE.SAMPLING_ARMED; 
+        
+        const pad = els.padsGrid.children[recordingPadIndex];
+        if(pad) pad.classList.add('recording-armed');
+        log("ARMED: SPEAK"); 
+        updateMicGate(); 
+        updateBackingTrackVolume(); 
+        updateRecBtnVisual();
+        return; // <--- EXIT HERE so we don't unpause
+    }
+
+    // --- 3. AUTO-UNPAUSE (Only if not sampling) ---
     if (isPaused) {
         if (masterLoopLength > 0) {
             TRACKS.forEach(t => trackCtx[t].mute = false);
@@ -1622,25 +1638,9 @@ function onRecPress() {
         }
     }
 
-    // --- 3. MIC ACTIVATION LOGIC ---
-    
-    // A. Sampling (Holding Pad + Rec)
-    if (currentMode === 'voice' && heldPadIndex !== -1) {
-        enableMic(); // <--- ACTIVATE MIC
-        recordingPadIndex = heldPadIndex;
-        currentState = STATE.SAMPLING_ARMED; 
-        
-        const pad = els.padsGrid.children[recordingPadIndex];
-        if(pad) pad.classList.add('recording-armed');
-        log("ARMED: SPEAK"); 
-        updateMicGate(); 
-        updateBackingTrackVolume(); 
-        updateRecBtnVisual();
-        return;
-    }
-
     recPressTime = Date.now();
 
+    // --- 4. MAIN LOOP RECORDING LOGIC ---
     // B. Main Loop Recording
     if (currentState === STATE.IDLE) {
         // ONLY enable mic if we are in Voice Mode
@@ -1652,7 +1652,7 @@ function onRecPress() {
     } 
     else if (currentState === STATE.ARMED) {
         currentState = STATE.IDLE; 
-        disableMic(); // <--- KILL MIC IMMEDIATELY
+        disableMic(); 
         log("CANCELLED"); updateMicGate();
     }
     else if (currentState === STATE.PLAYING) {
@@ -1662,14 +1662,14 @@ function onRecPress() {
     }
     else if (currentState === STATE.OVERDUB_ARMED) {
         currentState = STATE.PLAYING; 
-        disableMic(); // <--- KILL MIC IMMEDIATELY
+        disableMic(); 
         log("CANCELLED"); updateMicGate();
     }
     else if (currentState === STATE.RECORDING_1) {
-        finishFirstLoop(); // FinishFirstLoop calls disableMic inside it
+        finishFirstLoop(); 
     }
     else if (currentState === STATE.OVERDUB) {
-        handleOverdubStop(); // This eventually calls disableMic
+        handleOverdubStop(); 
     }
     else if (currentState === STATE.WAITING_FOR_SYNC) {
         log("FORCE FINISH");
@@ -2541,6 +2541,7 @@ pauseBtn.addEventListener('pointerdown', (e) => {
         pauseBtn.innerText = "▶";
     }
 });
+
 function initKnobs() {
     // --- RIGHT KNOB (MASTER / POST FX) ---
     // Cycle: 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
@@ -2573,8 +2574,8 @@ function initKnobs() {
         else if (rightKnobMode === 2) { 
             // BEAT REPEAT (Red)
             let div = 1;
-            if (val < 0.1) div = 1;         
-            else if (val < 0.3) div = 0.5;  
+            if (val < 0.1) div = 1;          
+            else if (val < 0.3) div = 0.5;   
             else if (val < 0.5) div = 0.25; 
             else if (val < 0.7) div = 0.125;
             else if (val < 0.9) div = 0.0625; 
@@ -2623,8 +2624,10 @@ function initKnobs() {
     updateKnobLed('led-fx', 1, {1:'led-green', 2:'led-blue', 3:'led-red'});
     
     const knobLeftEl = document.getElementById('knob-left');
+    let currentLeftVal = 0.0; // Track value locally
 
     const onLeftRotate = (val) => {
+        currentLeftVal = val; // Store value
         if(!instReverb) return;
         // Reset all momentarily to avoid bleed
         instReverb.gainNode.gain.value = 0;
@@ -2648,11 +2651,9 @@ function initKnobs() {
         leftKnobMode = (leftKnobMode % 3) + 1;
         updateKnobLed('led-fx', leftKnobMode, {1:'led-green', 2:'led-blue', 3:'led-red'});
 
-        // RESET LOGIC
-        leftKnobCtrl.setValue(0.0, true); 
-        if(instReverb) instReverb.gainNode.gain.value = 0;
-        if(instDelayGain) instDelayGain.gain.value = 0;
-        if(distortionGain) distortionGain.gain.value = 0;
+        // UPDATE AUDIO IMMEDIATELY (Do NOT reset visual position)
+        // This applies the current knob position to the NEW mode immediately
+        onLeftRotate(currentLeftVal);
         
     }, true);
     
