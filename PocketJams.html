@@ -701,7 +701,19 @@ els.startBtn.addEventListener('click', async () => {
     try {
         ctx = new AudioContext();
         await ctx.resume();
-        
+
+        // --- PRE-WARM MICROPHONE PERMISSION ---
+        // This asks for permission ONCE at the start.
+        // We immediately stop it to restore volume/quality.
+        // Subsequent calls to enableMic() will likely not prompt the user.
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop()); 
+            // log("MIC PERMISSION GRANTED");
+        } catch(err) {
+            console.warn("Initial Mic Check Failed", err);
+        }
+
         // --- MASTER BUS SETUP ---
         masterGain = ctx.createGain();
         masterGain.gain.value = 0.9;
@@ -1316,23 +1328,27 @@ else if (currentSynthIdx === 7) {
 
 function playSample(index) {
     if(!userSamples[index]) return;
+    
+    // Note: We do NOT call enableMic() here. 
+    // Playback should remain in High Quality mode.
+    
     isSamplePlaying = true;
-    updateMicGate();
+    // updateMicGate(); // Removed this line, not needed for playback only
     
     if(samplePlayTimer) clearTimeout(samplePlayTimer);
     
     const src = ctx.createBufferSource(); src.buffer = userSamples[index]; 
-    src.connect(trackCtx.voice.bus); 
-    src.connect(voiceRecordingBus);
     
-    // NEW: Also connect to liveBus so we hear samples when paused
-    src.connect(liveBus);
+    // Connect to LiveBus so we hear it, but NOT to the recording bus 
+    // unless we are actually recording (which is handled by mixer logic)
+    src.connect(trackCtx.voice.bus); 
+    src.connect(liveBus); 
     
     src.start(0);
     
     samplePlayTimer = setTimeout(() => {
         isSamplePlaying = false;
-        updateMicGate();
+        // updateMicGate(); // Removed
     }, src.buffer.duration * 1000);
 }
 
@@ -1497,57 +1513,75 @@ function updateRecBtnVisual() {
     }
 }
 
+// --- MICROPHONE MANAGEMENT ---
+
 async function enableMic() {
-    if (micStream && micStream.active) return; 
+    // If already active, don't do anything (prevents glitches)
+    if (micStream && micStream.active) return;
 
     try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: { 
-            echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 
-        }});
+        // Request stream - echoCancellation: false is CRITICAL for music quality
+        micStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { 
+                echoCancellation: false, 
+                noiseSuppression: false, 
+                autoGainControl: false, 
+                latency: 0 
+            }
+        });
         
         micNode = ctx.createMediaStreamSource(micStream);
         micCompressor = ctx.createDynamicsCompressor();
-        // ... (Compressor settings same as before) ...
+        
+        // Compressor Settings (Light compression for input)
         micCompressor.threshold.value = -24;
         micCompressor.knee.value = 30;
         micCompressor.ratio.value = 12;
         micCompressor.attack.value = 0.003;
         micCompressor.release.value = 0.25;
 
-        // FIX: Don't create new Gate, use the global one
-        micGateGain.gain.value = 1; 
+        // Reset Gate to Open
+        micGateGain.gain.cancelScheduledValues(ctx.currentTime);
+        micGateGain.gain.setValueAtTime(1, ctx.currentTime);
 
         // Wiring
         micNode.connect(micCompressor);
         micCompressor.connect(analyser); 
         micCompressor.connect(micGateGain); // Connect to existing gate
         
-        log("MIC ON");
+        // Visual Log
+        // console.log("Mic Hardware Started - Call Mode Active");
     } catch (e) {
         console.warn("Mic Error:", e);
-        log("MIC ERROR");
+        log("MIC DENIED");
     }
 }
 
 function disableMic() {
     if (!micStream) return;
 
-    // Stop all hardware tracks to release "Call Mode" on mobile
+    // CRITICAL: Stop all hardware tracks. 
+    // This tells the OS "We are done with the phone call", 
+    // forcing it to switch back to High Quality / High Volume audio.
     micStream.getTracks().forEach(track => track.stop());
+    
     micStream = null;
     
-    // Disconnect nodes to prevent garbage
-    if (micNode) { try { micNode.disconnect(); } catch(e){} micNode = null; }
+    // Disconnect nodes to clean up graph
+    if (micNode) { 
+        try { micNode.disconnect(); } catch(e){} 
+        micNode = null; 
+    }
     
     // Visual cleanup
     updateLedBar(0); 
-    log("MIC OFF");
+    // console.log("Mic Hardware Stopped - Media Mode Restored");
 }
 
 function onRecPress() {
     if(!isPowered) return;
     
-    // --- 1. CLEAR ALL GESTURE (Restored) ---
+    // --- 1. CLEAR ALL GESTURE ---
     if (isUndoHeld) {
         els.recBtn.classList.add('state-finishing'); 
         log("HOLD TO CLEAR...");
@@ -1558,15 +1592,12 @@ function onRecPress() {
         return;
     }
     
-    // --- 2. AUTO-UNPAUSE & RESET (Restored) ---
+    // --- 2. AUTO-UNPAUSE ---
     if (isPaused) {
         if (masterLoopLength > 0) {
-            // A. UNMUTE EVERYTHING
             TRACKS.forEach(t => trackCtx[t].mute = false);
             updateBackingTrackVolume();
             updateUI();
-
-            // B. RESET CLOCK
             loopStartTime = ctx.currentTime;
             startPlayback(); 
         }
@@ -1578,9 +1609,10 @@ function onRecPress() {
     }
 
     // --- 3. MIC ACTIVATION LOGIC ---
+    
     // A. Sampling (Holding Pad + Rec)
     if (currentMode === 'voice' && heldPadIndex !== -1) {
-        enableMic(); 
+        enableMic(); // <--- ACTIVATE MIC
         recordingPadIndex = heldPadIndex;
         currentState = STATE.SAMPLING_ARMED; 
         
@@ -1595,31 +1627,35 @@ function onRecPress() {
 
     recPressTime = Date.now();
 
-    // B. Main Loop Recording (Only if Voice is selected)
+    // B. Main Loop Recording
     if (currentState === STATE.IDLE) {
+        // ONLY enable mic if we are in Voice Mode
         if(currentMode === 'voice') enableMic(); 
+        
         currentState = STATE.ARMED; 
         recordingStream = []; preRollBuffer = [];
         log("ARMED: MAKE SOUND"); updateMicGate();
     } 
     else if (currentState === STATE.ARMED) {
-        // Cancelling Armed State
-        disableMic(); 
         currentState = STATE.IDLE; 
+        disableMic(); // <--- KILL MIC IMMEDIATELY
         log("CANCELLED"); updateMicGate();
     }
     else if (currentState === STATE.PLAYING) {
-        if(currentMode === 'voice') enableMic(); 
+        // ONLY enable mic for overdub if in Voice Mode
+        if(currentMode === 'voice') enableMic();
         armOverdub();
     }
     else if (currentState === STATE.OVERDUB_ARMED) {
-        currentState = STATE.PLAYING; log("CANCELLED"); updateMicGate();
+        currentState = STATE.PLAYING; 
+        disableMic(); // <--- KILL MIC IMMEDIATELY
+        log("CANCELLED"); updateMicGate();
     }
     else if (currentState === STATE.RECORDING_1) {
-        finishFirstLoop();
+        finishFirstLoop(); // FinishFirstLoop calls disableMic inside it
     }
     else if (currentState === STATE.OVERDUB) {
-        handleOverdubStop(); 
+        handleOverdubStop(); // This eventually calls disableMic
     }
     else if (currentState === STATE.WAITING_FOR_SYNC) {
         log("FORCE FINISH");
