@@ -434,37 +434,46 @@
 
 <div id="desktop-instructions">
     <h3>USER MANUAL v17.8</h3>
-    <div class="section-title">BASICS</div>
+    
+    <div class="section-title">LOOPER WORKFLOW</div>
     <ul>
-        <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
-        <li><span>OVERDUB</span> <strong>ARM by Tap, Signal Starts</strong></li>
-        <li><span>VOICE SAMPLE</span> <strong>Hold PAD + REC</strong></li>
+        <li><span>REC (NEW)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>REC (DUB)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>STOP REC</span> <strong>Tap REC (Waits for Bar)</strong></li>
+        <li><span>VOICE SAMPLE</span> <strong>Hold PAD + Tap REC</strong></li>
     </ul>
     
     <div class="section-title">TRACK CONTROL</div>
     <ul>
-        <li><span>MUTE TRACK</span> <strong>Hold INSTRUMENT + Press PAUSE</strong></li>
+        <li><span>UNDO/REDO</span> <strong>Tap UNDO (Last Take)</strong></li>
         <li><span>CLEAR TRACK</span> <strong>Hold UNDO (1s)</strong></li>
-        <li><span>UNMUTE</span> <strong>Tap INSTRUMENT + PAUSE</strong></li>
-        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Hold REC (1.5s)</strong></li>
+        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Hold REC</strong></li>
+        <li><span>MUTE/SOLO</span> <strong>Hold Inst Button + Tap PAUSE</strong></li>
+    </ul>
+
+    <div class="section-title">KNOBS (CLICK TO CYCLE MODE)</div>
+    <ul>
+        <li><span>LEFT KNOB</span> <strong>PRE-FX AMOUNT</strong></li>
+        <li style="font-size:9px; opacity:0.8; margin-bottom: 10px;">
+            <span style="color:var(--led-green)">● Reverb</span>
+            <span style="color:var(--led-blue)">● Delay</span>
+            <span style="color:var(--led-red)">● Distort</span>
+        </li>
+        
+        <li><span>RIGHT KNOB</span> <strong>MASTER CHANNEL</strong></li>
+        <li style="font-size:9px; opacity:0.8;">
+            <span style="color:var(--led-green)">● Filter</span>
+            <span style="color:var(--led-red)">● Repeater</span>
+            <span style="color:var(--led-blue)">● Speed</span>
+        </li>
     </ul>
     
     <div class="section-title">KEYBOARD SHORTCUTS</div>
     <ul>
-        <li><span>REC</span> <strong>SHIFT</strong></li>
-        <li><span>UNDO</span> <strong>CTRL</strong></li>
-        <li><span>INSTRUMENTS</span> <strong>1 / 2 / 3</strong></li>
-        <li><span>PADS (TOP)</span> <strong>Q W E R</strong></li>
-        <li><span>PADS (BOT)</span> <strong>A S D F</strong></li>
-        <li><span>POWER</span> <strong>SPACE</strong></li>
-    </ul>
-
-    <div class="section-title">SOUND DESIGN</div>
-    <ul>
-        <li><span>CHANGE SOUND</span> <strong>Click Instrument Btn</strong></li>
-        <li><span>SYNTH SCALE</span> <strong>Switch above Synth</strong></li>
-        <li><span>FX KNOB</span> <strong>Reverb (L) / Delay (R)</strong></li>
-        <li><span>SPEED KNOB</span> <strong>Slow (L) / Fast (R)</strong></li>
+        <li><span>REC / UNDO</span> <strong>SHIFT / CTRL</strong></li>
+        <li><span>INST SELECT</span> <strong>1 (Synth) 2 (Mic) 3 (Drum)</strong></li>
+        <li><span>PADS</span> <strong>Q W E R / A S D F</strong></li>
+        <li><span>POWER</span> <strong>SPACEBAR</strong></li>
     </ul>
 </div>
 
@@ -531,15 +540,16 @@
     <p>Version 17.8</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
- 
-        <span>LOOP/DUB:</span> <strong>Tap REC (Toggle) or Hold</strong><br>
-        <span>VOICE SAMPLE:</span> <strong>Hold PAD + REC</strong><br>
-        <span>MUTE TRACK:</span> <strong>Hold Inst Button + Press PAUSE</strong><br>
-        <span>CLEAR TRACK:</span> <strong>Hold UNDO (1s)</strong><br>
-        <span>CLEAR ALL:</span> <strong>Hold UNDO + Hold REC (1.5s)</strong><br>
+
+        <span>RECORDING:</span> <strong>Tap REC to Arm (Signal Triggers Start)</strong><br>
+        <span>SAMPLING:</span> <strong>Hold a Pad + Tap REC to capture Mic</strong><br>
+        <br>
+        <span>LEFT KNOB:</span> <strong>Click to Cycle FX (Reverb/Delay/Dist)</strong><br>
+        <span>RIGHT KNOB:</span> <strong>Click to Cycle Master (Filter/Repeat/Speed)</strong><br>
+        <br>
         <span style="color:#aaa; display:block; margin-top:5px; border-top:1px solid #444; padding-top:5px;">
-        Tap Instrument Button to Cycle Sounds<br>
-        Keys: 1=Synth, 2=Voice, 3=Drums
+        <strong>UNDO:</strong> Tap to Undo Layer / Hold to Clear Track<br>
+        <strong>RESET:</strong> Tap Pause (Stop) / Tap again to Resume All
         </span>
 
     </p>
