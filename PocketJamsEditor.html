@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forest's Sound Lab v4.2</title>
+    <title>Forest's Sound Lab v4.3</title>
     <style>
         body {
             background: #111;
@@ -94,7 +94,7 @@
             font-family: inherit;
             padding: 5px 10px;
             border-radius: 4px;
-            width: 150px;
+            width: 200px;
             font-weight: bold;
             text-align: center;
         }
@@ -255,7 +255,7 @@
     <div id="init-overlay"><button id="init-btn">CLICK TO START LAB</button></div>
     <div id="save-indicator">Saved</div>
 
-    <h2>Sound Lab v4.2</h2>
+    <h2>Sound Lab v4.3</h2>
 
     <!-- Controls -->
     <div class="controls-top">
@@ -315,17 +315,17 @@
     // Top row (0-3), Bottom row (4-7)
     const KEY_MAP = ['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'];
 
-    // --- PRESET DATA ---
+    // --- PRESET DATA (UPDATED WITH NEW DEFAULTS) ---
     // [[SYNTH_PRESETS_START]]
     const SYNTH_PRESETS = [
-        { name: "Saw Lead", wave: 'sawtooth', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 200, filterEnd: 3000, resonance: 2 },
-        { name: "Deep Bass", wave: 'triangle', octave: -2, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.6, filterStart: 50, filterEnd: 300, resonance: 1 },
-        { name: "Soft Sine", wave: 'sine', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.2, decay: 0.8, filterStart: 100, filterEnd: 1000, resonance: 1 },
-        { name: "Retro Pad", wave: 'square', octave: 0, lfoDepth: 2, lfoRate: 3, attack: 0.3, decay: 1.0, filterStart: 300, filterEnd: 1500, resonance: 1 },
-        { name: "Pluck", wave: 'square', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.01, decay: 0.3, filterStart: 2000, filterEnd: 200, resonance: 8 },
-        { name: "Chords", wave: 'sawtooth', octave: 0, lfoDepth: 5, lfoRate: 0.5, attack: 0.1, decay: 1.5, filterStart: 200, filterEnd: 2000, resonance: 3 },
-        { name: "Acid", wave: 'sawtooth', octave: -1, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 100, filterEnd: 2500, resonance: 15 },
-        { name: "Dream", wave: 'triangle', octave: 1, lfoDepth: 8, lfoRate: 4, attack: 0.4, decay: 1.5, filterStart: 100, filterEnd: 800, resonance: 1 }
+        { name: "In A Hole", wave: 'sine', octave: -3, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 1.3, filterStart: 200, filterEnd: 4400, resonance: 2 },
+        { name: "Wiggle", wave: 'triangle', octave: 0, lfoDepth: 69, lfoRate: 12.8, attack: 0.156, decay: 1.0, filterStart: 50, filterEnd: 4300, resonance: 1 },
+        { name: "Riser Bass", wave: 'square', octave: -3, lfoDepth: 0, lfoRate: 5, attack: 0.5, decay: 0.5, filterStart: 850, filterEnd: 7900, resonance: 5 },
+        { name: "WOW", wave: 'square', octave: -3, lfoDepth: 4, lfoRate: 5.8, attack: 0.1, decay: 0.4, filterStart: 260, filterEnd: 2900, resonance: 19 },
+        { name: "Block", wave: 'triangle', octave: -3, lfoDepth: 0, lfoRate: 5, attack: 0.01, decay: 0.6, filterStart: 2000, filterEnd: 4700, resonance: 8 },
+        { name: "CRAZYTRAIN", wave: 'square', octave: -3, lfoDepth: 100, lfoRate: 0.1, attack: 0.2, decay: 2.0, filterStart: 2000, filterEnd: 10000, resonance: 1 },
+        { name: "Acid", wave: 'square', octave: -3, lfoDepth: 56, lfoRate: 5.9, attack: 0.3, decay: 1.0, filterStart: 1490, filterEnd: 10000, resonance: 1 },
+        { name: "Too Much Of A Nightmare", wave: 'sawtooth', octave: -3, lfoDepth: 20, lfoRate: 20, attack: 0.4, decay: 1.5, filterStart: 220, filterEnd: 2100, resonance: 20 }
     ];
     // [[SYNTH_PRESETS_END]]
 
@@ -349,14 +349,86 @@
 
     // [[DRUM_PRESETS_START]]
     const DRUM_PRESETS = [
-        makeKit("Standard"),
-        makeKit("808", k => { k.kick.decay=0.8; k.kick.endFreq=30; k.snare.tuneFreq=200; k.hat.decay=0.05; }),
-        makeKit("Glass", k => { k.kick.fmAmount=200; k.kick.fmRatio=1.5; k.perc1.fmAmount=500; k.hat.fmAmount=300; k.hat.fmRatio=4.2; }),
-        makeKit("Zap", k => { k.kick.startFreq=300; k.kick.decay=0.15; k.snare.filter=2000; k.tom.fmAmount=200; k.tom.decay=0.1; }),
-        makeKit("Glitch", k => { k.kick.decay=0.05; k.snare.noiseBal=1; k.snare.decay=0.02; k.hat.freq=8000; k.hat.decay=0.01; }),
-        makeKit("Game", k => { k.kick.fmAmount=50; k.kick.fmRatio=0.5; k.snare.noiseBal=0.5; k.snare.tuneFreq=400; k.perc1.startFreq=1500; }),
-        makeKit("Custom 1"),
-        makeKit("Custom 2")
+        makeKit("Greatest hit", k => {
+            k.kick.startFreq=150; k.kick.decay=0.3;
+            k.snare.tuneFreq=250; k.snare.fmAmount=70; k.snare.fmRatio=0.6; k.snare.noiseBal=0.5; k.snare.decay=0.12; k.snare.filter=400;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.decay=0.31;
+            k.clap.tuneFreq=800; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.07;
+            k.crash.freq=1100; k.crash.decay=0.74;
+        }),
+        makeKit("808", k => {
+            k.kick.startFreq=150; k.kick.decay=0.57;
+            k.snare.tuneFreq=200; k.snare.noiseBal=0.8; k.snare.decay=0.2; k.snare.filter=1000;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=640; k.clap.noiseBal=0.4; k.clap.decay=0.22; k.clap.filter=100;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.5;
+            k.perc2.startFreq=2000; k.perc2.fmAmount=180; k.perc2.fmRatio=1.8; k.perc2.decay=0.06;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("History", k => {
+            k.kick.startFreq=50; k.kick.fmAmount=290; k.kick.fmRatio=1.5; k.kick.decay=0.39;
+            k.snare.tuneFreq=250; k.snare.noiseBal=0.8; k.snare.decay=0.2; k.snare.filter=1000;
+            k.hat.freq=1025; k.hat.fmAmount=30; k.hat.fmRatio=1.1; k.hat.decay=0.14;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=240; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=500; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.14;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("Command", k => {
+            k.kick.startFreq=300; k.kick.decay=0.15;
+            k.snare.filter=2000;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.fmAmount=200; k.tom.fmRatio=1.5; k.tom.decay=0.1;
+            k.clap.filter=500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.2;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("Option", k => {
+            k.kick.startFreq=150; k.kick.decay=0.11;
+            k.snare.tuneFreq=250; k.snare.noiseBal=1.0; k.snare.decay=0.1; k.snare.filter=1000;
+            k.hat.freq=8000; k.hat.decay=0.04;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=800; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.2;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("GAMEBOY", k => {
+            k.kick.startFreq=150; k.kick.fmAmount=50; k.kick.fmRatio=0.5; k.kick.decay=0.3;
+            k.snare.tuneFreq=400; k.snare.noiseBal=0.5; k.snare.decay=0.2; k.snare.filter=1000;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=800; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=1500; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.2;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("Custom Beat", k => {
+            k.kick.startFreq=150; k.kick.decay=0.3;
+            k.snare.tuneFreq=250; k.snare.noiseBal=0.8; k.snare.decay=0.2; k.snare.filter=1000;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=800; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.2;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        }),
+        makeKit("ANOTHER Custom Beat", k => {
+            k.kick.startFreq=150; k.kick.decay=0.3;
+            k.snare.tuneFreq=250; k.snare.noiseBal=0.8; k.snare.decay=0.2; k.snare.filter=1000;
+            k.hat.freq=6000; k.hat.decay=0.05;
+            k.tom.startFreq=200; k.tom.decay=0.4;
+            k.clap.tuneFreq=800; k.clap.noiseBal=0.9; k.clap.decay=0.15; k.clap.filter=1500;
+            k.perc1.startFreq=800; k.perc1.fmAmount=200; k.perc1.fmRatio=2.5; k.perc1.decay=0.1;
+            k.perc2.startFreq=1200; k.perc2.decay=0.2;
+            k.crash.freq=3000; k.crash.decay=1.2;
+        })
     ];
     // [[DRUM_PRESETS_END]]
 
@@ -401,9 +473,6 @@
 
     function resetData() {
         if(confirm("Reset all sounds to factory defaults?")) {
-            // Re-init from constants (make sure to re-run makeKit logic if needed by re-parsing original)
-            // Ideally we reload page, but we can just reload from markers logic if we had them as raw objects.
-            // Simplified: Clear storage and reload page
             localStorage.removeItem('forestSoundLabData');
             location.reload();
         }
@@ -415,9 +484,6 @@
         
         // Prepare replacement strings (Indent for clean formatting)
         const synthJSON = `const SYNTH_PRESETS = ${JSON.stringify(synthStyles, null, 4)};`;
-        
-        // For drums, since we don't want to rely on 'makeKit' execution order in the baked file,
-        // we just dump the final object array directly.
         const drumJSON = `const DRUM_PRESETS = ${JSON.stringify(drumStyles, null, 4)};`;
 
         // Replace Synth Block using comments
@@ -584,7 +650,7 @@
             addGroup(container, "ENVELOPE & FILTER");
             addSlider(container, "Attack", 0.001, 0.5, 0.001, params.attack, v => params.attack = v);
             addSlider(container, "Decay", 0.1, 2.0, 0.1, params.decay, v => params.decay = v);
-            addSlider(container, "Filter Start", 50, 2000, 10, params.filterStart, v => params.filterStart = v);
+            addSlider(container, "Filter Start", 50, 5000, 10, params.filterStart, v => params.filterStart = v);
             addSlider(container, "Filter End", 500, 10000, 100, params.filterEnd, v => params.filterEnd = v);
             addSlider(container, "Resonance", 1, 20, 1, params.resonance, v => params.resonance = v);
 
