@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v16.6</title>
+    <title>Forest's Pocket Jams v16.9</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -13,6 +13,7 @@
             --led-red: #ff3333;
             --led-green: #33ff33;
             --led-blue: #33ccff;
+            --led-orange: #ff9900; 
             --led-yellow: #ffcc33;
             --accent-gold: #c5a059;
             --knob-silver: #ddd;
@@ -121,7 +122,9 @@
         #device.powered-off .pad.active,
         #device.powered-off .pad.has-sample,
         #device.powered-off .mode-btn.selected,
-        #device.powered-off .mode-btn.has-audio {
+        #device.powered-off .mode-btn.has-audio,
+        #device.powered-off .pause-btn,
+        #device.powered-off .undo-btn {
             background-color: #111 !important;
             box-shadow: none !important;
             border-color: #333 !important;
@@ -258,14 +261,36 @@
 
         .undo-btn {
             width: 50px; height: 50px; border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #33ccff, #006699);
+            /* Orange for Undo */
+            background: radial-gradient(circle at 30% 30%, #ffaa00, #cc6600);
             border: 2px solid #111; color: #fff; font-size: 24px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 #442200, 0 5px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: all 0.1s;
+        }
+        .undo-btn:active, .undo-btn.active-key { transform: translateY(2px); box-shadow: 0 2px 0 #442200; }
+        .undo-btn.reset-flash { background: #fff; box-shadow: 0 0 20px #fff; }
+
+        /* New Pause Button Style - Always Blue */
+        .pause-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            /* Blue Always */
+            background: radial-gradient(circle at 30% 30%, #33ccff, #006699);
+            border: 2px solid #111; color: #fff; font-size: 16px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 0 #002233, 0 5px 10px rgba(0,0,0,0.5);
             cursor: pointer; transition: all 0.1s;
+            font-family: monospace;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .undo-btn:active, .undo-btn.active-key { transform: translateY(2px); box-shadow: 0 2px 0 #002233; }
-        .undo-btn.reset-flash { background: #fff; box-shadow: 0 0 20px #fff; }
+        .pause-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #002233; }
+        /* Paused State: Keeps blue, icon changes in JS */
+        .pause-btn.paused { 
+            /* Same blue */
+             background: radial-gradient(circle at 30% 30%, #33ccff, #006699);
+             box-shadow: 0 4px 0 #002233; 
+             opacity: 0.8;
+        }
 
         @keyframes flash-white { 0% { background-color: #fff; color: #000; } 100% { background-color: #222; color: #555; } }
         .flash-trigger { animation: flash-white 0.2s ease-out; }
@@ -371,7 +396,7 @@
 <body oncontextmenu="return false;">
 
 <div id="desktop-instructions">
-    <h3>USER MANUAL v16.6</h3>
+    <h3>USER MANUAL v16.9</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
@@ -381,10 +406,10 @@
     
     <div class="section-title">TRACK CONTROL</div>
     <ul>
-        <li><span>MUTE TRACK</span> <strong>Hold INSTRUMENT + Press UNDO</strong></li>
-        <li><span>CLEAR TRACK</span> <strong>Hold INSTRUMENT + Hold UNDO</strong></li>
-        <li><span>UNMUTE</span> <strong>Tap INSTRUMENT + UNDO</strong></li>
-        <li><span>CLEAR ALL</span> <strong>Hold UNDO (No Inst held)</strong></li>
+        <li><span>MUTE TRACK</span> <strong>Hold INSTRUMENT + Press PAUSE</strong></li>
+        <li><span>CLEAR TRACK</span> <strong>Hold UNDO (1s)</strong></li>
+        <li><span>UNMUTE</span> <strong>Tap INSTRUMENT + PAUSE</strong></li>
+        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Press REC</strong></li>
     </ul>
     
     <div class="section-title">KEYBOARD SHORTCUTS</div>
@@ -435,6 +460,7 @@
     </div>
 
     <div class="mid-section">
+        <div class="pause-btn" id="btn-pause">❚❚</div>
         <div class="rec-btn" id="btn-rec">● REC</div>
         <div class="undo-btn" id="btn-undo">↺</div>
     </div>
@@ -457,15 +483,15 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 16.6</p>
+    <p>Version 16.9</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
         <span>LOOP/DUB:</span> <strong>Tap REC (Toggle) or Hold</strong><br>
         <span>VOICE SAMPLE:</span> <strong>Hold PAD + REC</strong><br>
-        <span>MUTE TRACK:</span> <strong>Hold Inst Button + Press UNDO</strong><br>
-        <span>CLEAR TRACK:</span> <strong>Hold Inst Button + Hold UNDO</strong><br>
-        <span>CLEAR ALL:</span> <strong>Hold UNDO (Alone)</strong><br>
+        <span>MUTE TRACK:</span> <strong>Hold Inst Button + Press PAUSE</strong><br>
+        <span>CLEAR TRACK:</span> <strong>Hold UNDO (1s)</strong><br>
+        <span>CLEAR ALL:</span> <strong>Hold UNDO + Press REC</strong><br>
         <span style="color:#aaa; display:block; margin-top:5px; border-top:1px solid #444; padding-top:5px;">
         Tap Instrument Button to Cycle Sounds<br>
         Keys: 1=Synth, 2=Voice, 3=Drums
@@ -481,10 +507,11 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V16.6
- * - Fixed Undo/Redo to be a state toggle for the last recording
- * - Added FX Recording (Reverb/Delay now prints to loop)
- * - Fixed Instrument selection changing variation on switch
+ * FOREST'S POCKET JAMROOM - V16.9
+ * - Visuals: Pause is Blue/Symbol change, Undo is Orange
+ * - Feature: Instant Quantized Stop (Crops/Pads loop to 1/4, 1/2, 1x, 2x master length)
+ * - Control: Clear Track = Hold Undo (1s)
+ * - Control: Reset Jam = Hold Undo + Press REC
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -505,6 +532,7 @@ let trackCtx = {
 // Undo Storage
 let undoBackup = null; 
 let undoTrackName = null;
+let isUndoHeld = false; // New flag for shortcuts
 
 // FX Nodes
 let reverbBuffer = null;
@@ -671,6 +699,9 @@ els.startBtn.addEventListener('click', async () => {
             
             // CRITICAL: Route Mic to Voice RECORDING Bus ONLY.
             micGateGain.connect(voiceRecordingBus);
+            
+            // NEW: Route Mic to FX Bus for Reverb/Delay on Voice
+            micGateGain.connect(fxBus); 
             
         } catch (e) { console.warn("Mic access denied."); }
 
@@ -928,8 +959,6 @@ function setupRecorder() {
     
     TRACKS.forEach(t => recGates[t].connect(recorderNode));
     
-    // FIX 2: Connect Shared FX Return to Recorder so FX are printed
-    // Only 'Live' audio goes to FX Bus, so this won't feedback loop with the loops.
     if(fxReturn) fxReturn.connect(recorderNode);
     
     const zeroGain = ctx.createGain(); zeroGain.gain.value = 0; recorderNode.connect(zeroGain); zeroGain.connect(ctx.destination);
@@ -993,7 +1022,6 @@ function updateRecBtnVisual() {
         els.recBtn.classList.add('state-recording');
     } 
     else if (currentState === STATE.OVERDUB) {
-        // "when an instrument already has a loop then the overdub color should always be YELLOW"
         if (trackHasContent) {
             els.recBtn.classList.add('state-overdub'); // Yellow
         } else {
@@ -1018,6 +1046,14 @@ function updateRecBtnVisual() {
 // --- Control Logic ---
 function onRecPress() {
     if(!isPowered) return;
+    
+    // FIX 4: CLEAR ALL GESTURE (Hold Undo + Rec)
+    if (isUndoHeld) {
+        resetDevice();
+        // Reset flag so releasing Undo doesn't trigger clearTrack
+        isUndoHeld = false; 
+        return;
+    }
     
     if (trackCtx[currentMode].mute) toggleMute(currentMode);
 
@@ -1052,7 +1088,7 @@ function onRecPress() {
         finishFirstLoop();
     }
     else if (currentState === STATE.OVERDUB) {
-        stopOverdub();
+        handleOverdubStop(); 
     }
     updateRecBtnVisual();
 }
@@ -1120,14 +1156,12 @@ function finishFirstLoop() {
     const data = rawBuffer.getChannelData(0); let offset = 0;
     for(let chunk of recordingStream) { data.set(chunk, offset); offset += chunk.length; }
     
-    // Set up Undo for First Loop (Undo means clear it)
     undoTrackName = currentMode;
-    undoBackup = null; // Represents 'Empty'
+    undoBackup = null; 
     
     trackCtx[currentMode].buffer = rawBuffer;
-    trackCtx[currentMode].hasContent = true; // Mark as having content
+    trackCtx[currentMode].hasContent = true;
 
-    // Initialize other tracks
     TRACKS.forEach(t => {
         if (t !== currentMode) {
             trackCtx[t].buffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
@@ -1151,7 +1185,11 @@ function armOverdub() {
 }
 
 function startOverdubRecording() {
-    if (masterLoopLength > 0) {
+    const isOverdubbingExisting = trackCtx[currentMode].hasContent;
+    
+    // Auto-stop logic: Only applies if we are overdubbing on top of existing material
+    // New tracks (isOverdubbingExisting = false) do NOT auto-stop anymore.
+    if (masterLoopLength > 0 && isOverdubbingExisting) {
         const loopDuration = masterLoopLength / ctx.sampleRate;
         const rate = Math.abs(playbackRate) || 1.0;
         const timeToRecord = loopDuration / rate; 
@@ -1160,7 +1198,7 @@ function startOverdubRecording() {
         autoStopTimer = setTimeout(() => {
             if (currentState === STATE.OVERDUB) {
                 log("AUTO STOP");
-                stopOverdub();
+                performStopOverdub(); 
             }
         }, timeToRecord * 1000);
     }
@@ -1174,55 +1212,139 @@ function startOverdubRecording() {
     updateRecBtnVisual();
 }
 
-function stopOverdub() {
+// FIX 2: INSTANT SMART SYNC
+function handleOverdubStop() {
+    const isNewTrack = !trackCtx[currentMode].hasContent;
+    
+    // Only smart-sync if we are creating a fresh loop on a new track
+    if (isNewTrack && masterLoopLength > 0) {
+        const currentSampleCount = recordingStream.length * bufferSize;
+        const ratios = [0.25, 0.5, 1.0, 2.0, 4.0];
+        const targets = ratios.map(r => Math.floor(masterLoopLength * r));
+        
+        // Find nearest target length
+        let bestTarget = targets[0];
+        let minDiff = Math.abs(currentSampleCount - bestTarget);
+        
+        for (let t of targets) {
+            const diff = Math.abs(currentSampleCount - t);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestTarget = t;
+            }
+        }
+        
+        // We now have the "Ideal" length. We will force the recording to this length.
+        // If actual recording is shorter -> Pad with silence.
+        // If actual recording is longer -> Crop.
+        
+        // Flatten recorded stream
+        const totalRecorded = recordingStream.length * bufferSize;
+        const flatStream = new Float32Array(totalRecorded);
+        let offset = 0;
+        for(let chunk of recordingStream) { flatStream.set(chunk, offset); offset += chunk.length; }
+        
+        // Create perfect buffer
+        const finalBuffer = ctx.createBuffer(1, bestTarget, ctx.sampleRate);
+        const finalData = finalBuffer.getChannelData(0);
+        
+        // Copy data (up to the limit of either)
+        const copyAmount = Math.min(totalRecorded, bestTarget);
+        finalData.set(flatStream.subarray(0, copyAmount));
+        
+        // (Optional: Small fade out at the splice point to prevent clicking if we cropped)
+        if (copyAmount > 100) {
+            for(let i=0; i<100; i++) {
+                finalData[copyAmount - 1 - i] *= (i/100);
+            }
+        }
+
+        // Apply
+        trackCtx[currentMode].buffer = finalBuffer;
+        trackCtx[currentMode].hasContent = true;
+        
+        undoBackup = null; 
+        undoTrackName = currentMode;
+        
+        log("SYNCED LOOP");
+        
+        currentState = STATE.PLAYING; 
+        updateMicGate();
+        updateBackingTrackVolume();
+        updateRecBtnVisual();
+        
+        restartPlayback();
+        return;
+    }
+    
+    performStopOverdub();
+}
+
+function performStopOverdub() {
     clearTimeout(autoStopTimer); 
+    
     currentState = STATE.PLAYING; log("PLAYING"); 
     updateMicGate();
     updateBackingTrackVolume(); 
     
-
     if(masterLoopLength === 0 || recordingStream.length === 0) { updateRecBtnVisual(); return; }
 
-    // FIX 1: Set up UNDO before we modify the buffer
+    const isOverdubbingExisting = trackCtx[currentMode].hasContent;
+
     if (trackCtx[currentMode].buffer) {
         const existingBuf = trackCtx[currentMode].buffer;
-        // Deep copy the current state into undoBackup
         undoBackup = ctx.createBuffer(1, existingBuf.length, existingBuf.sampleRate);
         undoBackup.copyToChannel(existingBuf.getChannelData(0), 0);
         undoTrackName = currentMode;
         log("DUBBED (UNDO AVAIL)");
+    } else {
+        undoBackup = null;
+        undoTrackName = currentMode;
     }
 
-    const targetBuffer = trackCtx[currentMode].buffer;
-    const oldData = targetBuffer.getChannelData(0);
-    const loopTotalSamples = masterLoopLength;
-    
-    let timeElapsed = ctx.currentTime - loopStartTime;
-    let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
-    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
-    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+    if (isOverdubbingExisting) {
+        const targetBuffer = trackCtx[currentMode].buffer;
+        const oldData = targetBuffer.getChannelData(0);
+        const loopTotalSamples = masterLoopLength;
+        
+        let timeElapsed = ctx.currentTime - loopStartTime;
+        let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
+        while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+        while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
 
-    let latencySamples = 512; 
-    if (currentMode === 'voice') latencySamples = 12000; 
-    
-    currentLoopPos -= (playbackRate * latencySamples);
-    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
-    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+        let latencySamples = 512; 
+        if (currentMode === 'voice') latencySamples = 12000; 
+        
+        currentLoopPos -= (playbackRate * latencySamples);
+        while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+        while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
 
-    const flatRecLen = recordingStream.length * bufferSize;
-    const flatRec = new Float32Array(flatRecLen);
-    let off = 0;
-    for(let chunk of recordingStream) { flatRec.set(chunk, off); off += chunk.length; }
-    
-    for (let i = 0; i < flatRecLen; i++) {
-        const inputSample = flatRec[flatRecLen - 1 - i];
-        let targetIndex = currentLoopPos - (i * playbackRate);
-        while(targetIndex < 0) targetIndex += loopTotalSamples;
-        while(targetIndex >= loopTotalSamples) targetIndex -= loopTotalSamples;
-        oldData[Math.floor(targetIndex)] += inputSample;
+        const flatRecLen = recordingStream.length * bufferSize;
+        const flatRec = new Float32Array(flatRecLen);
+        let off = 0;
+        for(let chunk of recordingStream) { flatRec.set(chunk, off); off += chunk.length; }
+        
+        for (let i = 0; i < flatRecLen; i++) {
+            const inputSample = flatRec[flatRecLen - 1 - i];
+            let targetIndex = currentLoopPos - (i * playbackRate);
+            while(targetIndex < 0) targetIndex += loopTotalSamples;
+            while(targetIndex >= loopTotalSamples) targetIndex -= loopTotalSamples;
+            oldData[Math.floor(targetIndex)] += inputSample;
+        }
+    } else {
+        const totalSamples = recordingStream.length * bufferSize;
+        const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
+        const data = rawBuffer.getChannelData(0); let offset = 0;
+        for(let chunk of recordingStream) { data.set(chunk, offset); offset += chunk.length; }
+        
+        trackCtx[currentMode].buffer = rawBuffer;
+        trackCtx[currentMode].hasContent = true;
+        log("NEW LOOP ADDED");
+        
+        restartPlayback();
     }
     
-    trackCtx[currentMode].hasContent = true; // Mark as having content now
+    trackCtx[currentMode].hasContent = true; 
     
     updateUI();
     updateRecBtnVisual();
@@ -1339,11 +1461,7 @@ function initUI() {
         // Pointer Down: Select Track immediately
         btn.addEventListener('pointerdown', (e) => { 
             if(!isPowered) return;
-            
-            // FIX 3: Check if already selected BEFORE selecting logic runs
-            // Store it on the element itself to read it in pointerup
             btn.dataset.wasSelected = (mode === currentMode);
-            
             heldInstrument = mode; 
             instHoldStartTime = Date.now();
             selectTrack(mode);
@@ -1354,7 +1472,6 @@ function initUI() {
             if(!isPowered) return;
             const duration = Date.now() - instHoldStartTime;
             if (duration < 300) {
-                 // FIX 3: Only cycle if it was ALREADY selected when pressed
                  if (btn.dataset.wasSelected === 'true') {
                      cycleSound(mode);
                  }
@@ -1548,14 +1665,15 @@ function startUndoTimer(e) {
     if(!isPowered) return; 
     if(e.pointerId >= 0) els.undoBtn.setPointerCapture(e.pointerId); 
     hasReset = false; 
+    isUndoHeld = true; // FIX 4: Flag for Rec combo
+    
     undoTimeout = setTimeout(() => {
-        // HOLD ACTION (1s)
+        // HOLD ACTION (1s) -> CLEAR CURRENT TRACK
         hasReset = true;
-        if(heldInstrument) {
-            clearTrack(heldInstrument);
-        } else {
-            resetDevice();
-        }
+        // Previously this cleared the held instrument.
+        // User requested: "hold the undo button and it will clear whatever instrument is currently selected."
+        clearTrack(currentMode);
+        
     }, 1000); 
 }
 
@@ -1563,13 +1681,13 @@ function endUndoTimer(e) {
     clearTimeout(undoTimeout); 
     if(e.pointerId >= 0) els.undoBtn.releasePointerCapture(e.pointerId);
     
+    // Release the flag
+    // Use a small delay in case the click handler needs it? No, sync is fine.
+    isUndoHeld = false;
+    
     // TAP ACTION (Short Press)
     if (!hasReset && isPowered) {
-        if(heldInstrument) {
-            toggleMute(heldInstrument);
-        } else {
-            performUndo(); 
-        }
+        performUndo(); 
     }
 }
 
@@ -1579,23 +1697,18 @@ function performUndo() {
         if(userSamples[heldPadIndex]) { userSamples[heldPadIndex] = null; updatePadVisuals(); log("SAMPLE DELETED"); return; }
     }
     
-    // Check if we have anything to undo in the specific track
     if(undoTrackName && undoTrackName === undoTrackName) {
+        const activeTracksCount = TRACKS.filter(t => trackCtx[t].hasContent).length;
+        if (undoBackup === null && activeTracksCount <= 1) {
+            log("CAN'T UNDO LAST");
+            return;
+        }
+
         const t = undoTrackName;
-        
-        // Save current state to temp
         const tempBuffer = trackCtx[t].buffer;
-        
-        // Restore backup to current
         trackCtx[t].buffer = undoBackup;
-        
-        // Save temp to backup (this enables REDO)
         undoBackup = tempBuffer;
         
-        // If we just swapped, we should probably keep the name
-        // undoTrackName = t; // Remains same
-        
-        // Update Content Flag
         trackCtx[t].hasContent = !!trackCtx[t].buffer;
         
         log(trackCtx[t].buffer ? "REDO" : "UNDO");
@@ -1625,7 +1738,7 @@ function resetDevice() {
 
     updateUI();
     currentState = STATE.IDLE; 
-    updateRecBtnVisual(); // This will now set it to idle dark red
+    updateRecBtnVisual(); 
     els.undoBtn.classList.add('reset-flash'); setTimeout(() => els.undoBtn.classList.remove('reset-flash'), 500);
     log("RESET ALL");
 }
@@ -1633,26 +1746,38 @@ function resetDevice() {
 function updateUI() {
     els.modes.forEach(btn => {
         const mode = btn.dataset.mode;
-        
-        // Remove all state classes first
         btn.classList.remove('selected', 'has-audio', 'muted');
         
-        // Apply Selected (Blue)
-        if (mode === currentMode) {
-            btn.classList.add('selected');
-        }
+        if (mode === currentMode) btn.classList.add('selected');
+        if (trackCtx[mode].mute) btn.classList.add('muted');
         
-        // Apply Muted (Red) - Overrides others if needed, or combines
-        if (trackCtx[mode].mute) {
-            btn.classList.add('muted');
-        }
-        
-        // Apply Has Audio (Green) - Only if not selected, to show it's there
         if (mode !== currentMode && !trackCtx[mode].mute && trackCtx[mode].buffer) {
             if (masterLoopLength > 0) btn.classList.add('has-audio');
         }
     });
 }
+
+// Pause Button Logic
+const pauseBtn = document.getElementById('btn-pause');
+let isGlobalMuted = false;
+pauseBtn.addEventListener('click', () => {
+    // SHORTCUT CHECK: Is an instrument held?
+    if (heldInstrument) {
+        toggleMute(heldInstrument);
+        return;
+    }
+
+    isGlobalMuted = !isGlobalMuted;
+    if (isGlobalMuted) {
+        masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+        pauseBtn.classList.add('paused');
+        pauseBtn.innerText = "▶"; // Visual Fix
+    } else {
+        masterGain.gain.setTargetAtTime(0.9, ctx.currentTime, 0.1);
+        pauseBtn.classList.remove('paused');
+        pauseBtn.innerText = "❚❚";
+    }
+});
 </script>
 </body>
 </html>
