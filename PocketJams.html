@@ -1557,25 +1557,39 @@ async function enableMic() {
     }
 }
 
-function disableMic() {
+async function disableMic() {
     if (!micStream) return;
 
-    // CRITICAL: Stop all hardware tracks. 
-    // This tells the OS "We are done with the phone call", 
-    // forcing it to switch back to High Quality / High Volume audio.
-    micStream.getTracks().forEach(track => track.stop());
-    
+    // 1. HARD STOP: Kill the hardware tracks immediately
+    micStream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+    });
     micStream = null;
     
-    // Disconnect nodes to clean up graph
+    // 2. DISCONNECT: Remove the node from the graph
     if (micNode) { 
         try { micNode.disconnect(); } catch(e){} 
         micNode = null; 
     }
     
-    // Visual cleanup
+    // 3. FORCE MODE SWITCH (The "Soft Reset" Hack)
+    // We suspend the context briefly. This tells the OS "Hey, audio is done."
+    // The OS drops Call Mode. Then we resume, and it comes back in Media Mode.
+    if (ctx.state === 'running') {
+        try {
+            await ctx.suspend();
+            // Tiny delay to let the OS process the change
+            setTimeout(async () => {
+                await ctx.resume();
+            }, 50);
+        } catch(e) {
+            console.warn("Context reset failed", e);
+        }
+    }
+    
     updateLedBar(0); 
-    // console.log("Mic Hardware Stopped - Media Mode Restored");
+    log("MIC OFF / VOL RESET");
 }
 
 function onRecPress() {
@@ -1863,8 +1877,11 @@ function handleOverdubStop() {
 
 function performStopOverdub(isQuantized = false) {
     clearTimeout(autoStopTimer); 
+    
+    // Call this first to trigger the volume fix immediately
     disableMic();
-    currentState = STATE.PLAYING; log("PLAYING"); 
+    
+    currentState = STATE.PLAYING;
     updateMicGate();
     updateBackingTrackVolume(); 
     
@@ -2026,6 +2043,13 @@ function updatePadVisuals() {
 }
 
 function hitPad(index, el) {
+    // --- NEW: FORCE VOLUME RESET ---
+    // If I hit a drum pad and the mic was left on by accident, kill it.
+    if (currentMode !== 'voice' && micStream) {
+         disableMic();
+    }
+    // -------------------------------
+
     if (currentMode === 'voice') {
         if (userSamples[index]) playSample(index);
     } else {
@@ -2048,13 +2072,23 @@ function updateMicGate() {
 
 // Helper to select track without cycling
 function selectTrack(newMode) {
+    // EXISTING CODE...
     // Safety: If we switch away from voice while armed, kill mic
     if (currentMode === 'voice' && newMode !== 'voice') {
         disableMic();
     }
-        const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
     
-    // Update Gates
+    // --- NEW: FORCE VOLUME RESET ---
+    // If we are just jamming (not recording), ensure mic is off 
+    // to guarantee full volume on the new instrument.
+    if (!isRecordingState() && micStream) {
+        disableMic();
+    }
+    // -------------------------------
+
+    const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
+    
+    // ... REST OF YOUR EXISTING FUNCTION ...
     TRACKS.forEach(t => {
         recGates[t].gain.setTargetAtTime((t === newMode) ? 1 : 0, ctx.currentTime, 0.02);
     });
