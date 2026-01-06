@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v17.7</title>
+    <title>Forest's Pocket Jams v17.8</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -403,7 +403,7 @@
 <body oncontextmenu="return false;">
 
 <div id="desktop-instructions">
-    <h3>USER MANUAL v17.7</h3>
+    <h3>USER MANUAL v17.8</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
@@ -490,7 +490,7 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 17.7</p>
+    <p>Version 17.8</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
@@ -514,11 +514,11 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V17.7
+ * FOREST'S POCKET JAMROOM - V17.8
  * Updates:
- * - Fixed First Loop Playback Start: Explicitly resets loop timeline to 0 when first loop ends.
- * - Voice Reverb Recording: Implemented dedicated Voice FX chain that routes to recorder but NOT monitor.
- * This allows "Wet" recording without "Live Preview".
+ * - Fixed Overdub Interval Independence: When overdubbing an existing track, 
+ * the system now respects THAT track's length instead of forcing the Master Loop Length. 
+ * This allows long vocal loops to be overdubbed completely without cutting off at the drum loop length.
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1310,7 +1310,12 @@ function startOverdubRecording() {
     const isOverdubbingExisting = trackCtx[currentMode].hasContent;
     
     if (masterLoopLength > 0 && isOverdubbingExisting) {
-        const loopDuration = masterLoopLength / ctx.sampleRate;
+        // --- FIX: USE SPECIFIC TRACK LENGTH ---
+        // If track exists, use its length. If not (should not happen here), fallback.
+        const currentBuffer = trackCtx[currentMode].buffer;
+        const loopLen = currentBuffer ? currentBuffer.length : masterLoopLength;
+        const loopDuration = loopLen / ctx.sampleRate;
+        
         const rate = Math.abs(playbackRate) || 1.0;
         const timeToRecord = loopDuration / rate; 
         
