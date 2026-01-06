@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v16.9</title>
+    <title>Forest's Pocket Jams v17.6</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -235,6 +235,12 @@
             background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
             box-shadow: 0 0 20px #f00, 0 6px 0 #500;
         }
+        .rec-btn.state-finishing {
+            /* Fast Flashing Red - Finishing Loop Interval */
+            background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+            box-shadow: 0 0 20px #f00, 0 6px 0 #500;
+            animation: pulse-fast 0.2s infinite alternate;
+        }
         .rec-btn.state-playing {
             /* Green - Playing */
             background: radial-gradient(circle at 30% 30%, #44ff44, #00aa00);
@@ -258,6 +264,7 @@
 
         @keyframes pulse-red { from { box-shadow: 0 0 5px #f00; opacity: 0.8; } to { box-shadow: 0 0 20px #f00; opacity: 1; } }
         @keyframes pulse-yellow { from { box-shadow: 0 0 5px #ff0; opacity: 0.8; } to { box-shadow: 0 0 20px #ff0; opacity: 1; } }
+        @keyframes pulse-fast { from { opacity: 0.6; } to { opacity: 1; } }
 
         .undo-btn {
             width: 50px; height: 50px; border-radius: 50%;
@@ -396,7 +403,7 @@
 <body oncontextmenu="return false;">
 
 <div id="desktop-instructions">
-    <h3>USER MANUAL v16.9</h3>
+    <h3>USER MANUAL v17.6</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
@@ -409,7 +416,7 @@
         <li><span>MUTE TRACK</span> <strong>Hold INSTRUMENT + Press PAUSE</strong></li>
         <li><span>CLEAR TRACK</span> <strong>Hold UNDO (1s)</strong></li>
         <li><span>UNMUTE</span> <strong>Tap INSTRUMENT + PAUSE</strong></li>
-        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Press REC</strong></li>
+        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Hold REC (1.5s)</strong></li>
     </ul>
     
     <div class="section-title">KEYBOARD SHORTCUTS</div>
@@ -483,7 +490,7 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 16.9</p>
+    <p>Version 17.6</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
@@ -491,7 +498,7 @@
         <span>VOICE SAMPLE:</span> <strong>Hold PAD + REC</strong><br>
         <span>MUTE TRACK:</span> <strong>Hold Inst Button + Press PAUSE</strong><br>
         <span>CLEAR TRACK:</span> <strong>Hold UNDO (1s)</strong><br>
-        <span>CLEAR ALL:</span> <strong>Hold UNDO + Press REC</strong><br>
+        <span>CLEAR ALL:</span> <strong>Hold UNDO + Hold REC (1.5s)</strong><br>
         <span style="color:#aaa; display:block; margin-top:5px; border-top:1px solid #444; padding-top:5px;">
         Tap Instrument Button to Cycle Sounds<br>
         Keys: 1=Synth, 2=Voice, 3=Drums
@@ -507,16 +514,20 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V16.9
- * - Visuals: Pause is Blue/Symbol change, Undo is Orange
- * - Feature: Instant Quantized Stop (Crops/Pads loop to 1/4, 1/2, 1x, 2x master length)
- * - Control: Clear Track = Hold Undo (1s)
- * - Control: Reset Jam = Hold Undo + Press REC
+ * FOREST'S POCKET JAMROOM - V17.6
+ * Updates:
+ * - Multi-Interval Sync: Fixed `startPlayback` to calculate offsets per-track, allowing 
+ * polyrhythms (e.g. 1-bar drums, 4-bar vocals) to sync perfectly to global transport.
+ * - Clear All Gesture: Now requires Holding Undo + Holding Rec for 1.5s.
+ * - Voice Latency: Tuned to ~85ms (4096 samples) for standard tightness.
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let ctx;
 let masterGain, compressor;
+// NEW BUSES
+let loopBus, liveBus;
+
 let analyser;
 let micStream, micNode;
 let micCompressor;
@@ -532,7 +543,8 @@ let trackCtx = {
 // Undo Storage
 let undoBackup = null; 
 let undoTrackName = null;
-let isUndoHeld = false; // New flag for shortcuts
+let isUndoHeld = false; 
+let clearAllTimer = null; // New timer for delete all
 
 // FX Nodes
 let reverbBuffer = null;
@@ -559,13 +571,15 @@ const STATE = {
     OVERDUB: 4, 
     SAMPLING_ARMED: 5, 
     SAMPLING_REC: 6,
-    OVERDUB_ARMED: 7 
+    OVERDUB_ARMED: 7,
+    WAITING_FOR_SYNC: 8 
 };
 let currentState = STATE.IDLE;
 let currentMode = 'drums';
 let lastInstrumentMode = 'drums'; 
 let isPowered = true;
 let isMinorScale = false;
+let isGlobalMuted = false;
 
 // Interaction State
 let heldInstrument = null; 
@@ -593,6 +607,7 @@ let userSamples = new Array(8).fill(null);
 let heldPadIndex = -1;
 let recordingPadIndex = -1; 
 let sampleRecBuffer = [];
+let preRollBuffer = [];
 
 let playbackRate = 1.0;
 let recStartTime = 0; 
@@ -635,39 +650,58 @@ els.startBtn.addEventListener('click', async () => {
         ctx = new AudioContext();
         await ctx.resume();
         
-        // Master Bus
+        // --- MASTER BUS SETUP ---
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.9;
+        masterGain.connect(ctx.destination);
+        
         compressor = ctx.createDynamicsCompressor();
         compressor.threshold.value = -12;
         compressor.ratio.value = 12;
-        masterGain = ctx.createGain();
-        masterGain.gain.value = 0.9;
         compressor.connect(masterGain);
-        masterGain.connect(ctx.destination);
+
+        // NEW: Separate Buses
+        loopBus = ctx.createGain(); // Loops go here
+        loopBus.connect(compressor);
+        
+        liveBus = ctx.createGain(); // Pads/Mic go here
+        liveBus.connect(compressor);
 
         // --- Track Setup ---
         TRACKS.forEach(track => {
+            // Bus for RECORDING (Sends to FX and RecGates)
             trackCtx[track].bus = ctx.createGain(); 
-            trackCtx[track].loopGain = ctx.createGain(); 
-            trackCtx[track].loopGain.connect(compressor); 
             
+            // Gain for PLAYBACK LOOP (Sends to LoopBus)
+            trackCtx[track].loopGain = ctx.createGain(); 
+            trackCtx[track].loopGain.connect(loopBus); 
+            
+            // Gates for Recorder
             recGates[track] = ctx.createGain();
             recGates[track].gain.value = (currentMode === track) ? 1 : 0;
+            
+            // Only non-voice tracks route bus to RecGate (Voice uses special routing)
             if (track !== 'voice') {
                 trackCtx[track].bus.connect(recGates[track]);
+                
+                // CRITICAL: Live pads need to be heard!
+                // Route trackBus to liveBus so we hear what we play
+                trackCtx[track].bus.connect(liveBus);
             }
         });
 
         // Special Voice Setup
         voiceRecordingBus = ctx.createGain();
         voiceRecordingBus.connect(recGates['voice']);
+        // Voice doesn't route to liveBus by default to avoid feedback, 
+        // mic monitoring is handled separately via micGateGain.
 
         // FX Bus
         setupSharedFX();
 
-        // Connect Track Buses
+        // Connect Track Buses to FX
         TRACKS.forEach(track => {
             trackCtx[track].bus.connect(fxBus);
-            trackCtx[track].bus.connect(compressor);
         });
 
         analyser = ctx.createAnalyser();
@@ -688,8 +722,6 @@ els.startBtn.addEventListener('click', async () => {
             micCompressor.release.value = 0.25;
             
             micNode.connect(micCompressor);
-            
-            // Analyser connected to MIC (for Ducking logic)
             micCompressor.connect(analyser); 
             
             micGateGain = ctx.createGain();
@@ -697,11 +729,11 @@ els.startBtn.addEventListener('click', async () => {
             
             micCompressor.connect(micGateGain);
             
-            // CRITICAL: Route Mic to Voice RECORDING Bus ONLY.
+            // CRITICAL: Route Mic to Voice RECORDING Bus ONLY
             micGateGain.connect(voiceRecordingBus);
             
-            // NEW: Route Mic to FX Bus for Reverb/Delay on Voice
-            micGateGain.connect(fxBus); 
+            // FIXED: NO Live Preview. 
+            // Removed connection to liveBus and fxBus for Mic.
             
         } catch (e) { console.warn("Mic access denied."); }
 
@@ -732,7 +764,8 @@ function setupSharedFX() {
     fxBus.connect(instDelay); instDelay.connect(instFeedback); instFeedback.connect(instDelay);
     instDelay.connect(instDelayGain); instDelayGain.connect(fxReturn);
     
-    fxReturn.connect(compressor);
+    // FX Returns go to Live Bus AND Recorder (via setupRecorder)
+    fxReturn.connect(liveBus);
 }
 
 function createReverbBuffer() {
@@ -914,6 +947,10 @@ function playSample(index) {
     const src = ctx.createBufferSource(); src.buffer = userSamples[index]; 
     src.connect(trackCtx.voice.bus); 
     src.connect(voiceRecordingBus);
+    
+    // NEW: Also connect to liveBus so we hear samples when paused
+    src.connect(liveBus);
+    
     src.start(0);
     
     samplePlayTimer = setTimeout(() => {
@@ -923,7 +960,7 @@ function playSample(index) {
 }
 
 function isRecordingState() {
-    return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || currentState === STATE.OVERDUB_ARMED);
+    return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC);
 }
 
 // --- Recorder ---
@@ -934,31 +971,53 @@ function setupRecorder() {
     if(recorderNode) return;
     recorderNode = ctx.createScriptProcessor(bufferSize, 1, 1);
     recorderNode.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        
+        // --- PRE-ROLL LOGIC ---
+        // Constantly cache last ~0.5s of audio during ARM state to catch early attacks
+        if (currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.SAMPLING_ARMED) {
+            preRollBuffer.push(new Float32Array(input));
+            // 2 buffers * 2048 samples = ~90ms
+            if (preRollBuffer.length > 2) preRollBuffer.shift(); 
+        }
+
         if (!isRecordingState()) return;
         
-        const input = e.inputBuffer.getChannelData(0);
         let rms = 0; for(let i=0; i<input.length; i++) rms += input[i]*input[i]; rms = Math.sqrt(rms/input.length);
         
+        // Silence Gate for Arming
         if (currentState === STATE.SAMPLING_ARMED || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED) {
              if (rms < 0.001) { for(let i=0; i<input.length; i++) input[i] = 0; }
         }
 
+        // Trigger logic - FIXED DOUBLING BUG HERE
         if (currentState === STATE.SAMPLING_ARMED && rms > inputThreshold) {
-            currentState = STATE.SAMPLING_REC; sampleRecBuffer = [];
+            currentState = STATE.SAMPLING_REC; sampleRecBuffer = [...preRollBuffer]; preRollBuffer = [];
             if (recordingPadIndex !== -1) els.padsGrid.children[recordingPadIndex].classList.add('recording');
             log("SAMPLING..."); updateMicGate(); updateBackingTrackVolume(); updateRecBtnVisual();
+            return; // Prevent double pushing this buffer
         }
-        else if (currentState === STATE.ARMED && rms > inputThreshold) startFirstRecording();
-        else if (currentState === STATE.OVERDUB_ARMED && rms > inputThreshold) startOverdubRecording();
+        else if (currentState === STATE.ARMED && rms > inputThreshold) {
+            startFirstRecording();
+            return; // Prevent double pushing this buffer
+        }
+        else if (currentState === STATE.OVERDUB_ARMED && rms > inputThreshold) {
+            startOverdubRecording();
+            return; // Prevent double pushing this buffer
+        }
 
+        // Capture logic
         if (currentState === STATE.SAMPLING_REC) { sampleRecBuffer.push(new Float32Array(input)); return; }
-        if (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB) recordingStream.push(new Float32Array(input));
+        
+        // Capture for Loops (including Waiting For Sync state)
+        if (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.WAITING_FOR_SYNC) {
+            recordingStream.push(new Float32Array(input));
+        }
         
         const output = e.outputBuffer.getChannelData(0); for (let i = 0; i < output.length; i++) output[i] = 0; 
     };
     
     TRACKS.forEach(t => recGates[t].connect(recorderNode));
-    
     if(fxReturn) fxReturn.connect(recorderNode);
     
     const zeroGain = ctx.createGain(); zeroGain.gain.value = 0; recorderNode.connect(zeroGain); zeroGain.connect(ctx.destination);
@@ -974,10 +1033,9 @@ function toggleMute(trackName) {
 
 function clearTrack(trackName) {
     trackCtx[trackName].buffer = null;
-    trackCtx[trackName].hasContent = false; // Mark as empty
+    trackCtx[trackName].hasContent = false; 
     trackCtx[trackName].mute = false;
     
-    // CHECK IF ALL TRACKS ARE CLEARED -> RESET
     const allCleared = TRACKS.every(t => !trackCtx[t].hasContent);
     
     if (allCleared) {
@@ -985,9 +1043,9 @@ function clearTrack(trackName) {
     } else {
         if (masterLoopLength > 0) {
             trackCtx[trackName].buffer = ctx.createBuffer(1, masterLoopLength, ctx.sampleRate);
-            if(trackCtx[trackName].source) restartPlayback();
+            if(trackCtx[trackName].source) restartPlayback(trackName); // Soft restart specific
         }
-        selectTrack(trackName); // Switch without cycling sound
+        selectTrack(trackName); 
         log(`CLEARED ${trackName.toUpperCase()}`);
         updateRecBtnVisual();
     }
@@ -1013,13 +1071,15 @@ function updateBackingTrackVolume() {
 
 function updateRecBtnVisual() {
     // Reset classes
-    els.recBtn.classList.remove('state-recording', 'state-playing', 'state-overdub', 'state-standby-red', 'state-standby-yellow');
+    els.recBtn.classList.remove('state-recording', 'state-playing', 'state-overdub', 'state-standby-red', 'state-standby-yellow', 'state-finishing');
     
-    const hasLoop = (masterLoopLength > 0);
     const trackHasContent = trackCtx[currentMode].hasContent;
 
     if (currentState === STATE.RECORDING_1 || currentState === STATE.SAMPLING_REC) {
         els.recBtn.classList.add('state-recording');
+    }
+    else if (currentState === STATE.WAITING_FOR_SYNC) {
+        els.recBtn.classList.add('state-finishing');
     } 
     else if (currentState === STATE.OVERDUB) {
         if (trackHasContent) {
@@ -1047,19 +1107,32 @@ function updateRecBtnVisual() {
 function onRecPress() {
     if(!isPowered) return;
     
-    // FIX 4: CLEAR ALL GESTURE (Hold Undo + Rec)
+    // FIX 4: CLEAR ALL GESTURE (Hold Undo + Hold Rec for 1.5s)
     if (isUndoHeld) {
-        resetDevice();
-        // Reset flag so releasing Undo doesn't trigger clearTrack
-        isUndoHeld = false; 
+        // Start Hold Timer for Delete
+        els.recBtn.classList.add('state-finishing'); 
+        log("HOLD TO CLEAR...");
+        clearAllTimer = setTimeout(() => {
+             resetDevice();
+             clearAllTimer = null;
+        }, 1500); 
         return;
+    }
+    
+    // NEW: Auto-Unpause when Record is pressed
+    if (isGlobalMuted) {
+        // Trigger the pause button logic directly
+        loopBus.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
+        pauseBtn.classList.remove('paused');
+        pauseBtn.innerText = "❚❚";
+        isGlobalMuted = false;
     }
     
     if (trackCtx[currentMode].mute) toggleMute(currentMode);
 
     if (currentMode === 'voice' && heldPadIndex !== -1) {
         recordingPadIndex = heldPadIndex;
-        currentState = STATE.SAMPLING_ARMED; sampleRecBuffer = [];
+        currentState = STATE.SAMPLING_ARMED; sampleRecBuffer = []; preRollBuffer = [];
         const pad = els.padsGrid.children[recordingPadIndex];
         if(pad) pad.classList.add('recording-armed');
         log("ARMED: SPEAK"); 
@@ -1072,7 +1145,7 @@ function onRecPress() {
     recPressTime = Date.now();
 
     if (currentState === STATE.IDLE) {
-        currentState = STATE.ARMED; recordingStream = []; 
+        currentState = STATE.ARMED; recordingStream = []; preRollBuffer = [];
         log("ARMED: MAKE SOUND"); updateMicGate();
     } 
     else if (currentState === STATE.ARMED) {
@@ -1090,10 +1163,24 @@ function onRecPress() {
     else if (currentState === STATE.OVERDUB) {
         handleOverdubStop(); 
     }
+    else if (currentState === STATE.WAITING_FOR_SYNC) {
+        // User pressed again while waiting? Force finish.
+        log("FORCE FINISH");
+        performStopOverdub(true);
+    }
     updateRecBtnVisual();
 }
 
 function onRecRelease() {
+    // Check Clear All Timer
+    if (clearAllTimer) {
+        clearTimeout(clearAllTimer);
+        clearAllTimer = null;
+        log("CANCELLED CLEAR");
+        updateRecBtnVisual(); 
+        return;
+    }
+
     if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) {
         finishSampling(); return;
     }
@@ -1138,7 +1225,10 @@ function finishSampling() {
 
 function startFirstRecording() {
     currentState = STATE.RECORDING_1;
-    recordingStream = []; recStartTime = ctx.currentTime; 
+    // INJECT PRE-ROLL
+    recordingStream = [...preRollBuffer]; 
+    preRollBuffer = [];
+    recStartTime = ctx.currentTime; 
     log("RECORDING..."); 
     updateMicGate();
     updateBackingTrackVolume(); 
@@ -1185,10 +1275,12 @@ function armOverdub() {
 }
 
 function startOverdubRecording() {
+    // INJECT PRE-ROLL
+    recordingStream = [...preRollBuffer];
+    preRollBuffer = [];
+
     const isOverdubbingExisting = trackCtx[currentMode].hasContent;
     
-    // Auto-stop logic: Only applies if we are overdubbing on top of existing material
-    // New tracks (isOverdubbingExisting = false) do NOT auto-stop anymore.
     if (masterLoopLength > 0 && isOverdubbingExisting) {
         const loopDuration = masterLoopLength / ctx.sampleRate;
         const rate = Math.abs(playbackRate) || 1.0;
@@ -1204,7 +1296,6 @@ function startOverdubRecording() {
     }
 
     currentState = STATE.OVERDUB; 
-    recordingStream = []; 
     recStartTime = ctx.currentTime; 
     log("DUBBING..."); 
     updateMicGate();
@@ -1212,17 +1303,15 @@ function startOverdubRecording() {
     updateRecBtnVisual();
 }
 
-// FIX 2: INSTANT SMART SYNC
+// FIX 2: QUANTIZED SMART SYNC (The "Continue Recording" Fix)
 function handleOverdubStop() {
     const isNewTrack = !trackCtx[currentMode].hasContent;
     
-    // Only smart-sync if we are creating a fresh loop on a new track
     if (isNewTrack && masterLoopLength > 0) {
         const currentSampleCount = recordingStream.length * bufferSize;
         const ratios = [0.25, 0.5, 1.0, 2.0, 4.0];
         const targets = ratios.map(r => Math.floor(masterLoopLength * r));
         
-        // Find nearest target length
         let bestTarget = targets[0];
         let minDiff = Math.abs(currentSampleCount - bestTarget);
         
@@ -1234,53 +1323,36 @@ function handleOverdubStop() {
             }
         }
         
-        // We now have the "Ideal" length. We will force the recording to this length.
-        // If actual recording is shorter -> Pad with silence.
-        // If actual recording is longer -> Crop.
+        // --- QUANTIZATION LOGIC ---
+        // If we are stopping EARLY (before the bar ends), we wait.
+        const samplesShort = bestTarget - currentSampleCount;
         
-        // Flatten recorded stream
-        const totalRecorded = recordingStream.length * bufferSize;
-        const flatStream = new Float32Array(totalRecorded);
-        let offset = 0;
-        for(let chunk of recordingStream) { flatStream.set(chunk, offset); offset += chunk.length; }
-        
-        // Create perfect buffer
-        const finalBuffer = ctx.createBuffer(1, bestTarget, ctx.sampleRate);
-        const finalData = finalBuffer.getChannelData(0);
-        
-        // Copy data (up to the limit of either)
-        const copyAmount = Math.min(totalRecorded, bestTarget);
-        finalData.set(flatStream.subarray(0, copyAmount));
-        
-        // (Optional: Small fade out at the splice point to prevent clicking if we cropped)
-        if (copyAmount > 100) {
-            for(let i=0; i<100; i++) {
-                finalData[copyAmount - 1 - i] *= (i/100);
-            }
+        // If we are significantly short (more than 50ms worth of samples), wait.
+        if (samplesShort > (ctx.sampleRate * 0.05)) {
+            currentState = STATE.WAITING_FOR_SYNC;
+            log("FINISHING BAR...");
+            updateRecBtnVisual(); // Updates to Flashing RED
+            
+            const timeToWait = (samplesShort / ctx.sampleRate) * 1000;
+            setTimeout(() => {
+                // Check if user cancelled in meantime? No, state check inside perform
+                if (currentState === STATE.WAITING_FOR_SYNC) {
+                    performStopOverdub(true);
+                }
+            }, timeToWait / Math.abs(playbackRate));
+            
+            return;
         }
-
-        // Apply
-        trackCtx[currentMode].buffer = finalBuffer;
-        trackCtx[currentMode].hasContent = true;
         
-        undoBackup = null; 
-        undoTrackName = currentMode;
-        
-        log("SYNCED LOOP");
-        
-        currentState = STATE.PLAYING; 
-        updateMicGate();
-        updateBackingTrackVolume();
-        updateRecBtnVisual();
-        
-        restartPlayback();
+        // If we are close or late, perform immediate crop/snap
+        performStopOverdub(true);
         return;
     }
     
-    performStopOverdub();
+    performStopOverdub(false);
 }
 
-function performStopOverdub() {
+function performStopOverdub(isQuantized = false) {
     clearTimeout(autoStopTimer); 
     
     currentState = STATE.PLAYING; log("PLAYING"); 
@@ -1291,6 +1363,7 @@ function performStopOverdub() {
 
     const isOverdubbingExisting = trackCtx[currentMode].hasContent;
 
+    // Undo Prep
     if (trackCtx[currentMode].buffer) {
         const existingBuf = trackCtx[currentMode].buffer;
         undoBackup = ctx.createBuffer(1, existingBuf.length, existingBuf.sampleRate);
@@ -1302,68 +1375,108 @@ function performStopOverdub() {
         undoTrackName = currentMode;
     }
 
-    if (isOverdubbingExisting) {
-        const targetBuffer = trackCtx[currentMode].buffer;
-        const oldData = targetBuffer.getChannelData(0);
-        const loopTotalSamples = masterLoopLength;
-        
-        let timeElapsed = ctx.currentTime - loopStartTime;
-        let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
-        while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
-        while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
-
-        let latencySamples = 512; 
-        if (currentMode === 'voice') latencySamples = 12000; 
-        
-        currentLoopPos -= (playbackRate * latencySamples);
-        while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
-        while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
-
-        const flatRecLen = recordingStream.length * bufferSize;
-        const flatRec = new Float32Array(flatRecLen);
-        let off = 0;
-        for(let chunk of recordingStream) { flatRec.set(chunk, off); off += chunk.length; }
-        
-        for (let i = 0; i < flatRecLen; i++) {
-            const inputSample = flatRec[flatRecLen - 1 - i];
-            let targetIndex = currentLoopPos - (i * playbackRate);
-            while(targetIndex < 0) targetIndex += loopTotalSamples;
-            while(targetIndex >= loopTotalSamples) targetIndex -= loopTotalSamples;
-            oldData[Math.floor(targetIndex)] += inputSample;
-        }
+    // --- CRITICAL SYNC FIX: UNIFIED BUFFER CREATION ---
+    let targetBuffer;
+    
+    if (isOverdubbingExisting && !isQuantized) {
+        targetBuffer = trackCtx[currentMode].buffer;
     } else {
+        // Create new track buffer logic
         const totalSamples = recordingStream.length * bufferSize;
-        const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
-        const data = rawBuffer.getChannelData(0); let offset = 0;
-        for(let chunk of recordingStream) { data.set(chunk, offset); offset += chunk.length; }
+        let finalBufferLength = totalSamples;
         
-        trackCtx[currentMode].buffer = rawBuffer;
+        if (isQuantized && masterLoopLength > 0) {
+            const ratios = [0.25, 0.5, 1.0, 2.0, 4.0];
+            const targets = ratios.map(r => Math.floor(masterLoopLength * r));
+            let bestTarget = targets[0];
+            let minDiff = Math.abs(totalSamples - bestTarget);
+            for (let t of targets) {
+                const diff = Math.abs(totalSamples - t);
+                if (diff < minDiff) { minDiff = diff; bestTarget = t; }
+            }
+            finalBufferLength = bestTarget;
+        }
+        
+        // Initialize Silent Buffer of Correct Length
+        trackCtx[currentMode].buffer = ctx.createBuffer(1, finalBufferLength, ctx.sampleRate);
+        targetBuffer = trackCtx[currentMode].buffer;
         trackCtx[currentMode].hasContent = true;
-        log("NEW LOOP ADDED");
-        
-        restartPlayback();
+    }
+
+    // --- UNIFIED PASTE LOGIC ---
+    const targetData = targetBuffer.getChannelData(0);
+    const loopTotalSamples = targetBuffer.length;
+    
+    let timeElapsed = ctx.currentTime - loopStartTime;
+    let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
+    
+    // Normalize position
+    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+
+    // Latency Compensation
+    let latencySamples = 2048; // ~42ms @ 48kHz - Tighter standard latency for instruments
+    
+    // UPDATED: Voice-Specific Latency Boost
+    if (currentMode === 'voice') {
+        latencySamples = 4096; // ~85ms - Optimized voice latency
     }
     
-    trackCtx[currentMode].hasContent = true; 
+    currentLoopPos -= (playbackRate * latencySamples);
+    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+
+    // Flatten recorded stream
+    const flatRecLen = recordingStream.length * bufferSize;
+    const flatRec = new Float32Array(flatRecLen);
+    let off = 0;
+    for(let chunk of recordingStream) { flatRec.set(chunk, off); off += chunk.length; }
+    
+    // Mix/Paste Loop
+    for (let i = 0; i < flatRecLen; i++) {
+        const inputSample = flatRec[flatRecLen - 1 - i];
+        let targetIndex = currentLoopPos - (i * playbackRate);
+        
+        while(targetIndex < 0) targetIndex += loopTotalSamples;
+        while(targetIndex >= loopTotalSamples) targetIndex -= loopTotalSamples;
+        
+        targetData[Math.floor(targetIndex)] += inputSample;
+    }
+
+    if (!isOverdubbingExisting) {
+        log("NEW LOOP ADDED");
+        restartPlayback(currentMode);
+    }
     
     updateUI();
     updateRecBtnVisual();
 }
 
-function startPlayback() {
-    stopAllSources();
-    loopStartTime = ctx.currentTime;
+function startPlayback(specificTrack = null) {
+    let globalElapsed = 0;
+    if (loopStartTime > 0) {
+        globalElapsed = ctx.currentTime - loopStartTime;
+    } else {
+        loopStartTime = ctx.currentTime;
+    }
+    
+    const tracksToStart = specificTrack ? [specificTrack] : TRACKS;
 
-    TRACKS.forEach(t => {
+    tracksToStart.forEach(t => {
+        if(trackCtx[t].source) { try { trackCtx[t].source.stop(); } catch(e){} trackCtx[t].source = null; }
+        
         if(trackCtx[t].buffer) {
             trackCtx[t].source = ctx.createBufferSource();
             trackCtx[t].source.buffer = trackCtx[t].buffer;
             trackCtx[t].source.loop = true;
-            trackCtx[t].source.loopStart = 0;
-            trackCtx[t].source.loopEnd = trackCtx[t].buffer.duration;
+            
+            // CRITICAL FIX: Calculate offset based on THIS TRACK'S duration
+            const trackDuration = trackCtx[t].buffer.duration;
+            const startOffset = globalElapsed % trackDuration;
+
             trackCtx[t].source.playbackRate.value = playbackRate;
             trackCtx[t].source.connect(trackCtx[t].loopGain); 
-            trackCtx[t].source.start(0);
+            trackCtx[t].source.start(0, startOffset);
         }
     });
 }
@@ -1374,8 +1487,8 @@ function stopAllSources() {
     });
 }
 
-function restartPlayback() {
-    if(masterLoopLength > 0) startPlayback();
+function restartPlayback(specificTrack = null) {
+    if(masterLoopLength > 0) startPlayback(specificTrack);
 }
 
 // --- UI Logic ---
@@ -1417,7 +1530,7 @@ function hitPad(index, el) {
 
 function updateMicGate() {
     const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
-    const isVoiceRecording = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED));
+    const isVoiceRecording = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC));
     
     let target = (isSampling || isVoiceRecording) ? 1.0 : 0.0;
     if (isSamplePlaying) target = 0.0;
@@ -1461,6 +1574,9 @@ function initUI() {
         // Pointer Down: Select Track immediately
         btn.addEventListener('pointerdown', (e) => { 
             if(!isPowered) return;
+            // HARDENING: Capture pointer so sliding off doesn't cancel hold prematurely
+            btn.setPointerCapture(e.pointerId); 
+            
             btn.dataset.wasSelected = (mode === currentMode);
             heldInstrument = mode; 
             instHoldStartTime = Date.now();
@@ -1470,6 +1586,9 @@ function initUI() {
         // Pointer Up: Check for Cycle (Tap) vs Hold
         btn.addEventListener('pointerup', (e) => { 
             if(!isPowered) return;
+            // Release capture
+            btn.releasePointerCapture(e.pointerId);
+
             const duration = Date.now() - instHoldStartTime;
             if (duration < 300) {
                  if (btn.dataset.wasSelected === 'true') {
@@ -1479,7 +1598,7 @@ function initUI() {
             heldInstrument = null; 
         });
         
-        btn.addEventListener('pointerleave', (e) => { heldInstrument = null; });
+        // Removed pointerleave as setPointerCapture handles the bounds exit
     });
 
     els.scaleSwitch.addEventListener('click', () => {
@@ -1541,7 +1660,7 @@ function setupKnob(el, callback, magnet = false) {
 
 function updateLedBar(micLevel) {
     const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.ARMED);
-    const isPlaying = (currentState === STATE.PLAYING || currentState === STATE.OVERDUB);
+    const isPlaying = (currentState === STATE.PLAYING || currentState === STATE.OVERDUB || currentState === STATE.WAITING_FOR_SYNC);
     
     els.ledCells.forEach(led => led.className = 'led-cell');
 
@@ -1555,7 +1674,10 @@ function updateLedBar(micLevel) {
         const progress = current / duration; 
         const activeIdx = Math.floor(progress * 8); 
 
-        const colorClass = (currentState === STATE.OVERDUB) ? 'active-yellow' : 'active-green';
+        // Visual indicator for Waiting For Sync
+        const colorClass = (currentState === STATE.WAITING_FOR_SYNC) ? 'active-red' : 
+                           (currentState === STATE.OVERDUB) ? 'active-yellow' : 'active-green';
+        
         for(let i=0; i<=activeIdx; i++) if(i < 8) els.ledCells[i].classList.add(colorClass);
     }
 }
@@ -1665,13 +1787,11 @@ function startUndoTimer(e) {
     if(!isPowered) return; 
     if(e.pointerId >= 0) els.undoBtn.setPointerCapture(e.pointerId); 
     hasReset = false; 
-    isUndoHeld = true; // FIX 4: Flag for Rec combo
+    isUndoHeld = true; // Flag for Rec combo
     
     undoTimeout = setTimeout(() => {
         // HOLD ACTION (1s) -> CLEAR CURRENT TRACK
         hasReset = true;
-        // Previously this cleared the held instrument.
-        // User requested: "hold the undo button and it will clear whatever instrument is currently selected."
         clearTrack(currentMode);
         
     }, 1000); 
@@ -1680,12 +1800,7 @@ function startUndoTimer(e) {
 function endUndoTimer(e) { 
     clearTimeout(undoTimeout); 
     if(e.pointerId >= 0) els.undoBtn.releasePointerCapture(e.pointerId);
-    
-    // Release the flag
-    // Use a small delay in case the click handler needs it? No, sync is fine.
     isUndoHeld = false;
-    
-    // TAP ACTION (Short Press)
     if (!hasReset && isPowered) {
         performUndo(); 
     }
@@ -1714,7 +1829,7 @@ function performUndo() {
         log(trackCtx[t].buffer ? "REDO" : "UNDO");
         
         if(currentState === STATE.PLAYING || currentState === STATE.OVERDUB) {
-             restartPlayback();
+             restartPlayback(t); // Soft restart specific track
         }
         updateUI();
         updateRecBtnVisual();
@@ -1759,8 +1874,11 @@ function updateUI() {
 
 // Pause Button Logic
 const pauseBtn = document.getElementById('btn-pause');
-let isGlobalMuted = false;
-pauseBtn.addEventListener('click', () => {
+
+// CHANGE: Use pointerdown for responsive mute shortcut
+pauseBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // Prevent double firing
+    
     // SHORTCUT CHECK: Is an instrument held?
     if (heldInstrument) {
         toggleMute(heldInstrument);
@@ -1769,11 +1887,12 @@ pauseBtn.addEventListener('click', () => {
 
     isGlobalMuted = !isGlobalMuted;
     if (isGlobalMuted) {
-        masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+        // Only mute the LOOP bus, keep LIVE bus (pads) active
+        loopBus.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
         pauseBtn.classList.add('paused');
         pauseBtn.innerText = "▶"; // Visual Fix
     } else {
-        masterGain.gain.setTargetAtTime(0.9, ctx.currentTime, 0.1);
+        loopBus.gain.setTargetAtTime(1.0, ctx.currentTime, 0.1);
         pauseBtn.classList.remove('paused');
         pauseBtn.innerText = "❚❚";
     }
