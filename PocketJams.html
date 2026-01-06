@@ -43,8 +43,16 @@
             color: var(--text-main);
             font-family: 'JetBrains Mono', monospace;
             height: 100vh; width: 100vw;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; justify-content: center; align-items: flex-start; /* Changed to flex-start */
+            padding-top: 20px; /* Added padding */
             overflow: hidden;
+        }
+
+        .pad.armed-waiting {
+            background: #500; /* Dark Red */
+            border: 1px solid #f00;
+            box-shadow: none; /* No glow/pulse */
+            animation: none; /* No animation */
         }
 
         /* --- Device Chassis --- */
@@ -321,6 +329,14 @@
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
         .pad.active { background: #eee; }
+
+        .pad.voice-arming {
+            background: #500 !important;
+            animation: pulse-red 0.5s infinite !important;
+            border: 1px solid #f00 !important;
+            box-shadow: 0 0 15px #f00 !important;
+            color: #fff !important;
+        }
         
         .mode-voice .pad.has-sample { background: var(--led-green); border: 1px solid rgba(255,255,255,0.2); }
         .pad.recording { background: #f00 !important; box-shadow: 0 0 20px #f00 !important; }
@@ -580,6 +596,7 @@ const STATE = {
     WAITING_FOR_SYNC: 8 
 };
 let currentState = STATE.IDLE;
+let padArmTimer = null; // Track the 1s hold
 let currentMode = 'drums';
 let lastInstrumentMode = 'drums'; 
 let isPowered = true;
@@ -697,8 +714,12 @@ els.startBtn.addEventListener('click', async () => {
             recGates[track] = ctx.createGain();
             recGates[track].gain.value = (currentMode === track) ? 1 : 0;
             
+            // --- THE FIX ---
+            // 1. Connect ALL tracks (including Voice) to the Recorder
+            trackCtx[track].bus.connect(recGates[track]);
+
+            // 2. Connect Drums/Synth to Live speakers (Voice connects later in playSample)
             if (track !== 'voice') {
-                trackCtx[track].bus.connect(recGates[track]);
                 trackCtx[track].bus.connect(liveBus);
             }
         });
@@ -1259,13 +1280,21 @@ function playSample(index) {
     isSamplePlaying = true;
     if(samplePlayTimer) clearTimeout(samplePlayTimer);
     
-    const src = ctx.createBufferSource(); src.buffer = userSamples[index]; 
+    const src = ctx.createBufferSource(); 
+    src.buffer = userSamples[index]; 
+    
+    // Connect to the Voice Bus (which now goes to Recorder)
     src.connect(trackCtx.voice.bus); 
+    
+    // Also connect to Live Bus so you can hear it while performing
     src.connect(liveBus); 
+    
     src.start(0);
     
     samplePlayTimer = setTimeout(() => {
         isSamplePlaying = false;
+        // Optional: Update gate if needed, though updateMicGate handles this
+        updateMicGate(); 
     }, src.buffer.duration * 1000);
 }
 
@@ -1306,9 +1335,25 @@ function setupRecorder() {
         }
 
         if (currentState === STATE.SAMPLING_ARMED && rms > inputThreshold) {
-            currentState = STATE.SAMPLING_REC; sampleRecBuffer = [...preRollBuffer]; preRollBuffer = [];
-            if (recordingPadIndex !== -1) els.padsGrid.children[recordingPadIndex].classList.add('recording');
-            log("SAMPLING..."); updateMicGate(); updateBackingTrackVolume(); updateRecBtnVisual();
+            currentState = STATE.SAMPLING_REC; 
+            
+            // Move Pre-roll to main buffer
+            sampleRecBuffer = [...preRollBuffer]; 
+            preRollBuffer = [];
+            
+            // VISUAL UPDATE: Switch from 'Waiting' to 'Recording'
+            if (recordingPadIndex !== -1) {
+                const pad = els.padsGrid.children[recordingPadIndex];
+                if(pad) {
+                    pad.classList.remove('armed-waiting'); // Remove static red
+                    pad.classList.add('recording');        // Add bright red
+                }
+            }
+            
+            log("SAMPLING..."); 
+            updateMicGate(); 
+            updateBackingTrackVolume(); 
+            updateRecBtnVisual();
             return; 
         }
         else if (currentState === STATE.ARMED && rms > inputThreshold) {
@@ -1526,9 +1571,16 @@ function finishSampling() {
         const pad = els.padsGrid.children[recordingPadIndex];
         if(pad) { pad.classList.remove('recording'); pad.classList.remove('recording-armed'); }
     }
+    
     recordingPadIndex = -1;
+    // Return to IDLE or PLAYING depending on loop status
     currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE; 
-    updateMicGate(); updateBackingTrackVolume(); updatePadVisuals(); updateRecBtnVisual(); disableMic();
+    
+    updateMicGate(); 
+    updateBackingTrackVolume(); 
+    updatePadVisuals(); 
+    updateRecBtnVisual(); 
+    disableMic();
 }
 
 function startFirstRecording() {
@@ -1712,12 +1764,35 @@ function initPads() {
 
 // Helper to clean up visuals on release
 function handlePadRelease(btn, e) {
+    // --- NEW: CANCEL TIMER IF RELEASED EARLY ---
+    if (padArmTimer) {
+        clearTimeout(padArmTimer);
+        padArmTimer = null;
+    }
+    // -------------------------------------------
+
+    // 1. If recording actually started (Signal detected), Save it.
+    if (currentMode === 'voice' && currentState === STATE.SAMPLING_REC && heldPadIndex === recordingPadIndex) {
+        finishSampling();
+    }
+    // 2. If we were just ARMED (Red pulse, but no signal yet), Cancel it.
+    else if (currentMode === 'voice' && currentState === STATE.SAMPLING_ARMED && heldPadIndex === recordingPadIndex) {
+         log("CANCELLED");
+         recordingPadIndex = -1;
+         currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE;
+         disableMic();
+    }
+
+    // --- CLEANUP VISUALS ---
     heldPadIndex = -1; 
     btn.classList.remove('active'); 
     
-    // STOP PULSING
+    // Remove Red Pulse
+    btn.classList.remove('voice-arming');
+    
+    // Remove other legacy classes just in case
     btn.classList.remove('pulsing-alert');
-    els.recBtn.classList.remove('pulsing-alert');
+    btn.classList.remove('armed-waiting');
     
     if(e) btn.releasePointerCapture(e.pointerId);
 }
@@ -1739,10 +1814,26 @@ function hitPad(index, el) {
         if (userSamples[index]) {
             playSample(index); 
         } else {
-            // START LOOPING PULSE (Stops on release via handlePadRelease)
-            el.classList.add('pulsing-alert');
-            els.recBtn.classList.add('pulsing-alert');
-            log("HOLD + REC");
+            // --- NEW: 1 SECOND SAFETY DELAY ---
+            // The pad will look white (active) during this second.
+            // If you release early, nothing happens.
+            padArmTimer = setTimeout(() => {
+                enableMic().then(() => {
+                    recordingPadIndex = index;
+                    currentState = STATE.SAMPLING_ARMED; 
+                    
+                    sampleRecBuffer = []; 
+                    preRollBuffer = [];
+                    
+                    // After 1s, turn RED to indicate we are ready
+                    el.classList.add('voice-arming');
+                    
+                    log("LISTENING..."); 
+                    updateMicGate(); 
+                    updateBackingTrackVolume(); 
+                });
+            }, 600); // 1000ms = 1 Second
+            // ----------------------------------
         }
     } 
     else {
@@ -2015,9 +2106,43 @@ function startUndoTimer(e) {
     if(e.pointerId >= 0) els.undoBtn.setPointerCapture(e.pointerId); 
     hasReset = false; isUndoHeld = true; 
     
-    undoTimeout = setTimeout(() => {
-        hasReset = true; clearTrack(currentMode); 
-    }, 1000); 
+    // CHECK: Are we in Voice mode AND holding a pad?
+    if (currentMode === 'voice' && heldPadIndex !== -1) {
+        log("HOLD TO DELETE...");
+        undoTimeout = setTimeout(() => {
+            hasReset = true; 
+            deleteSample(heldPadIndex); 
+        }, 1000); // 1 second hold to delete sample
+    } 
+    // Otherwise, do the normal "Clear Track" behavior
+    else {
+        log("HOLD TO CLEAR...");
+        undoTimeout = setTimeout(() => {
+            hasReset = true; clearTrack(currentMode); 
+        }, 1000); 
+    }
+}
+
+function deleteSample(index) {
+    if (userSamples[index]) {
+        userSamples[index] = null;
+        updatePadVisuals();
+        log("SAMPLE DELETED");
+        
+        // Flash Red for feedback
+        const pad = els.padsGrid.children[index];
+        if(pad) {
+            pad.style.transition = "background 0.1s, box-shadow 0.1s";
+            pad.style.background = "#f00";
+            pad.style.boxShadow = "0 0 20px #f00";
+            setTimeout(() => { 
+                pad.style.background = ""; 
+                pad.style.boxShadow = ""; 
+            }, 200);
+        }
+    } else {
+        log("EMPTY PAD");
+    }
 }
 
 function endUndoTimer(e) { 
@@ -2028,10 +2153,9 @@ function endUndoTimer(e) {
 }
 
 function performUndo() {
-    if(currentMode === 'voice' && heldPadIndex !== -1) {
-        if(userSamples[heldPadIndex]) { userSamples[heldPadIndex] = null; updatePadVisuals(); log("DELETED"); return; }
-    }
-    
+    // We removed the "heldPadIndex" check here so accidental taps don't delete samples.
+    // Deletion is now strictly handled by the HOLD action above.
+
     if(undoTrackName && undoTrackName === undoTrackName) {
         const activeTracksCount = TRACKS.filter(t => trackCtx[t].hasContent).length;
         if (undoBackup === null && activeTracksCount <= 1) { log("CAN'T UNDO"); return; }
