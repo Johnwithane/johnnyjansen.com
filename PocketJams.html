@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Forest's Pocket Jams v17.6</title>
+    <title>Forest's Pocket Jams v17.7</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -403,7 +403,7 @@
 <body oncontextmenu="return false;">
 
 <div id="desktop-instructions">
-    <h3>USER MANUAL v17.6</h3>
+    <h3>USER MANUAL v17.7</h3>
     <div class="section-title">BASICS</div>
     <ul>
         <li><span>LOOP</span> <strong>Tap REC (Toggle) or Hold</strong></li>
@@ -490,7 +490,7 @@
 
 <div id="overlay">
     <h2>FOREST'S POCKET JAMS</h2>
-    <p>Version 17.6</p>
+    <p>Version 17.7</p>
     
         <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
  
@@ -514,12 +514,11 @@
 
 <script>
 /**
- * FOREST'S POCKET JAMROOM - V17.6
+ * FOREST'S POCKET JAMROOM - V17.7
  * Updates:
- * - Multi-Interval Sync: Fixed `startPlayback` to calculate offsets per-track, allowing 
- * polyrhythms (e.g. 1-bar drums, 4-bar vocals) to sync perfectly to global transport.
- * - Clear All Gesture: Now requires Holding Undo + Holding Rec for 1.5s.
- * - Voice Latency: Tuned to ~85ms (4096 samples) for standard tightness.
+ * - Fixed First Loop Playback Start: Explicitly resets loop timeline to 0 when first loop ends.
+ * - Voice Reverb Recording: Implemented dedicated Voice FX chain that routes to recorder but NOT monitor.
+ * This allows "Wet" recording without "Live Preview".
  */
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -550,6 +549,10 @@ let clearAllTimer = null; // New timer for delete all
 let reverbBuffer = null;
 let fxBus, fxReturn; 
 let instReverb, instDelay, instFeedback, instDelayGain;
+
+// Dedicated Voice FX (No Monitoring)
+let voiceReverb, voiceReverbGain;
+let voiceDelay, voiceDelayFeedback, voiceDelayGain;
 
 // Recording Gates
 let recGates = { drums: null, synth: null, voice: null };
@@ -730,7 +733,15 @@ els.startBtn.addEventListener('click', async () => {
             micCompressor.connect(micGateGain);
             
             // CRITICAL: Route Mic to Voice RECORDING Bus ONLY
-            micGateGain.connect(voiceRecordingBus);
+            micGateGain.connect(voiceRecordingBus); // Dry Record
+            
+            // NEW: Route Mic to Dedicated Voice FX Chains (Wet Record)
+            // Note: These chains eventually feed into voiceRecordingBus via Gains
+            micGateGain.connect(voiceReverb); 
+            voiceReverbGain.connect(voiceRecordingBus);
+            
+            micGateGain.connect(voiceDelay);
+            voiceDelayGain.connect(voiceRecordingBus);
             
             // FIXED: NO Live Preview. 
             // Removed connection to liveBus and fxBus for Mic.
@@ -749,6 +760,7 @@ els.startBtn.addEventListener('click', async () => {
 function setupSharedFX() {
     reverbBuffer = createReverbBuffer();
 
+    // -- SHARED FX (Instruments) --
     fxBus = ctx.createGain();
     fxReturn = ctx.createGain();
     
@@ -766,6 +778,19 @@ function setupSharedFX() {
     
     // FX Returns go to Live Bus AND Recorder (via setupRecorder)
     fxReturn.connect(liveBus);
+    
+    // -- DEDICATED VOICE FX (Recorded but NOT Monitored) --
+    voiceReverb = ctx.createConvolver(); voiceReverb.buffer = reverbBuffer;
+    voiceReverbGain = ctx.createGain(); voiceReverbGain.gain.value = 0;
+    voiceReverb.connect(voiceReverbGain);
+    
+    voiceDelay = ctx.createDelay(1.0); voiceDelay.delayTime.value = 0.3;
+    voiceDelayFeedback = ctx.createGain(); voiceDelayFeedback.gain.value = 0.3;
+    voiceDelayGain = ctx.createGain(); voiceDelayGain.gain.value = 0;
+    
+    voiceDelay.connect(voiceDelayFeedback); voiceDelayFeedback.connect(voiceDelay);
+    voiceDelay.connect(voiceDelayGain);
+    // Note: Connections to voiceRecordingBus happen in Mic Setup to ensure chain order
 }
 
 function createReverbBuffer() {
@@ -1249,6 +1274,9 @@ function finishFirstLoop() {
     undoTrackName = currentMode;
     undoBackup = null; 
     
+    // FIX: Force reset loop start time so playback starts exactly at "0"
+    loopStartTime = 0;
+
     trackCtx[currentMode].buffer = rawBuffer;
     trackCtx[currentMode].hasContent = true;
 
@@ -1634,6 +1662,11 @@ function initUI() {
         instReverb.gainNode.gain.value = rGain; 
         instDelayGain.gain.value = dGain; 
         instFeedback.gain.value = dFeed; 
+        
+        // Update Voice FX Gains as well
+        if(voiceReverbGain) voiceReverbGain.gain.value = rGain;
+        if(voiceDelayGain) voiceDelayGain.gain.value = dGain;
+        if(voiceDelayFeedback) voiceDelayFeedback.gain.value = dFeed;
     }, true);
 }
 
