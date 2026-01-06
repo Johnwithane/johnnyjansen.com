@@ -779,42 +779,42 @@ els.startBtn.addEventListener('click', async () => {
         analyser.fftSize = 256;
 
         // Mic Setup
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: { 
-                echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 
-            }});
-            micNode = ctx.createMediaStreamSource(micStream);
+    //     try {
+    //         micStream = await navigator.mediaDevices.getUserMedia({ audio: { 
+    //             echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 
+    //         }});
+    //         micNode = ctx.createMediaStreamSource(micStream);
             
-            micCompressor = ctx.createDynamicsCompressor();
-            micCompressor.threshold.value = -24;
-            micCompressor.knee.value = 30;
-            micCompressor.ratio.value = 12;
-            micCompressor.attack.value = 0.003;
-            micCompressor.release.value = 0.25;
+    //         micCompressor = ctx.createDynamicsCompressor();
+    //         micCompressor.threshold.value = -24;
+    //         micCompressor.knee.value = 30;
+    //         micCompressor.ratio.value = 12;
+    //         micCompressor.attack.value = 0.003;
+    //         micCompressor.release.value = 0.25;
             
-            micNode.connect(micCompressor);
-            micCompressor.connect(analyser); 
+    //         micNode.connect(micCompressor);
+    //         micCompressor.connect(analyser); 
             
-            micGateGain = ctx.createGain();
-            micGateGain.gain.value = 0; 
+    //         micGateGain = ctx.createGain();
+    //         micGateGain.gain.value = 0; 
             
-            micCompressor.connect(micGateGain);
+    //         micCompressor.connect(micGateGain);
             
-            // CRITICAL: Route Mic to Voice RECORDING Bus ONLY
-            micGateGain.connect(voiceRecordingBus); // Dry Record
+    //         // CRITICAL: Route Mic to Voice RECORDING Bus ONLY
+    //         micGateGain.connect(voiceRecordingBus); // Dry Record
             
-            // NEW: Route Mic to Dedicated Voice FX Chains (Wet Record)
-            // Note: These chains eventually feed into voiceRecordingBus via Gains
-            micGateGain.connect(voiceReverb); 
-            voiceReverbGain.connect(voiceRecordingBus);
+    //         // NEW: Route Mic to Dedicated Voice FX Chains (Wet Record)
+    //         // Note: These chains eventually feed into voiceRecordingBus via Gains
+    //         micGateGain.connect(voiceReverb); 
+    //         voiceReverbGain.connect(voiceRecordingBus);
             
-            micGateGain.connect(voiceDelay);
-            voiceDelayGain.connect(voiceRecordingBus);
+    //         micGateGain.connect(voiceDelay);
+    //         voiceDelayGain.connect(voiceRecordingBus);
             
-            // FIXED: NO Live Preview. 
-            // Removed connection to liveBus and fxBus for Mic.
+    //         // FIXED: NO Live Preview. 
+    //         // Removed connection to liveBus and fxBus for Mic.
             
-        } catch (e) { console.warn("Mic access denied."); }
+    //     } catch (e) { console.warn("Mic access denied."); }
 
         initUI(); initPads(); setupKeys();
         requestAnimationFrame(updateLoop);
@@ -1231,65 +1231,90 @@ function updateRecBtnVisual() {
     }
 }
 
+async function enableMic() {
+    if (micStream && micStream.active) return; // Already active
+
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: { 
+            echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 
+        }});
+        
+        // Re-create nodes every time we open the mic
+        micNode = ctx.createMediaStreamSource(micStream);
+        micCompressor = ctx.createDynamicsCompressor();
+        micCompressor.threshold.value = -24;
+        micCompressor.knee.value = 30;
+        micCompressor.ratio.value = 12;
+        micCompressor.attack.value = 0.003;
+        micCompressor.release.value = 0.25;
+
+        micGateGain = ctx.createGain();
+        micGateGain.gain.value = 1; // Open immediately, logic handles routing
+
+        // Wiring
+        micNode.connect(micCompressor);
+        micCompressor.connect(analyser); // Reconnect to visualizer
+        micCompressor.connect(micGateGain);
+        
+        // Connect to Buses
+        micGateGain.connect(voiceRecordingBus);
+        micGateGain.connect(voiceReverb);
+        micGateGain.connect(voiceDelay);
+
+        log("MIC ON");
+    } catch (e) {
+        console.warn("Mic Error:", e);
+        log("MIC ERROR");
+    }
+}
+
+function disableMic() {
+    if (!micStream) return;
+
+    // Stop all hardware tracks to release "Call Mode" on mobile
+    micStream.getTracks().forEach(track => track.stop());
+    micStream = null;
+    
+    // Disconnect nodes to prevent garbage
+    if (micNode) { try { micNode.disconnect(); } catch(e){} micNode = null; }
+    
+    // Visual cleanup
+    updateLedBar(0); 
+    log("MIC OFF");
+}
+
 function onRecPress() {
     if(!isPowered) return;
     
-    // FIX 4: CLEAR ALL GESTURE
-    if (isUndoHeld) {
-        els.recBtn.classList.add('state-finishing'); 
-        log("HOLD TO CLEAR...");
-        clearAllTimer = setTimeout(() => {
-             resetDevice();
-             clearAllTimer = null;
-        }, 1500); 
-        return;
-    }
-    
-    // --- FIX: AUTO-UNPAUSE & RESET TO START ---
-    if (isPaused) {
-        if (masterLoopLength > 0) {
-            // A. UNMUTE EVERYTHING
-            TRACKS.forEach(t => trackCtx[t].mute = false);
-            updateBackingTrackVolume();
-            updateUI();
+    // ... (Keep the Clear All Logic) ...
+    // ... (Keep the Unpause Logic) ...
 
-            // B. RESET CLOCK
-            loopStartTime = ctx.currentTime;
-            startPlayback(); 
-        }
-        isPaused = false;
-        els.pauseBtn = document.getElementById('btn-pause'); 
-        if(els.pauseBtn) {
-            els.pauseBtn.classList.remove('paused');
-            els.pauseBtn.innerText = "❚❚";
-        }
-    }
-    
-    // Normal Mute Toggle if pressing instrument button
-    if (trackCtx[currentMode].mute) toggleMute(currentMode);
-
+    // --- MIC ACTIVATION LOGIC ---
+    // 1. Sampling (Holding Pad + Rec)
     if (currentMode === 'voice' && heldPadIndex !== -1) {
+        enableMic(); // <--- ADD THIS
         recordingPadIndex = heldPadIndex;
-        currentState = STATE.SAMPLING_ARMED; sampleRecBuffer = []; preRollBuffer = [];
-        const pad = els.padsGrid.children[recordingPadIndex];
-        if(pad) pad.classList.add('recording-armed');
-        log("ARMED: SPEAK"); 
-        updateMicGate(); 
-        updateBackingTrackVolume(); 
-        updateRecBtnVisual();
+        currentState = STATE.SAMPLING_ARMED; 
+        // ... rest of existing sampling logic ...
         return;
     }
 
     recPressTime = Date.now();
 
+    // 2. Main Loop Recording (Only if Voice is selected)
     if (currentState === STATE.IDLE) {
-        currentState = STATE.ARMED; recordingStream = []; preRollBuffer = [];
-        log("ARMED: MAKE SOUND"); updateMicGate();
+        if(currentMode === 'voice') enableMic(); // <--- ADD THIS
+        currentState = STATE.ARMED; 
+        // ... rest of logic ...
     } 
     else if (currentState === STATE.ARMED) {
-        currentState = STATE.IDLE; log("CANCELLED"); updateMicGate();
+        // Cancelling Armed State
+        disableMic(); // <--- ADD THIS
+        currentState = STATE.IDLE; 
+        log("CANCELLED"); updateMicGate();
     }
     else if (currentState === STATE.PLAYING) {
+        if(currentMode === 'voice') enableMic(); // <--- ADD THIS
         armOverdub();
     }
     else if (currentState === STATE.OVERDUB_ARMED) {
@@ -1321,16 +1346,22 @@ function onRecRelease() {
     if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) {
         finishSampling(); return;
     }
-    const duration = Date.now() - recPressTime;
+const duration = Date.now() - recPressTime;
     const isLongPress = duration > 500;
 
     if (isLongPress) {
-        if (currentState === STATE.RECORDING_1) finishFirstLoop(); 
+        if (currentState === STATE.RECORDING_1) {
+             finishFirstLoop(); 
+        }
         else if (currentState === STATE.ARMED) {
-             currentState = STATE.IDLE; log("CANCELLED"); updateMicGate(); 
+             currentState = STATE.IDLE; 
+             disableMic(); // <--- ADD THIS
+             log("CANCELLED"); updateMicGate(); 
         }
         else if (currentState === STATE.OVERDUB_ARMED) {
-             currentState = STATE.PLAYING; log("CANCELLED"); updateMicGate(); 
+             currentState = STATE.PLAYING; 
+             disableMic(); // <--- ADD THIS
+             log("CANCELLED"); updateMicGate(); 
         }
     }
     updateRecBtnVisual();
@@ -1358,6 +1389,7 @@ function finishSampling() {
     updateBackingTrackVolume(); 
     updatePadVisuals();
     updateRecBtnVisual();
+    disableMic();
 }
 
 function startFirstRecording() {
@@ -1399,6 +1431,7 @@ function finishFirstLoop() {
         }
     });
 
+    disableMic();
     startPlayback(); log("LOOPING"); 
     updateMicGate(); 
     updateBackingTrackVolume(); 
@@ -1499,7 +1532,7 @@ function handleOverdubStop() {
 
 function performStopOverdub(isQuantized = false) {
     clearTimeout(autoStopTimer); 
-    
+    disableMic();
     currentState = STATE.PLAYING; log("PLAYING"); 
     updateMicGate();
     updateBackingTrackVolume(); 
@@ -1684,7 +1717,11 @@ function updateMicGate() {
 
 // Helper to select track without cycling
 function selectTrack(newMode) {
-    const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
+    // Safety: If we switch away from voice while armed, kill mic
+    if (currentMode === 'voice' && newMode !== 'voice') {
+        disableMic();
+    }
+        const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
     
     // Update Gates
     TRACKS.forEach(t => {

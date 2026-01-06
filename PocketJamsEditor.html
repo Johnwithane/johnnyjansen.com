@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forest's Sound Lab v4.1</title>
+    <title>Forest's Sound Lab v4.2</title>
     <style>
         body {
             background: #111;
@@ -33,7 +33,26 @@
             border: 1px solid #444;
             max-width: 600px;
             width: 100%;
+            position: relative;
         }
+
+        .top-actions {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            display: flex;
+            gap: 15px;
+        }
+
+        .action-link {
+            font-size: 10px;
+            color: #555;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .action-link:hover { color: #c5a059; }
 
         .section-label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; }
 
@@ -222,18 +241,31 @@
             padding: 20px 40px; background: #c5a059; border: none; 
             font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px;
         }
+        
+        #save-indicator {
+            position: fixed; bottom: 10px; right: 10px; 
+            color: #444; font-size: 10px; font-style: italic;
+            transition: color 0.5s;
+        }
+        #save-indicator.saved { color: #0f0; }
     </style>
 </head>
 <body>
 
     <div id="init-overlay"><button id="init-btn">CLICK TO START LAB</button></div>
+    <div id="save-indicator">Saved</div>
 
-    <h2>Sound Lab v4.1</h2>
+    <h2>Sound Lab v4.2</h2>
 
     <!-- Controls -->
     <div class="controls-top">
-        <button class="toggle-btn active" id="btn-mode-synth" onclick="setMode('synth')">SYNTH</button>
-        <button class="toggle-btn" id="btn-mode-drums" onclick="setMode('drums')">DRUMS</button>
+        <div class="top-actions">
+            <button class="action-link" onclick="downloadHTML()">⬇ SAVE HTML</button>
+            <button class="action-link" onclick="resetData()">RESET ALL</button>
+        </div>
+        
+        <button class="toggle-btn active" id="btn-mode-synth" onclick="setMode('synth')">🎹 SYNTH</button>
+        <button class="toggle-btn" id="btn-mode-drums" onclick="setMode('drums')">🥁 DRUMS</button>
         
         <div style="width: 1px; height: 20px; background: #444; margin: 0 10px;"></div>
         
@@ -247,18 +279,18 @@
         </div>
     </div>
 
-        <!-- EDITORS -->
+    <!-- PADS (QWER / ASDF) -->
+    <div class="pad-container mode-synth" id="pad-container"></div>
+
+    <!-- EDITORS -->
     <div class="editor-panel">
         <div class="editor-title">
             <span id="edit-target-name">SETTINGS</span>
             <span style="color:#555">Editing <span id="current-style-display">1</span></span>
         </div>
         <div id="sliders-container"></div>
-
-
-    <!-- PADS (QWER / ASDF) -->
-    <div class="pad-container mode-synth" id="pad-container"></div>
     </div>
+
     <!-- CODE OUT -->
     <div class="code-panel">
         <div class="btn-row">
@@ -284,6 +316,7 @@
     const KEY_MAP = ['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'];
 
     // --- PRESET DATA ---
+    // [[SYNTH_PRESETS_START]]
     const SYNTH_PRESETS = [
         { name: "Saw Lead", wave: 'sawtooth', octave: 0, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 200, filterEnd: 3000, resonance: 2 },
         { name: "Deep Bass", wave: 'triangle', octave: -2, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.6, filterStart: 50, filterEnd: 300, resonance: 1 },
@@ -294,6 +327,7 @@
         { name: "Acid", wave: 'sawtooth', octave: -1, lfoDepth: 0, lfoRate: 5, attack: 0.05, decay: 0.4, filterStart: 100, filterEnd: 2500, resonance: 15 },
         { name: "Dream", wave: 'triangle', octave: 1, lfoDepth: 8, lfoRate: 4, attack: 0.4, decay: 1.5, filterStart: 100, filterEnd: 800, resonance: 1 }
     ];
+    // [[SYNTH_PRESETS_END]]
 
     const DRUM_TEMPLATE = {
         kick:  { startFreq: 150, endFreq: 10, decay: 0.3, fmAmount: 0, fmRatio: 0.5 },
@@ -313,6 +347,7 @@
         return kit;
     };
 
+    // [[DRUM_PRESETS_START]]
     const DRUM_PRESETS = [
         makeKit("Standard"),
         makeKit("808", k => { k.kick.decay=0.8; k.kick.endFreq=30; k.snare.tuneFreq=200; k.hat.decay=0.05; }),
@@ -323,12 +358,16 @@
         makeKit("Custom 1"),
         makeKit("Custom 2")
     ];
+    // [[DRUM_PRESETS_END]]
 
     let synthStyles = JSON.parse(JSON.stringify(SYNTH_PRESETS));
     let drumStyles = JSON.parse(JSON.stringify(DRUM_PRESETS));
 
     // --- Init ---
     document.getElementById('init-btn').addEventListener('click', async () => {
+        // Load data before context start
+        loadData();
+        
         ctx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = ctx.createGain();
         masterGain.gain.value = 0.4;
@@ -339,6 +378,72 @@
         renderStyleTabs();
         setMode('synth'); 
     });
+
+    // --- Persistence & Export ---
+    function saveData() {
+        const data = { synth: synthStyles, drums: drumStyles };
+        localStorage.setItem('forestSoundLabData', JSON.stringify(data));
+        const ind = document.getElementById('save-indicator');
+        ind.classList.add('saved');
+        setTimeout(() => ind.classList.remove('saved'), 500);
+    }
+
+    function loadData() {
+        const data = localStorage.getItem('forestSoundLabData');
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                if(parsed.synth) synthStyles = parsed.synth;
+                if(parsed.drums) drumStyles = parsed.drums;
+            } catch(e) { console.error("Load failed", e); }
+        }
+    }
+
+    function resetData() {
+        if(confirm("Reset all sounds to factory defaults?")) {
+            // Re-init from constants (make sure to re-run makeKit logic if needed by re-parsing original)
+            // Ideally we reload page, but we can just reload from markers logic if we had them as raw objects.
+            // Simplified: Clear storage and reload page
+            localStorage.removeItem('forestSoundLabData');
+            location.reload();
+        }
+    }
+
+    function downloadHTML() {
+        // Get current source
+        let html = document.documentElement.outerHTML;
+        
+        // Prepare replacement strings (Indent for clean formatting)
+        const synthJSON = `const SYNTH_PRESETS = ${JSON.stringify(synthStyles, null, 4)};`;
+        
+        // For drums, since we don't want to rely on 'makeKit' execution order in the baked file,
+        // we just dump the final object array directly.
+        const drumJSON = `const DRUM_PRESETS = ${JSON.stringify(drumStyles, null, 4)};`;
+
+        // Replace Synth Block using comments
+        // Note: regex matches everything between the markers
+        html = html.replace(
+            /\/\/ \[\[SYNTH_PRESETS_START\]\][\s\S]*?\/\/ \[\[SYNTH_PRESETS_END\]\]/, 
+            `// [[SYNTH_PRESETS_START]]\n    ${synthJSON}\n    // [[SYNTH_PRESETS_END]]`
+        );
+
+        // Replace Drum Block
+        html = html.replace(
+            /\/\/ \[\[DRUM_PRESETS_START\]\][\s\S]*?\/\/ \[\[DRUM_PRESETS_END\]\]/, 
+            `// [[DRUM_PRESETS_START]]\n    ${drumJSON}\n    // [[DRUM_PRESETS_END]]`
+        );
+
+        // Create Blob and Download
+        const blob = new Blob([html], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ForestSoundLab_Saved.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 
     // --- Logic ---
     function setMode(mode) {
@@ -739,6 +844,8 @@ else if (currentDrumIdx === ${index}) {
     }
 
     function updateCodeView() {
+        // Save whenever the code view needs updating (implying a state change)
+        saveData();
         const ta = document.getElementById('code-output');
         let output = '';
         if (currentMode === 'synth') {
