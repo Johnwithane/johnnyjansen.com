@@ -222,7 +222,20 @@
             color: var(--led-gold);
         }
 
-        #btn-rec { background: #500; box-shadow: 0 3px 0 #151515, 0 5px 5px rgba(0,0,0,0.3); }
+        /* --- Updated Record Button (Default / Empty State) --- */
+        #btn-rec { 
+            background: #500; 
+            box-shadow: 0 3px 0 #151515, 0 5px 5px rgba(0,0,0,0.3); 
+            transition: background 0.2s, box-shadow 0.2s, transform 0.05s;
+        }
+
+        /* Ensure the pulse animations are defined (they were in your original code, keep them) */
+        /* This specific class helps the Rec button pulse when an empty pad is clicked */
+        .rec-alert-pulse {
+            animation: pulse-red 0.5s infinite;
+            background: #500 !important;
+            color: #fff;
+        }
         #btn-rec.state-recording { background: #d00; color: #fff; box-shadow: 0 0 15px #d00, 0 3px 0 #500; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         #btn-rec.state-playing { background: #00aa00; color: #fff; box-shadow: 0 0 15px #0f0, 0 3px 0 #050; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         #btn-rec.state-overdub { background: var(--led-gold); color: #000; box-shadow: 0 0 15px var(--led-gold), 0 3px 0 #850; }
@@ -309,9 +322,17 @@
         }
         .pad.active { background: #eee; }
         
-        .mode-voice .pad.has-sample { background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.2); }
+        .mode-voice .pad.has-sample { background: var(--led-green); border: 1px solid rgba(255,255,255,0.2); }
         .pad.recording { background: #f00 !important; box-shadow: 0 0 20px #f00 !important; }
         .pad.recording-armed { background: #500; animation: pulse-red 0.5s infinite; }
+
+        /* Loop Pulse Class */
+        .pulsing-alert {
+            animation: pulse-red 0.5s infinite !important;
+            background: #500 !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px #f00 !important;
+        }
 
         #status-log {
             text-align: center; color: var(--accent-gold); font-size: 10px;
@@ -369,20 +390,47 @@
 <body oncontextmenu="return false;">
 
 <div id="desktop-instructions">
-    <h3>POCKET JAM PRO v18</h3>
-    <div style="margin-bottom:15px; color:#555;">SHORTCUTS</div>
+    <h3>USER MANUAL v17.8</h3>
+    
+    <div class="section-title">LOOPER WORKFLOW</div>
+    <ul>
+        <li><span>REC (NEW)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>REC (DUB)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>STOP REC</span> <strong>Tap REC (Waits for Bar)</strong></li>
+        <li><span>VOICE SAMPLE</span> <strong>Hold PAD + Tap REC</strong></li>
+    </ul>
+    
+    <div class="section-title">TRACK CONTROL</div>
+    <ul>
+        <li><span>UNDO/REDO</span> <strong>Tap UNDO (Last Take)</strong></li>
+        <li><span>CLEAR TRACK</span> <strong>Hold UNDO (1s)</strong></li>
+        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Hold REC</strong></li>
+        <li><span>MUTE/SOLO</span> <strong>Hold Inst Button + Tap PAUSE</strong></li>
+    </ul>
+
+    <div class="section-title">KNOBS (CLICK TO CYCLE MODE)</div>
+    <ul>
+        <li><span>LEFT KNOB</span> <strong>PRE-FX AMOUNT</strong></li>
+        <li style="font-size:9px; opacity:0.8; margin-bottom: 10px;">
+            <span style="color:var(--led-green)">● Reverb</span>
+            <span style="color:var(--led-blue)">● Delay</span>
+            <span style="color:var(--led-red)">● Distort</span>
+        </li>
+        
+        <li><span>RIGHT KNOB</span> <strong>POST-FX AMOUNT</strong></li>
+        <li style="font-size:9px; opacity:0.8;">
+            <span style="color:var(--led-green)">● Filter</span>
+            <span style="color:var(--led-red)">● Repeater</span>
+            <span style="color:var(--led-blue)">● Speed</span>
+        </li>
+    </ul>
+    
+    <div class="section-title">KEYBOARD SHORTCUTS</div>
     <ul>
         <li><span>REC / UNDO</span> <strong>SHIFT / CTRL</strong></li>
-        <li><span>SELECT INST</span> <strong>1 / 2 / 3</strong></li>
-        <li><span>TRIGGER PADS</span> <strong>Q-R / A-F</strong></li>
+        <li><span>INST SELECT</span> <strong>1 (Synth) 2 (Mic) 3 (Drum)</strong></li>
+        <li><span>PADS</span> <strong>Q W E R / A S D F</strong></li>
         <li><span>POWER</span> <strong>SPACEBAR</strong></li>
-    </ul>
-    <div style="margin-top:20px; color:#555;">FLOW</div>
-    <ul>
-        <li><span>NEW LOOP</span> <strong>TAP REC</strong></li>
-        <li><span>OVERDUB</span> <strong>TAP REC WHILE PLAYING</strong></li>
-        <li><span>CLEAR</span> <strong>HOLD UNDO (1s)</strong></li>
-        <li><span>SAMPLE</span> <strong>HOLD PAD + TAP REC</strong></li>
     </ul>
 </div>
 
@@ -1336,21 +1384,35 @@ function updateBackingTrackVolume() {
 }
 
 function updateRecBtnVisual() {
-    els.recBtn.classList.remove('state-recording', 'state-playing', 'state-overdub', 'state-standby-red', 'state-standby-yellow', 'state-finishing');
+    // Remove all state classes first
+    els.recBtn.classList.remove('state-recording', 'state-playing', 'state-overdub', 'state-standby-red', 'state-standby-yellow', 'state-finishing', 'pulsing-alert');
+    
     const trackHasContent = trackCtx[currentMode].hasContent;
 
-    if (currentState === STATE.RECORDING_1 || currentState === STATE.SAMPLING_REC) els.recBtn.classList.add('state-recording');
-    else if (currentState === STATE.WAITING_FOR_SYNC) els.recBtn.classList.add('state-finishing');
+    if (currentState === STATE.RECORDING_1 || currentState === STATE.SAMPLING_REC) {
+        els.recBtn.classList.add('state-recording');
+    }
+    else if (currentState === STATE.WAITING_FOR_SYNC) {
+        els.recBtn.classList.add('state-finishing');
+    }
     else if (currentState === STATE.OVERDUB) {
         if (trackHasContent) els.recBtn.classList.add('state-overdub');
         else els.recBtn.classList.add('state-recording');
     } 
-    else if (currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED) els.recBtn.classList.add('state-standby-red');
+    else if (currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED) {
+        els.recBtn.classList.add('state-standby-red');
+    }
     else if (currentState === STATE.OVERDUB_ARMED) {
         if (trackHasContent) els.recBtn.classList.add('state-standby-yellow');
         else els.recBtn.classList.add('state-standby-red');
     } 
-    else if (currentState === STATE.PLAYING) els.recBtn.classList.add('state-playing');
+    else if (currentState === STATE.PLAYING) {
+        // FIX: Only show Green (Playing) if the CURRENT track actually has audio
+        if (trackHasContent) {
+            els.recBtn.classList.add('state-playing');
+        } 
+        // If track is empty, it falls back to default CSS (Red background #500)
+    }
 }
 
 async function enableMic() {
@@ -1626,14 +1688,38 @@ function initPads() {
     els.padsGrid.innerHTML = '';
     for(let i=0; i<8; i++) {
         const btn = document.createElement('div'); btn.className = 'pad';
+        
         btn.addEventListener('pointerdown', (e) => { 
             e.preventDefault(); if(!isPowered) return;
-            btn.setPointerCapture(e.pointerId); heldPadIndex = i; btn.classList.add('active'); hitPad(i, btn); 
+            btn.setPointerCapture(e.pointerId); 
+            heldPadIndex = i; 
+            btn.classList.add('active'); 
+            hitPad(i, btn); 
         });
-        btn.addEventListener('pointerup', (e) => { heldPadIndex = -1; btn.classList.remove('active'); btn.releasePointerCapture(e.pointerId); });
-        btn.addEventListener('pointercancel', (e) => { heldPadIndex = -1; btn.classList.remove('active'); btn.releasePointerCapture(e.pointerId); });
+
+        // Refactored to clear pulse on release
+        btn.addEventListener('pointerup', (e) => { 
+            handlePadRelease(btn, e); 
+        });
+        
+        btn.addEventListener('pointercancel', (e) => { 
+            handlePadRelease(btn, e); 
+        });
+        
         els.padsGrid.appendChild(btn);
     }
+}
+
+// Helper to clean up visuals on release
+function handlePadRelease(btn, e) {
+    heldPadIndex = -1; 
+    btn.classList.remove('active'); 
+    
+    // STOP PULSING
+    btn.classList.remove('pulsing-alert');
+    els.recBtn.classList.remove('pulsing-alert');
+    
+    if(e) btn.releasePointerCapture(e.pointerId);
 }
 
 function updatePadVisuals() {
@@ -1648,7 +1734,17 @@ function updatePadVisuals() {
 
 function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
-    if (currentMode === 'voice') { if (userSamples[index]) playSample(index); } 
+    
+    if (currentMode === 'voice') { 
+        if (userSamples[index]) {
+            playSample(index); 
+        } else {
+            // START LOOPING PULSE (Stops on release via handlePadRelease)
+            el.classList.add('pulsing-alert');
+            els.recBtn.classList.add('pulsing-alert');
+            log("HOLD + REC");
+        }
+    } 
     else {
         if (currentMode === 'drums') playDrum(DRUM_PADS[index]);
         else if (currentMode === 'synth') {
@@ -1656,6 +1752,25 @@ function hitPad(index, el) {
             playSynth(freqs[index]);
         }
     }
+}
+
+// NEW FUNCTION: Handles the "Red Pulse" alert for empty pads/rec button
+function triggerEmptySlotVisuals(padEl) {
+    // 1. Pulse the Pad (Reusing your existing 'recording-armed' class for the red pulse look)
+    padEl.classList.add('recording-armed');
+    
+    // 2. Pulse the Record Button
+    els.recBtn.classList.add('rec-alert-pulse');
+    
+    // 3. Optional: Quick log message
+    log("PRESS REC");
+
+    // 4. Remove the pulse effect after 600ms
+    setTimeout(() => {
+        padEl.classList.remove('recording-armed');
+        els.recBtn.classList.remove('rec-alert-pulse');
+        updateRecBtnVisual(); // Ensure button returns to correct state
+    }, 600);
 }
 
 function updateMicGate() {
@@ -1673,7 +1788,15 @@ function selectTrack(newMode) {
     TRACKS.forEach(t => { recGates[t].gain.setTargetAtTime((t === newMode) ? 1 : 0, ctx.currentTime, 0.02); });
     if(currentMode !== 'voice') lastInstrumentMode = currentMode;
     currentMode = newMode; 
-    updateUI(); updatePadVisuals(); updateMicGate(); updateBackingTrackVolume(); updateRecBtnVisual();
+    
+    updateUI(); 
+    updatePadVisuals(); 
+    updateMicGate(); 
+    updateBackingTrackVolume(); 
+    
+    // FIX: Force button update immediately so it turns Red if the new track is empty
+    updateRecBtnVisual(); 
+    
     log(currentMode.toUpperCase());
 }
 
