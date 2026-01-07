@@ -612,6 +612,10 @@ let distortionNode;
 let distortionGain; 
 let masterHighPass; 
 
+// --- ADD THESE TWO LINES ---
+let voiceDistortion;
+let voiceDistortionGain;
+
 // 0=OFF, 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
 let rightKnobMode = 0; 
 // 0=OFF, 1=Reverb(Green), 2=Delay(Blue), 3=Distortion(Red)
@@ -823,7 +827,7 @@ masterGain.connect(ctx.destination); // Existing line
         loopBus.connect(compressor);
         
         liveBus = ctx.createGain();
-        liveBus.connect(compressor);
+        liveBus.connect(masterGain);
 
         TRACKS.forEach(track => {
             trackCtx[track].bus = ctx.createGain(); 
@@ -860,8 +864,7 @@ masterGain.connect(ctx.destination); // Existing line
         micGateGain.gain.value = 0; 
         
         micGateGain.connect(voiceRecordingBus);
-
-        micGateGain.connect(fxBus); 
+        
         
         if(voiceReverb) {
             micGateGain.connect(voiceReverb); 
@@ -870,6 +873,11 @@ masterGain.connect(ctx.destination); // Existing line
         if(voiceDelay) {
             micGateGain.connect(voiceDelay);
             voiceDelayGain.connect(voiceRecordingBus);
+        }
+
+        // --- ADD THIS BLOCK ---
+        if(voiceDistortion) {
+            micGateGain.connect(voiceDistortion);
         }
 
         initUI(); 
@@ -920,6 +928,7 @@ function setupSharedFX() {
 }
 
 function setupDistortion() {
+    // 1. Existing Main Distortion
     distortionNode = ctx.createWaveShaper();
     distortionNode.curve = makeDistortionCurve(400); 
     distortionNode.oversample = '4x';
@@ -930,6 +939,19 @@ function setupDistortion() {
     fxBus.connect(distortionNode);
     distortionNode.connect(distortionGain);
     distortionGain.connect(fxReturn);
+
+    // 2. NEW Voice Distortion
+    voiceDistortion = ctx.createWaveShaper();
+    voiceDistortion.curve = makeDistortionCurve(400);
+    voiceDistortion.oversample = '4x';
+
+    voiceDistortionGain = ctx.createGain();
+    voiceDistortionGain.gain.value = 0;
+
+    // Connect Internal Path: Distortion -> Gain -> Recorder
+    // (Note: We REMOVED micGateGain.connect(voiceDistortion) from here)
+    voiceDistortion.connect(voiceDistortionGain);
+    voiceDistortionGain.connect(voiceRecordingBus);
 }
 
 function makeDistortionCurve(amount) {
@@ -2581,14 +2603,40 @@ function initKnobs() {
     const knobLeftEl = document.getElementById('knob-left');
     let currentLeftVal = 0.0; 
 
-    const onLeftRotate = (val) => {
+const onLeftRotate = (val) => {
         currentLeftVal = val; 
         if(!instReverb) return;
-        instReverb.gainNode.gain.value = 0; instDelayGain.gain.value = 0; distortionGain.gain.value = 0;
 
-        if (leftKnobMode === 1) instReverb.gainNode.gain.value = val * 1.5; 
-        else if (leftKnobMode === 2) { instDelayGain.gain.value = val; instFeedback.gain.value = 0.3 + (val * 0.4); }
-        else if (leftKnobMode === 3) distortionGain.gain.value = val * 0.8; 
+        // Reset Instrument FX
+        instReverb.gainNode.gain.value = 0; 
+        instDelayGain.gain.value = 0; 
+        distortionGain.gain.value = 0;
+
+        // Reset Voice FX (Silently)
+        voiceReverbGain.gain.value = 0;
+        voiceDelayGain.gain.value = 0;
+        if(voiceDistortionGain) voiceDistortionGain.gain.value = 0;
+
+        // Apply based on Mode
+        if (leftKnobMode === 1) { 
+            // Reverb
+            instReverb.gainNode.gain.value = val * 1.5; 
+            voiceReverbGain.gain.value = val * 1.5; // <--- Applies to Voice Rec
+        } 
+        else if (leftKnobMode === 2) { 
+            // Delay
+            instDelayGain.gain.value = val; 
+            instFeedback.gain.value = 0.3 + (val * 0.4);
+            
+            // Voice Delay
+            voiceDelayGain.gain.value = val; // <--- Applies to Voice Rec
+            voiceDelayFeedback.gain.value = 0.3 + (val * 0.4);
+        } 
+        else if (leftKnobMode === 3) { 
+            // Distortion
+            distortionGain.gain.value = val * 0.8; 
+            if(voiceDistortionGain) voiceDistortionGain.gain.value = val * 0.8; // <--- Applies to Voice Rec
+        } 
     };
 
     const leftKnobCtrl = setupKnob(knobLeftEl, onLeftRotate, () => {
