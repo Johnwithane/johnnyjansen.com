@@ -1609,7 +1609,7 @@ function updateBackingTrackVolume() {
             targetGain = 0.0;
         } else {
             if (isSampling) { targetGain = 0.0; }
-            else if (isVoiceOverdub) { targetGain = 0.3; }
+            else if (isVoiceOverdub) { targetGain = 1.0; }
         }
         if (trackCtx[t].loopGain) {
             trackCtx[t].loopGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
