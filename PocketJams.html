@@ -860,6 +860,8 @@ masterGain.connect(ctx.destination); // Existing line
         micGateGain.gain.value = 0; 
         
         micGateGain.connect(voiceRecordingBus);
+
+        micGateGain.connect(fxBus); 
         
         if(voiceReverb) {
             micGateGain.connect(voiceReverb); 
