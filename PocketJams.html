@@ -595,6 +595,9 @@ const INTERVALS_MINOR = [0, 2, 3, 5, 7, 8, 10, 12];
 let heldInstrument = null; 
 let instHoldStartTime = 0;
 
+let isSelectingForKeyboard = false; // Waiting for user to tap a pad to set root
+let pendingKeyboardAutoSwitch = false; // Waiting for a recording to finish to auto-enter keyboard mode
+
 // SOUND LIBRARY
 let currentDrumIdx = 0; let currentSynthIdx = 0;
 const DRUM_PADS = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
@@ -733,13 +736,17 @@ function drawOled() {
     oCtx.font = "bold 10px monospace"; 
     oCtx.textAlign = "left";
     
+// Inside drawOled(), find the TOP LEFT text section:
     let title = currentMode.toUpperCase();
     
-    // NEW: Chromatic Mode Display
-    if (isChromaticMode) {
-        title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
-        oCtx.fillStyle = "#ff00ff"; // Purple for special mode
+    if (isSelectingForKeyboard) {
+        title = "SELECT PAD";
+        oCtx.fillStyle = "#ffb300"; // Gold color for selection mode
     } 
+    else if (isChromaticMode) {
+        title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
+        oCtx.fillStyle = "#ff00ff"; 
+    }
     else if (currentMode === 'synth') {
         title += isMinorScale ? " (MIN)" : " (MAJ)";
     }
@@ -1997,7 +2004,18 @@ function finishSampling() {
         const data = rawBuffer.getChannelData(0); let offset = 0;
         for(let chunk of sampleRecBuffer) { data.set(chunk, offset); offset += chunk.length; }
         userSamples[recordingPadIndex] = rawBuffer;
-        // Sample saved
+        
+        // --- NEW: Auto-switch to Keyboard Mode if pending ---
+        if (pendingKeyboardAutoSwitch) {
+            chromaticRootIndex = recordingPadIndex;
+            isChromaticMode = true;
+            pendingKeyboardAutoSwitch = false;
+            triggerOledPopup("KEYBOARD", "ACTIVE");
+        } else {
+             triggerOledPopup("SAVED", "SAMPLE");
+        }
+        // ----------------------------------------------------
+
     } else { triggerOledPopup("EMPTY", "SAMPLE"); }
     
     if (recordingPadIndex !== -1) {
@@ -2264,11 +2282,23 @@ function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
     
     if (currentMode === 'voice') { 
-        // --- NEW CHROMATIC LOGIC ---
+        // --- SELECTION MODE FOR KEYBOARD ---
+        if (isSelectingForKeyboard) {
+            if (userSamples[index]) {
+                chromaticRootIndex = index;
+                isChromaticMode = true;
+                isSelectingForKeyboard = false;
+                triggerOledPopup("KEYBOARD", "ACTIVE");
+            } else {
+                triggerOledPopup("EMPTY", "PAD");
+            }
+            return; // Don't play the sample yet, just select it
+        }
+
+        // --- KEYBOARD PLAYBACK ---
         if (isChromaticMode) {
             playSamplePitched(chromaticRootIndex, index);
             
-            // Visual feedback
             el.style.transform = "translateY(2px)";
             el.style.backgroundColor = isMinorScale ? "#300" : "#003";
             setTimeout(() => { 
@@ -2277,35 +2307,28 @@ function hitPad(index, el) {
             }, 100);
             return;
         }
-        // ---------------------------
 
+        // --- NORMAL SAMPLE PLAYBACK ---
         if (userSamples[index]) {
             playSample(index);
         } else {
+            // Trigger sampling logic...
             triggerEmptySlotVisuals(el);
-            
-            // --- 1 SECOND SAFETY DELAY ---
             padArmTimer = setTimeout(() => {
                 padArmTimer = null; 
-
                 enableMic().then(() => {
                     recordingPadIndex = index;
                     currentState = STATE.SAMPLING_ARMED;
-                    
                     sampleRecBuffer = [];
                     preRollBuffer = [];
-                    
                     el.classList.add('voice-arming');
-                    
-                    log("LISTENING...");
                     updateMicGate();
                     updateBackingTrackVolume(); 
                 });
             }, 600);
-
             updateBackingTrackVolume(); 
         }
-    } 
+    }
     else {
         if (currentMode === 'drums') {
             if(DRUM_PADS[index]) playDrum(DRUM_PADS[index]);
@@ -2344,13 +2367,13 @@ function updateMicGate() {
 }
 
 function selectTrack(newMode) {
-    // --- RESET CHROMATIC MODE ---
-    if (isChromaticMode) {
+    // --- RESET CHROMATIC / SELECTION MODES ---
+    if (isChromaticMode && newMode !== 'voice') {
         isChromaticMode = false;
-        chromaticRootIndex = -1;
-        triggerOledPopup("VOICE", "NORMAL");
-        // If we clicked the voice button to exit, we still want to ensure UI updates below
+        // Keep root index for later
     }
+    isSelectingForKeyboard = false; // Always reset selection state on track change
+    pendingKeyboardAutoSwitch = false; 
 
     if (currentMode === 'voice' && newMode !== 'voice') disableMic();
     if (!isRecordingState() && micStream) disableMic();
@@ -2392,6 +2415,13 @@ function initUI() {
     els.modes.forEach(btn => {
         const mode = btn.dataset.mode;
         
+        // Helper to clear hold state safely
+        const clearHold = (e) => {
+            if(instHoldTimer) clearTimeout(instHoldTimer);
+            if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
+            heldInstrument = null; 
+        };
+
         btn.onpointerdown = (e) => { 
             if(!isPowered) return;
             btn.setPointerCapture(e.pointerId); 
@@ -2412,67 +2442,82 @@ function initUI() {
             }, 800); 
         };
 
-        btn.onpointerup = (e) => { 
+btn.onpointerup = (e) => { 
             if(!isPowered) return;
-            btn.releasePointerCapture(e.pointerId);
             
-            // Clear the hold timer immediately
-            if(instHoldTimer) clearTimeout(instHoldTimer);
-
             // If we didn't hold long enough, treat as a TAP
             if (!didLongPress) {
                 const duration = Date.now() - instHoldStartTime;
-                // If previously selected AND not muted, cycle sound
-                if (duration < 300 && btn.dataset.wasSelected === 'true') {
-                    cycleSound(mode);
+                
+                if (duration < 500 && btn.dataset.wasSelected === 'true') {
+                    
+                    // --- REFINED VOICE BUTTON LOGIC ---
+                    if (mode === 'voice') {
+                        if (isChromaticMode) {
+                            // Already in keyboard mode? Switch back to normal samples
+                            isChromaticMode = false;
+                            isSelectingForKeyboard = false;
+                            triggerOledPopup("VOICE", "SAMPLES");
+                        } 
+                        else {
+                            // Enter "Select a Sample" state every time we try to enter keyboard mode
+                            const hasSamples = userSamples.some(s => s !== null);
+                            
+                            if (hasSamples) {
+                                isSelectingForKeyboard = true;
+                                isChromaticMode = false; // Ensure we aren't playing while selecting
+                                triggerOledPopup("SELECT", "A SAMPLE");
+                            } else {
+                                // No samples recorded yet
+                                pendingKeyboardAutoSwitch = true;
+                                triggerOledPopup("REC SAMPLE", "FIRST");
+                            }
+                        }
+                    } 
+                    // --- STANDARD INSTRUMENT LOGIC ---
+                    else {
+                        cycleSound(mode);
+                    }
                 }
             }
             
-            heldInstrument = null; 
+            clearHold(e);
         };
-        const resumeAudio = () => {
-        if (isPowered && ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) {
-            ctx.resume().then(() => {
-                console.log("Audio Context Resumed by User Interaction");
-            });
-        }
-    };
+        
+        // --- FIX FOR BUG: PAUSE DISABLING LAYER ---
+        // Ensure state clears if finger slides off or event cancels
+        btn.onpointercancel = (e) => clearHold(e);
+        btn.onpointerleave = (e) => clearHold(e);
 
-    // Attach to the whole document
-    document.body.addEventListener('touchstart', resumeAudio, { passive: true });
-    document.body.addEventListener('click', resumeAudio);
+        const resumeAudio = () => {
+            if (isPowered && ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) {
+                ctx.resume().then(() => {
+                    console.log("Audio Context Resumed by User Interaction");
+                });
+            }
+        };
+
+        // Attach to the whole document
+        document.body.addEventListener('touchstart', resumeAudio, { passive: true });
+        document.body.addEventListener('click', resumeAudio);
     });
 
-    // ... (Rest of initUI: scaleSwitch, recBtn, powerSwitch etc. remains the same) ...
-// --- Scale Button Logic ---
+    // --- Scale Button Logic ---
     if(els.scaleBtn) {
         els.scaleBtn.onpointerdown = (e) => {
             if(!isPowered) return;
             e.preventDefault();
             els.scaleBtn.setPointerCapture(e.pointerId);
             
-            // --- NEW: CHROMATIC MODE TRIGGER ---
+            // --- CHROMATIC MODE TRIGGER (Keep existing just in case) ---
             if (currentMode === 'voice') {
-                // Scenario A: Already in Chromatic Mode -> Toggle Scale
-                if (isChromaticMode) {
-                    isMinorScale = !isMinorScale;
-                    triggerOledPopup("SCALE", isMinorScale ? "MINOR" : "MAJOR");
-                    return;
-                }
-
-                // Scenario B: Holding a Pad -> Enter Chromatic Mode
                 if (heldPadIndex !== -1) {
+                     // ... (Existing logic for holding pad + scale button)
                     if (userSamples[heldPadIndex]) {
                         isChromaticMode = true;
                         chromaticRootIndex = heldPadIndex;
                         triggerOledPopup("KEYBOARD", "MODE");
-                        
-                        // Clear the arming timer so we don't accidentally record
                         if (padArmTimer) { clearTimeout(padArmTimer); padArmTimer = null; }
-                        
-                        return;
-                    } else {
-                        triggerOledPopup("EMPTY", "PAD");
                         return;
                     }
                 }
@@ -2499,52 +2544,51 @@ function initUI() {
 
     if(els.powerSwitch) els.powerSwitch.onclick = togglePower;
 
-    // ... (Tape logic) ...
+    // ... (Tape logic remains unchanged) ...
     if (saveBtn) {
-       // ... (Keep existing Tape logic) ...
+        // [Existing Tape Logic Code Here - No changes needed to Tape Logic block, so shortening for brevity]
        saveBtn.addEventListener('click', () => {
-            // ... copy your existing tape click logic here ...
-            if(!isPowered || !mediaRecorder) return;
-            if (isTapeCountingDown) {
-                clearTimeout(tapeCountdownTimer);
-                isTapeCountingDown = false;
-                saveBtn.classList.remove('tape-countdown');
-                saveBtn.innerText = "RECORD JAM";
-                triggerOledPopup("ABORTED", "TAPE");
-                return;
-            }
-            if(!isTapeRecording) {
-                isTapeCountingDown = true;
-                saveBtn.classList.add('tape-countdown');
-                let count = 3;
-                const runCountdown = () => {
-                    if (!isTapeCountingDown) return; 
-                    if (count > 0) {
-                        saveBtn.innerText = `${count}... TAP TO CANCEL`;
-                        triggerOledPopup("REC IN", count);
-                        count--;
-                        tapeCountdownTimer = setTimeout(runCountdown, 1000);
-                    } else {
-                        isTapeCountingDown = false;
-                        saveBtn.classList.remove('tape-countdown');
-                        audioChunks = [];
-                        shouldSaveTape = true; 
-                        mediaRecorder.start();
-                        isTapeRecording = true;
-                        saveBtn.classList.add('tape-recording');
-                        saveBtn.innerText = "Save Recording (hold to discard)"; 
-                        triggerOledPopup("ROLLING", "TAPE");
-                    }
-                };
-                runCountdown();
-            } else {
-                if (saveBtn.classList.contains('tape-canceling')) return;
-                mediaRecorder.stop();
-                isTapeRecording = false;
-                saveBtn.classList.remove('tape-recording');
-                saveBtn.innerText = "RECORD JAM"; 
-                triggerOledPopup("SAVED", "TAPE");
-            }
+           if(!isPowered || !mediaRecorder) return;
+           if (isTapeCountingDown) {
+               clearTimeout(tapeCountdownTimer);
+               isTapeCountingDown = false;
+               saveBtn.classList.remove('tape-countdown');
+               saveBtn.innerText = "RECORD JAM";
+               triggerOledPopup("ABORTED", "TAPE");
+               return;
+           }
+           if(!isTapeRecording) {
+               isTapeCountingDown = true;
+               saveBtn.classList.add('tape-countdown');
+               let count = 3;
+               const runCountdown = () => {
+                   if (!isTapeCountingDown) return; 
+                   if (count > 0) {
+                       saveBtn.innerText = `${count}... TAP TO CANCEL`;
+                       triggerOledPopup("REC IN", count);
+                       count--;
+                       tapeCountdownTimer = setTimeout(runCountdown, 1000);
+                   } else {
+                       isTapeCountingDown = false;
+                       saveBtn.classList.remove('tape-countdown');
+                       audioChunks = [];
+                       shouldSaveTape = true; 
+                       mediaRecorder.start();
+                       isTapeRecording = true;
+                       saveBtn.classList.add('tape-recording');
+                       saveBtn.innerText = "Save Recording (hold to discard)"; 
+                       triggerOledPopup("ROLLING", "TAPE");
+                   }
+               };
+               runCountdown();
+           } else {
+               if (saveBtn.classList.contains('tape-canceling')) return;
+               mediaRecorder.stop();
+               isTapeRecording = false;
+               saveBtn.classList.remove('tape-recording');
+               saveBtn.innerText = "RECORD JAM"; 
+               triggerOledPopup("SAVED", "TAPE");
+           }
        });
 
        saveBtn.addEventListener('pointerdown', (e) => {
