@@ -517,6 +517,9 @@ let tapeHoldTimer = null;
 let shouldSaveTape = true; 
 const saveBtn = document.getElementById('btn-save');
 
+let recordingSource = 'internal'; 
+let recHoldTimer = null;
+
 let masterFilter; 
 let distortionNode; 
 let distortionGain; 
@@ -1833,6 +1836,8 @@ async function disableMic() {
 
 function onRecPress() {
     if(!isPowered) return;
+    
+    // Check for "Clear All" combo (Undo + Rec)
     if (isUndoHeld) {
         els.recBtn.classList.add('state-finishing'); 
         triggerOledPopup("CLEAR ALL?", "HOLD...");
@@ -1840,30 +1845,40 @@ function onRecPress() {
         return;
     }
 
-    if (currentMode === 'voice' && heldPadIndex !== -1) {
-        if (padArmTimer) clearTimeout(padArmTimer); 
-
-        enableMic(); recordingPadIndex = heldPadIndex;
-        currentState = STATE.SAMPLING_ARMED; 
-        const pad = els.padsGrid.children[recordingPadIndex];
-        if(pad) pad.classList.add('recording-armed');
-        updateMicGate(); updateBackingTrackVolume(); updateRecBtnVisual();
-        return; 
+    // --- VOICE LOGIC ---
+    if (currentMode === 'voice') {
+        // Start the timer to detect a HOLD
+        recHoldTimer = setTimeout(() => {
+            // User HELD the button -> Enable MIC Recording
+            recordingSource = 'mic';
+            enableMic();
+            
+            if (currentState === STATE.IDLE) {
+                currentState = STATE.ARMED;
+                recordingStream = []; preRollBuffer = [];
+                triggerOledPopup("MIC ARMED", "SING NOW");
+            } else if (currentState === STATE.PLAYING) {
+                armOverdub();
+                triggerOledPopup("MIC DUB", "ARMED");
+            }
+            updateMicGate();
+            updateRecBtnVisual();
+            recHoldTimer = null; // Mark as handled
+        }, 500); // 500ms Hold Threshold
+        return;
     }
-    if (isPaused) {
-        if (masterLoopLength > 0) {
-            TRACKS.forEach(t => trackCtx[t].mute = false);
-            updateBackingTrackVolume(); updateUI();
-            loopStartTime = ctx.currentTime; startPlayback(); 
-        }
-        isPaused = false;
-        if(pauseBtn) { pauseBtn.classList.remove('paused'); pauseBtn.innerHTML = '<span style="font-size:14px; margin-bottom:2px;">▶︎/❚❚</span>'; }
-    }
 
+    // --- STANDARD INSTRUMENT LOGIC (Drums/Synth) ---
+    // Immediate action for other instruments
+    recordingSource = 'internal'; 
+    handleStandardRecTrigger();
+}
+
+// Helper to reuse the standard arming logic
+function handleStandardRecTrigger() {
     recPressTime = Date.now();
-
+    
     if (currentState === STATE.IDLE) {
-        if(currentMode === 'voice') enableMic(); 
         currentState = STATE.ARMED; recordingStream = []; preRollBuffer = [];
         updateMicGate();
     } 
@@ -1871,7 +1886,6 @@ function onRecPress() {
         currentState = STATE.IDLE; disableMic(); triggerOledPopup("CANCELED", "ARM"); updateMicGate();
     }
     else if (currentState === STATE.PLAYING) {
-        if(currentMode === 'voice') enableMic();
         armOverdub();
     }
     else if (currentState === STATE.OVERDUB_ARMED) {
@@ -1880,22 +1894,44 @@ function onRecPress() {
     else if (currentState === STATE.RECORDING_1) finishFirstLoop(); 
     else if (currentState === STATE.OVERDUB) handleOverdubStop(); 
     else if (currentState === STATE.WAITING_FOR_SYNC) { performStopOverdub(true); }
+    
     updateRecBtnVisual();
 }
 
 function onRecRelease() {
+    // 1. Clear Reset Timer (Undo+Rec)
     if (clearAllTimer) { clearTimeout(clearAllTimer); clearAllTimer = null; triggerOledPopup("ABORTED", "CLEAR"); updateRecBtnVisual(); return; }
-    if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) { finishSampling(); return; }
-    const duration = Date.now() - recPressTime;
-    const isLongPress = duration > 500;
 
-    if (isLongPress) {
-        if (currentState === STATE.RECORDING_1) finishFirstLoop(); 
-        else if (currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED) {
-             currentState = (currentState === STATE.ARMED) ? STATE.IDLE : STATE.PLAYING; 
-             disableMic(); triggerOledPopup("CANCELED", "ARM"); updateMicGate(); 
+    // 2. Handle Voice Mode Tap Logic
+    if (currentMode === 'voice') {
+        // If timer exists, it means we let go BEFORE the hold threshold (It's a TAP)
+        if (recHoldTimer) {
+            clearTimeout(recHoldTimer);
+            recHoldTimer = null;
+
+            // Check if we have samples
+            const hasSamples = userSamples.some(s => s !== null);
+
+            if (hasSamples) {
+                // Samples exist -> Record internal audio (Pads) like other instruments
+                recordingSource = 'internal';
+                disableMic(); // Ensure mic doesn't bleed in
+                handleStandardRecTrigger(); // Trigger standard arm/record logic
+            } else {
+                // No samples -> Show Instruction
+                triggerOledPopup("HOLD TO", "REC VOICE");
+            }
         }
+        // If recHoldTimer was null, it means the HOLD action already fired in onRecPress. Do nothing.
+        return;
     }
+
+    // 3. Handle Standard Long Press Release (Finish Loop) for other instruments
+    const duration = Date.now() - recPressTime;
+    if (duration > 500 && currentState === STATE.RECORDING_1) {
+        finishFirstLoop();
+    }
+    
     updateRecBtnVisual();
 }
 
@@ -2218,11 +2254,19 @@ function triggerEmptySlotVisuals(padEl) {
 }
 
 function updateMicGate() {
-    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
-    const isVoiceRecording = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC));
-    let target = (isSampling || isVoiceRecording) ? 1.0 : 0.0;
-    if (isSamplePlaying) target = 0.0;
-    micGateGain.gain.setTargetAtTime(target, ctx.currentTime, 0.05);
+    const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC);
+    
+    // Only open the Mic Gate if we are in Voice Mode AND the source is explicitly set to 'mic'
+    if (currentMode === 'voice' && isRecording && recordingSource === 'mic') {
+        micGateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.05);
+    } 
+    // Also open it for sampling to pads
+    else if (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC) {
+        micGateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.05);
+    } 
+    else {
+        micGateGain.gain.setTargetAtTime(0.0, ctx.currentTime, 0.05);
+    }
 }
 
 function selectTrack(newMode) {
