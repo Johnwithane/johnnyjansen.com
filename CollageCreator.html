@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Scrapbook – Full View Canvas</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; font-family:system-ui,sans-serif; background:#f5f5f5; }
+    body { padding:0.5rem; }
+
+    .container {
+      max-width:900px; margin:0 auto; background:white; border-radius:12px;
+      overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.1);
+      height:calc(100vh - 1rem); display:flex; flex-direction:column;
+    }
+
+    .speech-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 0.5rem 0.8rem;
+  font-size: 14px;
+  font-family: system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  max-width: 200px;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: center;
+  z-index: 10;
+}
+
+.speech-bubble:empty {
+  display: none;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #333;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+  z-index: 1;
+  margin-top: -2px;
+}
+
+.speech-input {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  min-width: 120px;
+  max-width: 200px;
+  text-align: center;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.speech-input:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: #999;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .step {
+      margin-bottom: 1.5rem;
+    }
+
+    .step-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .copy-btn {
+      padding: 0.4rem 0.8rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #0056b3;
+    }
+
+    .prompt-area,
+    .response-area {
+      width: 100%;
+      min-height: 150px;
+      max-height: 250px;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+      background: #f9f9f9;
+    }
+
+    .response-area {
+      background: white;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .error-message {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: #fee;
+      color: #c33;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .success-message {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: #efe;
+      color: #3a3;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .user-prompt-area {
+      width: 100%;
+      min-height: 80px;
+      max-height: 150px;
+      padding: 0.8rem;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.95rem;
+      resize: vertical;
+      background: white;
+    }
+
+    .user-prompt-area:focus {
+      outline: none;
+      border-color: #0056b3;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .toolbar {
+      display:flex; gap:0.5rem; padding:0.8rem; background:#f0f0f0;
+      border-bottom:1px solid #ddd; flex-shrink:0; overflow-x:auto;
+      white-space:nowrap; touch-action: manipulation;
+    }
+    .btn {
+      padding:0.5rem 0.9rem; border:1px solid #ccc; background:white;
+      border-radius:6px; cursor:pointer; font-size:0.9rem; transition:all .2s;
+      min-width:fit-content; touch-action: manipulation;
+    }
+    .btn.active { background:#007bff; color:white; border-color:#007bff; }
+    .btn:hover, .btn:active { background:#f8f9fa; }
+    .btn.active:hover { background:#0056b3; }
+
+    /* Canvas Scaler – always fits screen, preserves ratio */
+    .canvas-scaler {
+      flex:1; position:relative; overflow:hidden; background:#fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .canvas {
+      position: relative;
+      width: 900px;
+      height: calc(900px * var(--ratio-h) / var(--ratio-w));
+      max-width: 100%;
+      max-height: 100%;
+      background-size: cover;
+      background-position: center;
+      touch-action: none;
+    }
+
+    .scrap-item {
+      position:absolute; user-select:none; cursor:move;
+      transform-origin: center;
+      pointer-events:auto; touch-action:none;
+    }
+    .scrap-item img,
+    .scrap-item .emoji-inner {
+      width:100%; height:100%; object-fit:cover; border-radius:4px; pointer-events:none;
+    }
+    .scrap-item.emoji .emoji-inner {
+      display:flex; align-items:center; justify-content:center; font-size:0.8em;
+    }
+    .scrap-item.selected { outline:2px solid #007bff; outline-offset:2px; }
+    .resize-handle {
+      position:absolute; right:-6px; bottom:-6px; width:20px; height:20px;
+      background:#007bff; border:2px solid white; border-radius:50%;
+      cursor:nwse-resize; touch-action:none;
+    }
+
+    .rotate-handle {
+      position:absolute; left:-6px; top:-6px; width:0px; height:0px;
+      background:#28a745; border:2px solid white; border-radius:50%;
+      cursor:grab; touch-action:none;
+    }
+    .rotate-handle:active { cursor:grabbing; }
+    .controls {
+      position:absolute; bottom:-56px; left:50%; 
+      background:white; border:1px solid #ddd; border-radius:10px;
+      padding:0.6rem; display:flex; gap:0.4rem;
+      box-shadow:0 4px 12px rgba(0,0,0,.15);
+      pointer-events:auto; z-index:1000; touch-action:manipulation;
+    }
+    .ctrl-btn {
+      width:32px; height:32px; border:none; background:#f0f0f0;
+      border-radius:8px; cursor:pointer; font-size:1.1rem;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .2s; touch-action:manipulation;
+    }
+    .ctrl-btn:hover, .ctrl-btn:active { background:#e0e0e0; }
+    .ctrl-btn.active { background:#007bff; color:white; }
+
+    .dropdown { position:relative; display:inline-block; }
+    .dropdown-btn {
+      width:32px; height:32px; background:#f0f0f0; border:none;
+      border-radius:8px; cursor:pointer; font-size:1.1rem;
+      display:flex; align-items:center; justify-content:center;
+      touch-action:manipulation;
+    }
+    .dropdown-btn.active { background:#007bff; color:white; }
+    .dropdown-menu {
+      position:absolute; top:100%; left:50%; transform:translateX(-50%);
+      margin-top:6px; background:white; border:1px solid #ddd;
+      border-radius:8px; box-shadow:0 6px 16px rgba(0,0,0,.2);
+      min-width:160px; max-height:220px; overflow-y:auto;
+      z-index:10000; opacity:0; visibility:hidden;
+      transform:translateX(-50%) translateY(-8px); transition:all .2s;
+      pointer-events:none; touch-action:manipulation;
+    }
+    .dropdown.open .dropdown-menu {
+      opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
+      pointer-events:auto;
+    }
+    .dropdown-item {
+      padding:0.5rem 0.8rem; font-size:0.9rem; cursor:pointer;
+      display:flex; align-items:center; gap:0.5rem; transition:background .2s;
+      touch-action:manipulation;
+    }
+    .dropdown-item:hover, .dropdown-item:active { background:#f5f5f5; }
+    .dropdown-item.active { background:#e3f2fd; color:#007bff; font-weight:500; }
+
+    /* Centered Heart Path */
+    .clip-heart {
+      clip-path: path('M50 15 C35 0, 15 0, 0 15 C0 30, 20 45, 50 75 C80 45, 100 30, 100 15 C85 0, 65 0, 50 15 Z');
+    }
+    .clip-circle { clip-path: circle(50%); }
+    .clip-star   { clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+    .clip-square { clip-path: inset(0); }
+    .clip-hexagon{ clip-path: polygon(30% 0%,70% 0%,100% 50%,70% 100%,30% 100%,0% 50%); }
+
+    .palette {
+      display:flex; gap:0.5rem; padding:1rem; flex-wrap:wrap; justify-content:center;
+      background:#f9f9f9; border-top:1px solid #eee; overflow-x:auto; flex-shrink:0;
+    }
+    .emoji-drag, .photo-sample {
+      width:60px; height:60px; cursor:grab; display:flex; align-items:center;
+      justify-content:center; font-size:2.2rem; background:white;
+      border:1px solid #ddd; border-radius:8px; transition:transform .2s;
+      touch-action:manipulation; flex-shrink:0;
+    }
+    .emoji-drag:active, .photo-sample:active { transform:scale(.95); }
+    .photo-sample img { width:100%; height:100%; object-fit:cover; border-radius:6px; }
+
+    .upload {
+      padding:1rem; text-align:center; border-top:1px solid #eee;
+      background:#f9f9f9; flex-shrink:0;
+    }
+    .upload input { display:none; }
+    .upload label {
+      display:inline-block; padding:.5rem 1rem; background:#007bff;
+      color:white; border-radius:6px; cursor:pointer; transition:background .2s;
+      touch-action:manipulation;
+    }
+    .upload label:hover, .upload label:active { background:#0056b3; }
+
+    .filter-bw { filter:grayscale(100%); }
+    .filter-sepia { filter:sepia(80%); }
+    .filter-vibrant { filter:saturate(180%) contrast(110%); }
+    .filter-cool { filter:hue-rotate(200deg) brightness(1.1); }
+    .filter-warm { filter:sepia(30%) saturate(130%) hue-rotate(20deg); }
+
+    .content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(8deg)}50%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+    @keyframes rotate{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    @keyframes hop{0%,100%{transform:translateY(0)}25%{transform:translateY(-20px)}50%{transform:translateY(0)}75%{transform:translateY(-10px)}}
+    @keyframes zoom{0%,100%{transform:scale(1)}30%{transform:scale(1.3)}60%{transform:scale(.9)}80%{transform:scale(1.15)}}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    @keyframes sway{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}75%{transform:rotate(-15deg)}}
+    @keyframes boing{0%{transform:scale(1)}40%{transform:scale(1.4,.8)}60%{transform:scale(.9,1.3)}80%{transform:scale(1.1,.95)}100%{transform:scale(1)}}
+    .anim-wiggle .content{animation:wiggle 4s ease-in-out infinite}
+    .anim-rotate .content{animation:rotate 4s linear infinite}
+    .anim-hop .content{animation:hop 4s ease-in-out infinite}
+    .anim-zoom .content{animation:zoom 4s ease-in-out infinite}
+    .anim-pulse .content{animation:pulse 4s ease-in-out infinite}
+    .anim-float .content{animation:float 4s ease-in-out infinite}
+    .anim-sway .content{animation:sway 4s ease-in-out infinite}
+    .anim-boing .content{animation:boing 4s ease-in-out infinite}
+
+    .scrap-item * { user-select:none; -webkit-user-select:none; }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <div class="toolbar">
+      <button class="btn" :class="{ active: mode === 'select' }" @click="setMode('select')">Select</button>
+      <button class="btn" @click="refreshBackground">New BG</button>
+      <button class="btn" @click="clearAll">Clear</button>
+
+      <!-- Aspect Ratio Buttons -->
+      <!-- <button class="btn" :class="{ active: aspect === '16:9' }" @click="setAspect('16:9')">Horizontal</button>
+      <button class="btn" :class="{ active: aspect === '9:16' }" @click="setAspect('9:16')">Vertical</button>
+      <button class="btn" :class="{ active: aspect === '1:1' }" @click="setAspect('1:1')">Square</button>
+
+      <button class="btn" @click="exportGif">Export GIF</button> -->
+      <button class="btn" @click="showAIModal = true">🤖 AI Animate</button>
+    </div>
+
+    <div class="canvas-scaler" ref="scaler" @drop.prevent="drop" @dragover.prevent @mousedown.self="deselectAll" @touchstart.self="deselectAll">
+      <div class="canvas" :style="{ backgroundImage: `url(${bgUrl})` }" @mousedown.self="deselectAll" @touchstart.self="deselectAll">
+<div v-for="item in items" :key="item.id"
+     class="scrap-item"
+     :class="{ selected: selectedId === item.id, emoji: item.type === 'emoji' }"
+     :data-id="item.id"
+     :style="itemStyle(item)"
+     @mousedown.stop="selectAndDrag($event, item.id)"
+     @touchstart.stop="selectAndDrag($event, item.id)">
+
+  <!-- Speech Bubble (only if selected and editing, or if has text and not selected) -->
+  <input 
+    v-if="selectedId === item.id"
+    type="text"
+    class="speech-input"
+    v-model="item.speech"
+    placeholder="Add speech..."
+    @click.stop
+    @mousedown.stop
+    @touchstart.stop
+  />
+  <div v-else-if="item.speech" class="speech-bubble">{{ item.speech }}</div>
+
+  <div class="content" :class="[item.filter, item.clip]">
+    <img v-if="item.type === 'photo'" :src="item.src" />
+    <div v-else class="emoji-inner">{{ item.emoji }}</div>
+  </div>
+
+          <div v-if="selectedId === item.id" class="resize-handle"
+              @mousedown.stop="startResize($event, item.id)"
+              @touchstart.stop="startResize($event, item.id)"></div>
+
+          <div v-if="selectedId === item.id" class="rotate-handle"
+              @mousedown.stop="startRotate($event, item.id)"
+              @touchstart.stop="startRotate($event, item.id)"></div>
+
+          <div v-if="selectedId === item.id" class="controls" :style="{ transform: `translateX(-50%) rotate(${-(item.rotation || 0)}deg)` }"> 
+            
+            <!-- <div class="dropdown" :class="{ open: cropOpen }">
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.clip }" @click.stop="toggleDropdown('crop')" @touchend.stop="toggleDropdown('crop')">✂️</button>
+              <div class="dropdown-menu">
+                <div class="dropdown-item" :class="{ active: !item.clip }" @click.stop="setClip(item, null)" @touchend.stop.prevent="setClip(item, null)">None</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-circle' }" @click.stop="setClip(item, 'clip-circle')" @touchend.stop.prevent="setClip(item, 'clip-circle')">Circle</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-heart' }" @click.stop="setClip(item, 'clip-heart')" @touchend.stop.prevent="setClip(item, 'clip-heart')">Heart</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-star' }" @click.stop="setClip(item, 'clip-star')" @touchend.stop.prevent="setClip(item, 'clip-star')">Star</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-square' }" @click.stop="setClip(item, 'clip-square')" @touchend.stop.prevent="setClip(item, 'clip-square')">Square</div>
+                <div class="dropdown-item" :class="{ active: item.clip === 'clip-hexagon' }" @click.stop="setClip(item, 'clip-hexagon')" @touchend.stop.prevent="setClip(item, 'clip-hexagon')">Hexagon</div>   
+              </div>
+            </div> -->
+
+            <!-- <div class="dropdown" :class="{ open: animOpen }">
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.anim }" @click.stop="toggleDropdown('anim')" @touchend.stop="toggleDropdown('anim')">🎞️</button>
+              <div class="dropdown-menu">
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-wiggle' }" @click.stop="setAnim(item,'anim-wiggle')" @touchend.stop.prevent="setAnim(item,'anim-wiggle')">Wiggle</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-rotate' }" @click.stop="setAnim(item,'anim-rotate')" @touchend.stop.prevent="setAnim(item,'anim-rotate')">Rotate</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-hop' }" @click.stop="setAnim(item,'anim-hop')" @touchend.stop.prevent="setAnim(item,'anim-hop')">Hop</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-zoom' }" @click.stop="setAnim(item,'anim-zoom')" @touchend.stop.prevent="setAnim(item,'anim-zoom')">Zoom</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-pulse' }" @click.stop="setAnim(item,'anim-pulse')" @touchend.stop.prevent="setAnim(item,'anim-pulse')">Pulse</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-float' }" @click.stop="setAnim(item,'anim-float')" @touchend.stop.prevent="setAnim(item,'anim-float')">Float</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-sway' }" @click.stop="setAnim(item,'anim-sway')" @touchend.stop.prevent="setAnim(item,'anim-sway')">Sway</div>
+                <div class="dropdown-item" :class="{ active: item.anim === 'anim-boing' }" @click.stop="setAnim(item,'anim-boing')" @touchend.stop.prevent="setAnim(item,'anim-boing')">Boing!</div>
+                <div class="dropdown-item" @click.stop="setAnim(item,null)" @touchend.stop.prevent="setAnim(item,null)">None</div>
+              </div>
+            </div> -->
+
+            <!-- <div class="dropdown" :class="{ open: filterOpen }">
+              <button class="ctrl-btn dropdown-btn" :class="{ active: item.filter }" @click.stop="toggleDropdown('filter')" @touchend.stop="toggleDropdown('filter')">🎨</button>
+              <div class="dropdown-menu">
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-bw' }" @click.stop="setFilter(item,'filter-bw')" @touchend.stop.prevent="setFilter(item,'filter-bw')">B&W</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-sepia' }" @click.stop="setFilter(item,'filter-sepia')" @touchend.stop.prevent="setFilter(item,'filter-sepia')">Sepia</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-vibrant' }" @click.stop="setFilter(item,'filter-vibrant')" @touchend.stop.prevent="setFilter(item,'filter-vibrant')">Vibrant</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-cool' }" @click.stop="setFilter(item,'filter-cool')" @touchend.stop.prevent="setFilter(item,'filter-cool')">Cool</div>
+                <div class="dropdown-item" :class="{ active: item.filter === 'filter-warm' }" @click.stop="setFilter(item,'filter-warm')" @touchend.stop.prevent="setFilter(item,'filter-warm')">Warm</div>
+                <div class="dropdown-item" @click.stop="setFilter(item,null)" @touchend.stop.prevent="setFilter(item,null)">None</div>
+              </div>
+            </div> -->
+
+            <!-- <button class="ctrl-btn" @click.stop="bringToFront">⬆️</button>
+            <button class="ctrl-btn" @click.stop="sendToBack">⬇️</button> -->
+          <button class="ctrl-btn" @click.stop="duplicate(item)" @touchend.stop="duplicate(item)">⧉</button>
+          <button class="ctrl-btn" @click.stop="remove(item)" @touchend.stop="remove(item)">X</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload">
+      <label @click.stop>Upload Photos <input type="file" multiple accept="image/*" @change="uploadPhotos"></label>
+    </div>
+
+    <div class="palette">
+      <span v-for="e in emojis" :key="e" class="emoji-drag" 
+        draggable="true" 
+        @dragstart="dragStart($event,'emoji',e)"
+        @click="addToCenter('emoji', e)"
+        @touchstart="touchStartPalette($event,'emoji',e)"
+        @touchmove.prevent
+        @touchend="touchEndPalette($event,'emoji',e)">{{ e }}</span>
+      <div v-for="p in samplePhotos" :key="p" class="photo-sample" 
+          draggable="true" 
+          @dragstart="dragStart($event,'photo',p)"
+          @click="addToCenter('photo', p)"
+          @touchstart="touchStartPalette($event,'photo',p)"
+          @touchmove.prevent
+          @touchend="touchEndPalette($event,'photo',p)">
+        <img :src="p">
+      </div>
+    </div>
+  <!-- AI Modal -->
+<div v-if="showAIModal" class="modal-overlay" @click.self="showAIModal = false">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>AI Animation Assistant</h2>
+      <button class="close-btn" @click="showAIModal = false">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="step">
+        <label class="step-label">
+          Step 1: Describe what you want (optional)
+        </label>
+        <textarea 
+          v-model="userPrompt"
+          class="user-prompt-area"
+          placeholder="e.g., 'Make it shake like an earthquake' or 'Create a dreamy floating effect' or leave blank for AI to decide..."
+        ></textarea>
+      </div>
+
+      <div class="step">
+        <label class="step-label">
+          Step 2: Copy this prompt and paste it into Claude, ChatGPT, or any LLM
+          <button class="copy-btn" @click="copyPrompt">📋 Copy Prompt</button>
+        </label>
+        <textarea 
+          readonly 
+          ref="promptArea"
+          class="prompt-area"
+          :value="aiPrompt"
+        ></textarea>
+      </div>
+
+      <div class="step">
+        <label class="step-label">
+          Step 3: Paste the AI's JSON response here
+        </label>
+        <textarea 
+          v-model="aiResponse"
+          class="response-area"
+          placeholder='Paste the JSON response from the AI here...'
+        ></textarea>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn" @click="applyAIAnimations" :disabled="!aiResponse">
+          ✨ Apply Animations
+        </button>
+        <button class="btn" @click="showAIModal = false">Cancel</button>
+      </div>
+      
+      <div v-if="aiError" class="error-message">{{ aiError }}</div>
+      <div v-if="aiSuccess" class="success-message">{{ aiSuccess }}</div>
+    </div>
+  </div>
+</div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        const bgUrl = ref('');
+        const items = ref([]);
+        const nextId = ref(0);
+        const selectedId = ref(null);
+        const mode = ref('select');
+        const animOpen = ref(false);
+        const filterOpen = ref(false);
+        const cropOpen = ref(false);
+        const aspect = ref('16:9');
+        const scaler = ref(null);
+
+        const touchPaletteState = ref({ active: false, type: null, data: null });
+
+        const deselectAll = () => { 
+          selectedId.value = null; 
+          animOpen.value = filterOpen.value = cropOpen.value = false; 
+        };
+
+        const emojis = ['😂', '😎', '👍', '❤️', '🔥'];
+        const samplePhotos = [
+          'https://picsum.photos/200/200?random=1',
+          'https://picsum.photos/200/200?random=2',
+          'https://picsum.photos/200/200?random=3',
+          'https://picsum.photos/200/200?random=4'
+        ];
+
+        const ratios = {
+          '16:9':  { w: 16, h: 9 },
+          '9:16':  { w: 9,  h: 16 },
+          '1:1':   { w: 1,  h: 1 }
+        };
+
+const showAIModal = ref(false);
+const aiResponse = ref('');
+const aiError = ref('');
+const aiSuccess = ref('');
+const promptArea = ref(null);
+
+// Add this with your other refs
+const userPrompt = ref('');
+
+// Update the aiPrompt computed property
+const aiPrompt = computed(() => {
+  const config = exportScene();
+  
+  let prompt = `You are an animation director for a 4-second looping animation in a scrapbooking app.\n\n`;
+  
+  if (userPrompt.value.trim()) {
+    prompt += `USER'S CREATIVE DIRECTION:\n"${userPrompt.value.trim()}"\n\n`;
+  }
+  
+  prompt += `SCENE:
+${config.assets.map((asset, i) => {
+  let desc = `${i + 1}. ${asset.description} (id: ${asset.id})`;
+  if (asset.speech) desc += ` - says: "${asset.speech}"`;
+  return desc;
+}).join('\n')}
+
+${config.assets.length === 0 ? `Scene is empty. Ask user to add elements first.\n\n` : ''}
+
+KEYFRAME PROPERTIES (0-100% time):
+- x: horizontal offset px (+ right, - left)
+- y: vertical offset px (+ down, - up)  
+- rotation: degrees
+- scale: multiplier (1.0 = normal)
+
+PRESETS: wiggle, rotate, hop, zoom, pulse, float, sway, boing
+
+SPEECH BUBBLES:
+You can add or update speech text for any character. Use empty string "" for no speech.
+
+Respond with minimal JSON:
+{
+  "context": "2-4 word summary",
+  "speech": [
+    {"id": 0, "text": "Hello!"},
+    {"id": 1, "text": ""}
+  ],
+  "animations": [
+    {
+      "id": 0,
+      "type": "custom",
+      "keyframes": [{"time": 0, "x": 0, "y": 0, "rotation": 0, "scale": 1}, ...]
+    }
+  ]
+}
+
+Include ALL asset IDs. Speech array is optional. Be creative!`;
+
+  return prompt;
+});
+
+const customAnimations = ref(new Map()); // Store custom keyframe animations
+
+const injectCustomAnimation = (itemId, keyframes) => {
+  // Remove old animation if exists
+  const oldStyle = document.getElementById(`anim-${itemId}`);
+  if (oldStyle) oldStyle.remove();
+  
+  // Get the item to include its base rotation
+  const item = items.value.find(i => i.id === itemId);
+  const baseRotation = item ? (item.rotation || 0) : 0;
+  
+  // Create new style element
+  const style = document.createElement('style');
+  style.id = `anim-${itemId}`;
+  
+  // Generate CSS keyframes with base rotation included
+  style.textContent = `
+    @keyframes custom-anim-${itemId} {
+      ${keyframes.map(kf => `
+        ${kf.time}% {
+          transform: translate(-50%, -50%) 
+                     translate(${kf.x || 0}px, ${kf.y || 0}px) 
+                     rotate(${baseRotation + (kf.rotation || 0)}deg) 
+                     scale(${kf.scale || 1});
+        }
+      `).join('\n')}
+    }
+    .scrap-item[data-id="${itemId}"] {
+      animation: custom-anim-${itemId} 4s ease-in-out infinite;
+    }
+  `;
+  
+  document.head.appendChild(style);
+  customAnimations.value.set(itemId, keyframes);
+  
+  // PostHog event
+  if (window.posthog) {
+    posthog.capture('custom_animation_created', {
+      item_id: itemId,
+      keyframe_count: keyframes.length
+    });
+  }
+};
+
+const generateAssetDescription = (item) => {
+  let desc = item.type === 'emoji' ? `emoji ${item.emoji}` : 'photo';
+  desc += ` at position (${Math.round(item.x)}, ${Math.round(item.y)})`;
+  desc += `, size ${Math.round(item.width)}×${Math.round(item.height)}px`;
+  if (item.rotation) desc += `, rotated ${Math.round(item.rotation)}°`;
+  if (item.anim) desc += `, currently animated with ${item.anim.replace('anim-', '')}`;
+  if (item.filter) desc += `, ${item.filter.replace('filter-', '')} filter`;
+  if (item.clip) desc += `, ${item.clip.replace('clip-', '')} shape`;
+  return desc;
+};
+
+const copyPrompt = () => {
+  navigator.clipboard.writeText(aiPrompt.value).then(() => {
+    aiSuccess.value = '✓ Prompt copied! Paste it into your favorite LLM.';
+    setTimeout(() => { aiSuccess.value = ''; }, 3000);
+    
+    // PostHog event
+    if (window.posthog) {
+      posthog.capture('ai_prompt_copied', {
+        asset_count: items.value.length,
+        aspect_ratio: aspect.value
+      });
+    }
+  });
+};
+
+const applySceneChanges = (changes) => {
+  if (changes.addAssets) {
+    changes.addAssets.forEach(asset => {
+      items.value.push({
+        id: nextId.value++,
+        type: asset.type,
+        [asset.type === 'emoji' ? 'emoji' : 'src']: asset.type === 'emoji' ? asset.emoji : asset.src,
+        x: asset.x,
+        y: asset.y,
+        width: asset.width,
+        height: asset.height,
+        rotation: asset.rotation || 0,
+        anim: null,
+        filter: null,
+        clip: null,
+        z: items.value.length,
+        speech: '' 
+      });
+    });
+  }
+  
+  if (changes.duplicateAssets) {
+    changes.duplicateAssets.forEach(id => {
+      const original = items.value.find(i => i.id === id);
+      if (original) {
+        items.value.push({
+          ...original,
+          id: nextId.value++,
+          x: original.x + 50,
+          y: original.y + 50,
+          z: items.value.length
+        });
+      }
+    });
+  }
+};
+
+const exportScene = () => {
+  return {
+    version: "1.0",
+    metadata: {
+      aspect: aspect.value,
+      background: bgUrl.value,
+      timestamp: Date.now()
+    },
+    assets: items.value.map(item => ({
+      id: item.id,
+      type: item.type,
+      content: item.type === 'emoji' ? item.emoji : 'photo',
+      speech: item.speech || '', // ADD THIS
+      transform: {
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation || 0,
+        z: item.z
+      },
+      effects: {
+        animation: item.anim || null,
+        filter: item.filter || null,
+        clip: item.clip || null
+      },
+      description: generateAssetDescription(item)
+    }))
+  };
+};
+
+const applyAIAnimations = () => {
+  aiError.value = '';
+  aiSuccess.value = '';
+  
+  try {
+    const result = JSON.parse(aiResponse.value);
+    
+    // Apply speech updates if provided
+    if (result.speech && Array.isArray(result.speech)) {
+      result.speech.forEach(speechItem => {
+        const item = items.value.find(i => i.id === speechItem.id);
+        if (item) {
+          item.speech = speechItem.text || '';
+        }
+      });
+    }
+    
+    if (!result.animations || !Array.isArray(result.animations)) {
+      throw new Error('Response must contain an "animations" array');
+    }
+    
+    let appliedCount = 0;
+    
+    result.animations.forEach(suggestion => {
+      const item = items.value.find(i => i.id === suggestion.id);
+      if (!item) return;
+      
+      if (suggestion.type === 'custom' && suggestion.keyframes) {
+        injectCustomAnimation(suggestion.id, suggestion.keyframes);
+        item.anim = `custom-${suggestion.id}`;
+        appliedCount++;
+      } else if (suggestion.type === 'preset' && suggestion.animation) {
+        const validAnims = ['wiggle', 'rotate', 'hop', 'zoom', 'pulse', 'float', 'sway', 'boing'];
+        if (validAnims.includes(suggestion.animation)) {
+          const oldStyle = document.getElementById(`anim-${suggestion.id}`);
+          if (oldStyle) oldStyle.remove();
+          customAnimations.value.delete(suggestion.id);
+          
+          item.anim = `anim-${suggestion.animation}`;
+          appliedCount++;
+        }
+      }
+    });
+    
+    const contextText = result.context ? ` (${result.context})` : '';
+    aiSuccess.value = `✓ Applied ${appliedCount} animation${appliedCount !== 1 ? 's' : ''}!${contextText}`;
+    
+    if (window.posthog) {
+      posthog.capture('ai_animations_applied', {
+        animations_applied: appliedCount,
+        total_assets: items.value.length,
+        context: result.context || '',
+        has_speech: result.speech && result.speech.length > 0,
+        has_custom_animations: result.animations.some(a => a.type === 'custom')
+      });
+    }
+    
+    setTimeout(() => {
+      showAIModal.value = false;
+      aiResponse.value = '';
+      aiSuccess.value = '';
+    }, 2000);
+    
+  } catch (e) {
+    aiError.value = `Error: ${e.message}`;
+    
+    if (window.posthog) {
+      posthog.capture('ai_animations_error', { error: e.message });
+    }
+  }
+};
+
+        const updateScale = () => {
+          nextTick(() => {
+            if (!scaler.value) return;
+            const ratio = ratios[aspect.value];
+            const canvasEl = scaler.value.querySelector('.canvas');
+            
+            document.documentElement.style.setProperty('--ratio-w', ratio.w);
+            document.documentElement.style.setProperty('--ratio-h', ratio.h);
+            
+            if (canvasEl) {
+              const rect = canvasEl.getBoundingClientRect();
+              const scale = rect.width / 900;
+              document.documentElement.style.setProperty('--canvas-scale', scale);
+            }
+          });
+        };
+
+        onMounted(() => {
+          refreshBackground();
+          updateScale();
+          window.addEventListener('resize', updateScale);
+          document.addEventListener('click', closeAllDropdowns);
+          document.addEventListener('touchstart', closeAllDropdowns, { passive: false });
+        });
+
+        const setAspect = (a) => { aspect.value = a; updateScale(); };
+        const refreshBackground = () => { bgUrl.value = `https://picsum.photos/900/506?blur=2&random=${Date.now()}`; };
+        const closeAllDropdowns = e => { 
+          if (!e.target.closest('.dropdown') && !e.target.closest('.dropdown-item')) { 
+            animOpen.value = filterOpen.value = cropOpen.value = false; 
+          }
+        };
+
+        const dragStart = (e, type, data) => {
+          e.dataTransfer.setData('type', type);
+          e.dataTransfer.setData('data', data);
+        };
+
+        const drop = e => {
+          if (mode.value !== 'select') return;
+          const type = e.dataTransfer.getData('type');
+          const data = e.dataTransfer.getData('data');
+          if (!type || !data) return;
+
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          const x = (clientX - rect.left) / scale;
+          const y = (clientY - rect.top) / scale;
+
+          items.value.push({
+            id: nextId.value++,
+            type, [type === 'emoji' ? 'emoji' : 'src']: data,
+            x, y,
+            width: type === 'emoji' ? 50 : 120,
+            height: type === 'emoji' ? 50 : 120,
+            anim: null, filter: null, clip: null,
+            rotation: 0,
+            z: items.value.length,
+            speech: '' // ADD THIS
+          });
+        };
+
+        const uploadPhotos = e => {
+          Array.from(e.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = ev => {
+              const img = new Image();
+              img.onload = () => {
+              items.value.push({
+                id: nextId.value++,
+                type: 'photo',
+                src: ev.target.result,
+                x: 300 + Math.random()*200,
+                y: 200 + Math.random()*150,
+                width: Math.min(img.width/4,150),
+                height: Math.min(img.height/4,150),
+                anim:null, filter:null, clip:null,
+                rotation: 0,
+                z: items.value.length,
+                speech: '' // ADD THIS
+              });
+              };
+              img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+          });
+        };
+
+        const setMode = m => { mode.value = m; };
+
+        const addToCenter = (type, data) => {
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
+          
+          // Add to center of canvas
+          const x = 450;
+          const y = (900 * ratios[aspect.value].h / ratios[aspect.value].w) / 2;
+          
+          items.value.push({
+            id: nextId.value++,
+            type,
+            [type === 'emoji' ? 'emoji' : 'src']: data,
+            x, y,
+            width: type === 'emoji' ? 50 : 120,
+            height: type === 'emoji' ? 50 : 120,
+            anim: null, filter: null, clip: null,
+            rotation: 0,
+            z: items.value.length,
+            speech: ''
+          });
+        };
+
+        const touchStartPalette = (e, type, data) => {
+          touchPaletteState.value = { active: true, type, data };
+        };
+
+        const touchEndPalette = (e, type, data) => {
+          if (!touchPaletteState.value.active) return;
+          touchPaletteState.value.active = false;
+          
+          const touch = e.changedTouches[0];
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
+          
+          if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+              touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+            
+            const x = (touch.clientX - rect.left) / scale;
+            const y = (touch.clientY - rect.top) / scale;
+            
+            items.value.push({
+              id: nextId.value++,
+              type,
+              [type === 'emoji' ? 'emoji' : 'src']: data,
+              x, y,
+              width: type === 'emoji' ? 50 : 120,
+              height: type === 'emoji' ? 50 : 120,
+              anim: null, filter: null, clip: null,
+              rotation: 0,
+              z: items.value.length,
+              speech: ''
+            });
+          }
+        };
+
+        let dragState = { active:false, id:null, startX:0, startY:0, initX:0, initY:0, initW:0, initH:0, mode:'', client:'mouse' };
+
+        const getCoords = e => {
+          const canvasEl = scaler.value.querySelector('.canvas');
+          const rect = canvasEl.getBoundingClientRect();
+          const scale = rect.width / 900;
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          return {
+            x: (clientX - rect.left) / scale,
+            y: (clientY - rect.top) / scale
+          };
+        };
+
+        const selectAndDrag = (e, id) => {
+          if (mode.value !== 'select') return;
+          e.preventDefault();
+          selectedId.value = id;
+          bringToFront(id);
+
+          const { x, y } = getCoords(e);
+          const isResize = e.target.classList.contains('resize-handle');
+          if (isResize) { startResize(e, id); return; }
+
+          const item = find(id);
+          dragState = { active:true, id, startX:x, startY:y, initX:item.x, initY:item.y, mode:'move', client: e.touches?'touch':'mouse' };
+          bindDrag();
+        };
+
+        const startResize = (e, id) => {
+          e.preventDefault();
+          const item = find(id);
+          const { x, y } = getCoords(e);
+          dragState = { active:true, id, startX:x, startY:y, initW:item.width, initH:item.height, mode:'resize', client: e.touches?'touch':'mouse' };
+          bindDrag();
+        };
+
+        const startRotate = (e, id) => {
+          e.preventDefault();
+          const item = find(id);
+          
+          // Get the initial mouse/touch position
+          const { x, y } = getCoords(e);
+          
+          // Calculate initial angle from center to touch point
+          const startAngle = Math.atan2(y - item.y, x - item.x);
+          
+          dragState = { 
+            active:true, id, 
+            mode:'rotate', 
+            client: e.touches?'touch':'mouse',
+            centerX: item.x,
+            centerY: item.y,
+            initialRotation: item.rotation || 0,
+            startAngle: startAngle  // Store in radians
+          };
+          bindDrag();
+        };
+
+        const bindDrag = () => {
+          const move = dragState.client === 'touch' ? e => handleDrag(e) : handleDrag;
+          const end  = dragState.client === 'touch' ? () => stopDrag() : stopDrag;
+          if (dragState.client === 'touch') {
+            document.addEventListener('touchmove', move, {passive:false});
+            document.addEventListener('touchend', end, {passive:false});
+          } else {
+            document.addEventListener('mousemove', move);
+            document.addEventListener('mouseup', end);
+          }
+        };
+
+        const handleDrag = e => {
+          if (!dragState.active) return;
+          e.preventDefault();
+          const { x, y } = getCoords(e);
+          const item = find(dragState.id);
+
+          if (dragState.mode === 'move') {
+            item.x = dragState.initX + (x - dragState.startX);
+            item.y = dragState.initY + (y - dragState.startY);
+          } else if (dragState.mode === 'resize') {
+            const delta = (x - dragState.startX) + (y - dragState.startY);
+            const newW = Math.max(20, dragState.initW + delta/3);
+            item.width = newW;
+            item.height = newW * (dragState.initH / dragState.initW);
+          } else if (dragState.mode === 'rotate') {
+            const currentAngle = Math.atan2(y - dragState.centerY, x - dragState.centerX);
+            const angleDiff = (currentAngle - dragState.startAngle) * 180 / Math.PI;
+            item.rotation = dragState.initialRotation + angleDiff;
+          }
+        };
+
+        const stopDrag = () => {
+          if (!dragState.active) return;
+          dragState.active = false;
+          if (dragState.client === 'touch') {
+            document.removeEventListener('touchmove', handleDrag);
+            document.removeEventListener('touchend', stopDrag);
+          } else {
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', stopDrag);
+          }
+        };
+
+        const find = id => items.value.find(i => i.id === id);
+        const bringToFront = id => {
+          const item = find(id || selectedId.value);
+          if (!item) return;
+          const maxZ = Math.max(...items.value.map(i=>i.z), -1);
+          item.z = maxZ + 1;
+        };
+
+        const setAnim = (item, a) => { item.anim = item.anim===a?null:a; animOpen.value=false; };
+        const setFilter = (item, f) => { item.filter = item.filter===f?null:f; filterOpen.value=false; };
+        const setClip = (item, c) => { item.clip = item.clip===c?null:c; cropOpen.value=false; };
+        const toggleDropdown = t => { animOpen.value=filterOpen.value=cropOpen.value=false; if(t==='anim')animOpen.value=true; else if(t==='filter')filterOpen.value=true; else if(t==='crop')cropOpen.value=true; };
+
+        const duplicate = item => { items.value.push({ ...item, id:nextId.value++, x:item.x+30, y:item.y+30, z:items.value.length }); };
+        const remove = item => { const idx=items.value.indexOf(item); if(idx>-1)items.value.splice(idx,1); if(selectedId.value===item.id)selectedId.value=null; };
+        const clearAll = () => { if(confirm('Clear all items?')) { items.value=[]; selectedId.value=null; }};
+
+const itemStyle = item => {
+  const canvasEl = scaler.value?.querySelector('.canvas');
+  const scale = canvasEl ? canvasEl.getBoundingClientRect().width / 900 : 1;
+  
+  return {
+    left: `${item.x * scale}px`, 
+    top: `${item.y * scale}px`,
+    width: `${item.width * scale}px`, 
+    height: `${item.height * scale}px`,
+    zIndex: item.z,
+    fontSize: item.type==='emoji' ? `${item.width * scale * 0.8}px` : '1em',
+    // Remove rotation from here - it's handled in CSS animation
+    transform: `translate(-50%, -50%)`
+  };
+};
+
+        const exportGif = async () => {
+          const canvasEl = scaler.value.querySelector('.canvas');
+          if (!canvasEl) return;
+          
+          // Create a temporary canvas
+          const tempCanvas = document.createElement('canvas');
+          const ratio = ratios[aspect.value];
+          tempCanvas.width = 900;
+          tempCanvas.height = 900 * (ratio.h / ratio.w);
+          const ctx = tempCanvas.getContext('2d');
+          
+          // Initialize GIF encoder
+          const gif = new GIF({
+            workers: 2,
+            quality: 10,
+            width: tempCanvas.width,
+            height: tempCanvas.height,
+            workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+          });
+          
+          const fps = 24;
+          const duration = 4; // 4 seconds
+          const totalFrames = fps * duration;
+          
+          for (let frame = 0; frame < totalFrames; frame++) {
+            const time = (frame / totalFrames) * duration;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw background
+            const bgImg = new Image();
+            bgImg.crossOrigin = 'anonymous';
+            await new Promise((resolve) => {
+              bgImg.onload = resolve;
+              bgImg.src = bgUrl.value;
+            });
+            ctx.drawImage(bgImg, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw each item
+            for (const item of items.value) {
+              ctx.save();
+              ctx.translate(item.x, item.y);
+              ctx.rotate((item.rotation || 0) * Math.PI / 180);
+              
+              // Apply animation offset
+              let animOffset = { x: 0, y: 0, rotation: 0, scale: 1 };
+              if (item.anim) {
+                animOffset = calculateAnimationOffset(item.anim, time);
+              }
+              
+              ctx.rotate(animOffset.rotation * Math.PI / 180);
+              ctx.scale(animOffset.scale, animOffset.scale);
+              ctx.translate(animOffset.x, animOffset.y);
+              
+              if (item.type === 'emoji') {
+                ctx.font = `${item.width * 0.8}px system-ui`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.emoji, 0, 0);
+              } else {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve) => {
+                  img.onload = resolve;
+                  img.src = item.src;
+                });
+                ctx.drawImage(img, -item.width / 2, -item.height / 2, item.width, item.height);
+              }
+              
+              ctx.restore();
+            }
+            
+            gif.addFrame(ctx, { copy: true, delay: 1000 / fps });
+          }
+          
+          gif.on('finished', (blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'remoose-animation.gif';
+            a.click();
+            URL.revokeObjectURL(url);
+          });
+          
+          gif.render();
+        };
+
+        const calculateAnimationOffset = (anim, time) => {
+          const t = time % 4; // 4 second loop
+          const offset = { x: 0, y: 0, rotation: 0, scale: 1 };
+          
+          switch (anim) {
+            case 'anim-wiggle':
+              if (t < 1) offset.rotation = 8 * (t / 1);
+              else if (t < 2) offset.rotation = 8 - 14 * ((t - 1) / 1);
+              else if (t < 3) offset.rotation = -6 + 12 * ((t - 2) / 1);
+              else offset.rotation = 6 - 6 * ((t - 3) / 1);
+              break;
+            case 'anim-rotate':
+              offset.rotation = (t / 4) * 360;
+              break;
+            case 'anim-hop':
+              if (t < 1) offset.y = -20 * (t / 1);
+              else if (t < 2) offset.y = -20 + 20 * ((t - 1) / 1);
+              else if (t < 3) offset.y = -10 * ((t - 2) / 1);
+              else offset.y = -10 + 10 * ((t - 3) / 1);
+              break;
+            case 'anim-zoom':
+              if (t < 1.2) offset.scale = 1 + 0.3 * (t / 1.2);
+              else if (t < 2.4) offset.scale = 1.3 - 0.4 * ((t - 1.2) / 1.2);
+              else if (t < 3.2) offset.scale = 0.9 + 0.25 * ((t - 2.4) / 0.8);
+              else offset.scale = 1.15 - 0.15 * ((t - 3.2) / 0.8);
+              break;
+            case 'anim-pulse':
+              offset.scale = t < 2 ? 1 + 0.25 * (t / 2) : 1.25 - 0.25 * ((t - 2) / 2);
+              break;
+            case 'anim-float':
+              offset.y = t < 2 ? -12 * (t / 2) : -12 + 12 * ((t - 2) / 2);
+              break;
+            case 'anim-sway':
+              if (t < 1) offset.rotation = 15 * (t / 1);
+              else if (t < 3) offset.rotation = 15 - 30 * ((t - 1) / 2);
+              else offset.rotation = -15 + 15 * ((t - 3) / 1);
+              break;
+            case 'anim-boing':
+              // Simplified boing
+              if (t < 1.6) offset.scale = 1 + 0.4 * (t / 1.6);
+              else if (t < 2.4) offset.scale = 1.4 - 0.5 * ((t - 1.6) / 0.8);
+              else if (t < 3.2) offset.scale = 0.9 + 0.2 * ((t - 2.4) / 0.8);
+              else offset.scale = 1.1 - 0.1 * ((t - 3.2) / 0.8);
+              break;
+          }
+          
+          return offset;
+        };
+
+        return {
+          bgUrl, items, selectedId, mode, animOpen, filterOpen, cropOpen, aspect,
+          emojis, samplePhotos, scaler,
+          refreshBackground, drop, dragStart, uploadPhotos,
+          setMode, selectAndDrag, startResize, setAspect,
+          bringToFront, setAnim, setFilter, setClip, toggleDropdown,
+          duplicate, remove, clearAll, itemStyle,
+          deselectAll, startRotate,
+          touchStartPalette, touchEndPalette, addToCenter,
+          showAIModal, aiPrompt, aiResponse, aiError, aiSuccess, promptArea,
+          userPrompt,
+          copyPrompt, applyAIAnimations,
+          customAnimations, injectCustomAnimation
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Forest's Pocket Jams v17.8</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --plate-color: #222;
+            --fr4-color: #2a2a2a;
+            --led-off: #2a1111;
+            --led-red: #ff3333;
+            --led-green: #33ff33;
+            --led-blue: #33ccff;
+            --led-orange: #ff9900; 
+            --led-yellow: #ffcc33;
+            --accent-gold: #c5a059;
+            --knob-silver: #ddd;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            touch-action: none; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #eee;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- Desktop Instructions --- */
+        #desktop-instructions {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 280px;
+            max-width: 25vw;
+            background: rgba(0,0,0,0.85);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            color: #ccc;
+            font-size: 11px;
+            line-height: 1.4;
+            display: none; 
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        #desktop-instructions h3 { 
+            color: var(--accent-gold); 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 8px; 
+            margin: 0 0 12px 0; 
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        #desktop-instructions strong { color: #fff; }
+        #desktop-instructions ul { padding-left: 0; list-style: none; margin: 0 0 15px 0; }
+        #desktop-instructions li { margin-bottom: 6px; display: flex; justify-content: space-between; }
+        #desktop-instructions li span:first-child { color: #888; }
+        #desktop-instructions .section-title { color: var(--accent-gold); margin-top: 15px; margin-bottom: 5px; font-weight: bold; border-top: 1px solid #333; padding-top: 5px;}
+
+        @media (min-width: 900px) {
+            #desktop-instructions { display: block; }
+        }
+
+        /* --- Device --- */
+        #device {
+            width: 90vw;
+            max-width: 380px;
+            height: 92vh;
+            max-height: 720px;
+            background-color: var(--plate-color);
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.9),
+                0 0 0 4px #111,
+                0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-image: 
+                linear-gradient(45deg, #252525 25%, transparent 25%, transparent 75%, #252525 75%, #252525), 
+                linear-gradient(45deg, #252525 25%, transparent 25%, transparent 75%, #252525 75%, #252525);
+            background-size: 4px 4px;
+            background-position: 0 0, 2px 2px;
+            transition: filter 0.3s;
+            z-index: 10;
+        }
+
+        #device.powered-off { filter: brightness(0.4); }
+        #device.powered-off .power-switch-container { filter: brightness(2.5); pointer-events: auto; }
+        
+        #device.powered-off .led-cell,
+        #device.powered-off .mic-led,
+        #device.powered-off .rec-btn,
+        #device.powered-off .pad.active,
+        #device.powered-off .pad.has-sample,
+        #device.powered-off .mode-btn.selected,
+        #device.powered-off .mode-btn.has-audio,
+        #device.powered-off .pause-btn,
+        #device.powered-off .undo-btn {
+            background-color: #111 !important;
+            box-shadow: none !important;
+            border-color: #333 !important;
+            animation: none !important;
+            background: #222 !important;
+            color: #444 !important;
+        }
+
+        /* --- Power Switch --- */
+        .power-switch-container {
+            position: absolute; top: 160px; right: -12px; left: auto;
+            width: 24px; height: 50px; background: #111;
+            border: 2px solid #333; border-left: none; border-radius: 0 6px 6px 0;
+            z-index: 50; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .power-nub {
+            width: 12px; height: 20px; background: #444; border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.2);
+            transform: translateY(10px); transition: transform 0.2s, background-color 0.2s;
+        }
+        .power-active .power-nub {
+            transform: translateY(-10px); background-color: var(--accent-gold);
+            box-shadow: 0 0 10px var(--accent-gold);
+        }
+
+        /* --- LED Strip --- */
+        .led-strip {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 8px 15px; 
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            border: 1px solid #333;
+        }
+        .led-cell {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background-color: var(--led-off);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.9);
+            transition: background-color 0.05s, box-shadow 0.05s;
+            border: 1px solid #111;
+        }
+        .led-cell.active-red { background-color: var(--led-red); box-shadow: 0 0 8px var(--led-red), inset 0 1px 2px rgba(255,255,255,0.4); }
+        .led-cell.active-green { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green), inset 0 1px 2px rgba(255,255,255,0.4); }
+        .led-cell.active-gold { background-color: var(--accent-gold); box-shadow: 0 0 8px var(--accent-gold), inset 0 1px 2px rgba(255,255,255,0.4); }
+        .led-cell.active-yellow { background-color: var(--led-yellow); box-shadow: 0 0 8px var(--led-yellow), inset 0 1px 2px rgba(255,255,255,0.4); }
+
+        /* --- New Knob LEDs --- */
+        .knob-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .knob-led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #111;
+            margin-bottom: 5px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        /* LED States */
+        .knob-led.led-green { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+        .knob-led.led-red   { background-color: var(--led-red);   box-shadow: 0 0 8px var(--led-red); }
+        .knob-led.led-blue  { background-color: var(--led-blue);  box-shadow: 0 0 8px var(--led-blue); }
+
+        /* --- Top: Knobs --- */
+        .top-section {
+            flex: 1; display: flex; justify-content: center; gap: 40px;
+            align-items: center; padding: 10px 0; border-bottom: 2px solid #111; margin-bottom: 10px;
+        }
+        .knob-container { display: flex; flex-direction: column; align-items: center; width: 80px; }
+        .knob-label { font-size: 10px; margin-bottom: 5px; color: #888; font-weight: bold; letter-spacing: 1px; }
+        .knob {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, #bbb 60%, #555);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.6); position: relative;
+            transform: rotate(0deg); transition: transform 0.1s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+        }
+        .knob::after {
+            content: ''; position: absolute; top: 5px; left: 50%;
+            transform: translateX(-50%); width: 4px; height: 12px;
+            background-color: #333; border-radius: 2px;
+        }
+
+        /* --- Knob Animation (Shadow Only) --- */
+        .knob.pushed {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.8) !important; /* Flatten shadow */
+            cursor: grabbing;
+        }
+
+
+        .knurled { border: 2px dashed #666; }
+
+        .mic-grille {
+            width: 60px; height: 60px;
+            background: radial-gradient(black 15%, transparent 16%) 0 0,
+                radial-gradient(black 15%, transparent 16%) 8px 8px,
+                radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 0 1px,
+                radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 8px 9px;
+            background-color: #222; background-size: 8px 8px; border-radius: 50%; border: 2px solid #444;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
+        }
+
+        /* --- Mid: Looper Controls --- */
+        .mid-section {
+            flex: 1.5; display: flex; flex-direction: row; align-items: center;
+            justify-content: center; gap: 30px; position: relative;
+            border: 1px solid #333; background: rgba(0,0,0,0.2);
+            border-radius: 8px; padding: 10px; margin-bottom: 10px;
+        }
+        
+        .rec-btn {
+            width: 100px; height: 100px; border-radius: 50%;
+            /* Default: Dark Red (Inactive) - IDLE STATE */
+            background: radial-gradient(circle at 30% 30%, #550000, #330000);
+            border: 4px solid #111; 
+            box-shadow: 0 6px 0 #200, 0 15px 20px rgba(0,0,0,0.6);
+            position: relative; display: flex; justify-content: center; align-items: center;
+            transition: all 0.2s; cursor: pointer; z-index: 10;
+            color: #fff !important; /* Force white text */
+            font-weight: 900; font-size: 16px; letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            font-family: Arial, sans-serif;
+        }
+        .rec-btn:active, .rec-btn.active-key { transform: translateY(4px); box-shadow: 0 2px 0 #200; }
+        
+        /* States for Record Button - Only affect background/shadow */
+        .rec-btn.state-recording {
+            /* Bright Red - Recording New Material */
+            background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+            box-shadow: 0 0 20px #f00, 0 6px 0 #500;
+        }
+        .rec-btn.state-finishing {
+            /* Fast Flashing Red - Finishing Loop Interval */
+            background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+            box-shadow: 0 0 20px #f00, 0 6px 0 #500;
+            animation: pulse-fast 0.2s infinite alternate;
+        }
+        .rec-btn.state-playing {
+            /* Green - Playing */
+            background: radial-gradient(circle at 30% 30%, #44ff44, #00aa00);
+            box-shadow: 0 0 20px #0f0, 0 6px 0 #050;
+        }
+        .rec-btn.state-overdub {
+            /* Yellow - Overdubbing Existing Material */
+            background: radial-gradient(circle at 30% 30%, #ffee44, #ccaa00);
+            box-shadow: 0 0 20px #ff0, 0 6px 0 #880;
+        }
+        .rec-btn.state-standby-red {
+            /* Flashing Red - Armed for First Loop or Fresh Track */
+             animation: pulse-red 1s infinite alternate;
+             background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+        }
+        .rec-btn.state-standby-yellow {
+            /* Flashing Yellow - Armed for Overdub */
+             animation: pulse-yellow 1s infinite alternate;
+             background: radial-gradient(circle at 30% 30%, #ffee44, #ccaa00);
+        }
+
+        @keyframes pulse-red { from { box-shadow: 0 0 5px #f00; opacity: 0.8; } to { box-shadow: 0 0 20px #f00; opacity: 1; } }
+        @keyframes pulse-yellow { from { box-shadow: 0 0 5px #ff0; opacity: 0.8; } to { box-shadow: 0 0 20px #ff0; opacity: 1; } }
+        @keyframes pulse-fast { from { opacity: 0.6; } to { opacity: 1; } }
+
+        .undo-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            /* Orange for Undo */
+            background: radial-gradient(circle at 30% 30%, #ffaa00, #cc6600);
+            border: 2px solid #111; color: #fff; font-size: 24px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 #442200, 0 5px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: all 0.1s;
+        }
+        .undo-btn:active, .undo-btn.active-key { transform: translateY(2px); box-shadow: 0 2px 0 #442200; }
+        .undo-btn.reset-flash { background: #fff; box-shadow: 0 0 20px #fff; }
+
+        /* New Pause Button Style - Always Blue */
+        .pause-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            /* Blue Always */
+            background: radial-gradient(circle at 30% 30%, #33ccff, #006699);
+            border: 2px solid #111; color: #fff; font-size: 16px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 #002233, 0 5px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: all 0.1s;
+            font-family: monospace;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .pause-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #002233; }
+        /* Paused State: Keeps blue, icon changes in JS */
+        .pause-btn.paused { 
+            /* Same blue */
+             background: radial-gradient(circle at 30% 30%, #33ccff, #006699);
+             box-shadow: 0 4px 0 #002233; 
+             opacity: 0.8;
+        }
+
+        @keyframes flash-white { 0% { background-color: #fff; color: #000; } 100% { background-color: #222; color: #555; } }
+        .flash-trigger { animation: flash-white 0.2s ease-out; }
+
+        /* --- Modes --- */
+        .mode-section { display: flex; justify-content: space-around; width: 100%; margin-bottom: 15px; position: relative; padding: 0 10px; }
+        
+        .scale-switch-wrapper {
+            position: absolute; 
+            top: 2px; 
+            left: 8px; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            gap: 2px;
+            z-index: 20;
+        }
+        .scale-label { font-size: 7px; color: #666; font-weight: bold; }
+        .scale-toggle {
+            width: 14px; height: 30px; background: #111; border: 1px solid #444; border-radius: 10px;
+            position: relative; cursor: pointer;
+        }
+        .scale-toggle::after {
+            content: ''; position: absolute; top: 1px; left: 1px; width: 10px; height: 10px;
+            background: #666; border-radius: 50%; transition: top 0.2s, background 0.2s;
+        }
+        .scale-toggle.minor::after { top: 17px; background: var(--accent-gold); }
+
+        /* Instrument Buttons */
+        .mode-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #444, #222);
+            border: 2px solid #111; color: #666; font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 #000, 0 5px 10px rgba(0,0,0,0.5);
+            cursor: pointer; transition: all 0.1s;
+            position: relative;
+        }
+
+        .mode-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+
+        /* HAS AUDIO (Content exists, but not selected) */
+        .mode-btn.has-audio {
+            color: var(--led-green);
+            border-color: #004400;
+        }
+
+        /* MUTED */
+        .mode-btn.muted {
+            color: #500;
+            border-color: #300;
+            opacity: 0.6;
+        }
+        .mode-btn.muted::after {
+            content: '❌'; font-size: 12px; position: absolute; bottom: -5px; right: -5px;
+        }
+
+        /* SELECTED (Overrides others visually for border/bg) */
+        .mode-btn.selected {
+            background: radial-gradient(circle at 30% 30%, #223344, #001122); /* Darker Blue BG */
+            color: var(--led-blue);
+            border-color: var(--led-blue);
+            box-shadow: 0 0 15px rgba(51, 204, 255, 0.6), 0 4px 0 #000;
+            z-index: 5;
+        }
+
+        /* --- Pads --- */
+        .pads-container {
+            flex: 2; display: grid; grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr); gap: 8px; width: 100%;
+        }
+        .pad {
+            background: rgba(255,255,255,0.05); border-radius: 6px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8); transition: background 0.05s;
+        }
+        .pad.active { background: rgba(255, 200, 100, 0.4) !important; box-shadow: 0 0 15px rgba(255, 200, 100, 0.6) !important; }
+        .pad.recording-armed { background-color: #500; border: 1px solid #f00; }
+        .pad.recording { background-color: #f00; box-shadow: 0 0 15px #f00; }
+        
+        /* New "Has Sample" Style: White/Glass fill, NO red border */
+        .mode-voice .pad.has-sample { 
+            background: rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: var(--accent-gold); padding: 20px;
+        }
+        #overlay button {
+            margin-top: 20px; padding: 15px 30px; background: var(--accent-gold);
+            border: none; font-weight: bold; font-size: 16px; cursor: pointer;
+        }
+        #status-log {
+            position: absolute; bottom: 5px; left: 0; width: 100%;
+            text-align: center; font-size: 10px; color: #666; pointer-events: none;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="desktop-instructions">
+    <h3>USER MANUAL v17.8</h3>
+    
+    <div class="section-title">LOOPER WORKFLOW</div>
+    <ul>
+        <li><span>REC (NEW)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>REC (DUB)</span> <strong>Tap to ARM &rarr; Signal Starts</strong></li>
+        <li><span>STOP REC</span> <strong>Tap REC (Waits for Bar)</strong></li>
+        <li><span>VOICE SAMPLE</span> <strong>Hold PAD + Tap REC</strong></li>
+    </ul>
+    
+    <div class="section-title">TRACK CONTROL</div>
+    <ul>
+        <li><span>UNDO/REDO</span> <strong>Tap UNDO (Last Take)</strong></li>
+        <li><span>CLEAR TRACK</span> <strong>Hold UNDO (1s)</strong></li>
+        <li><span>CLEAR ALL</span> <strong>Hold UNDO + Hold REC</strong></li>
+        <li><span>MUTE/SOLO</span> <strong>Hold Inst Button + Tap PAUSE</strong></li>
+    </ul>
+
+    <div class="section-title">KNOBS (CLICK TO CYCLE MODE)</div>
+    <ul>
+        <li><span>LEFT KNOB</span> <strong>PRE-FX AMOUNT</strong></li>
+        <li style="font-size:9px; opacity:0.8; margin-bottom: 10px;">
+            <span style="color:var(--led-green)">● Reverb</span>
+            <span style="color:var(--led-blue)">● Delay</span>
+            <span style="color:var(--led-red)">● Distort</span>
+        </li>
+        
+        <li><span>RIGHT KNOB</span> <strong>MASTER CHANNEL</strong></li>
+        <li style="font-size:9px; opacity:0.8;">
+            <span style="color:var(--led-green)">● Filter</span>
+            <span style="color:var(--led-red)">● Repeater</span>
+            <span style="color:var(--led-blue)">● Speed</span>
+        </li>
+    </ul>
+    
+    <div class="section-title">KEYBOARD SHORTCUTS</div>
+    <ul>
+        <li><span>REC / UNDO</span> <strong>SHIFT / CTRL</strong></li>
+        <li><span>INST SELECT</span> <strong>1 (Synth) 2 (Mic) 3 (Drum)</strong></li>
+        <li><span>PADS</span> <strong>Q W E R / A S D F</strong></li>
+        <li><span>POWER</span> <strong>SPACEBAR</strong></li>
+    </ul>
+</div>
+
+<div id="device">
+    <div class="power-switch-container" id="power-switch">
+        <div class="power-nub"></div>
+    </div>
+
+    <div class="led-strip" id="led-strip">
+        <div class="led-cell" id="led-0"></div>
+        <div class="led-cell" id="led-1"></div>
+        <div class="led-cell" id="led-2"></div>
+        <div class="led-cell" id="led-3"></div>
+        <div class="led-cell" id="led-4"></div>
+        <div class="led-cell" id="led-5"></div>
+        <div class="led-cell" id="led-6"></div>
+        <div class="led-cell" id="led-7"></div>
+    </div>
+
+    <div class="top-section">
+        <div class="knob-container">
+            <div class="knob-wrapper">
+                <div class="knob-led" id="led-fx"></div>
+                <div class="knob-label">PRE FX</div>
+                <div class="knob knurled" id="knob-left"></div>
+            </div>
+        </div>
+
+        <div class="mic-grille"></div>
+
+        <div class="knob-container">
+            <div class="knob-wrapper">
+                <div class="knob-led" id="led-master"></div>
+                <div class="knob-label">POST FX</div>
+                <div class="knob knurled" id="knob-right"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mid-section">
+        <div class="pause-btn" id="btn-pause">❚❚</div>
+        <div class="rec-btn" id="btn-rec">● REC</div>
+        <div class="undo-btn" id="btn-undo">↺</div>
+    </div>
+
+    <div class="mode-section">
+        <div class="scale-switch-wrapper" id="scale-wrapper">
+            <div class="scale-label">MAJ</div>
+            <div class="scale-toggle" id="scale-switch"></div>
+            <div class="scale-label">MIN</div>
+        </div>
+
+        <div class="mode-btn" data-mode="synth" id="btn-synth">🎹</div>
+        <div class="mode-btn" data-mode="voice" id="btn-voice">🎙️</div>
+        <div class="mode-btn selected" data-mode="drums" id="btn-drums">🥁</div>
+    </div>
+
+    <div class="pads-container" id="pads-grid"></div>
+    <div id="status-log"></div>
+</div>
+
+<div id="overlay">
+    <h2>FOREST'S POCKET JAMS</h2>
+    <p>Version 17.8</p>
+    
+        <p style="font-size: 11px; color: #ffffff; margin-top: 10px; line-height: 1.6;">
+
+        <span>RECORDING:</span> <strong>Tap REC to Arm (Signal Triggers Start)</strong><br>
+        <span>SAMPLING:</span> <strong>Hold a Pad + Tap REC to capture Mic</strong><br>
+        <br>
+        <span>LEFT KNOB:</span> <strong>Click to Cycle FX (Reverb/Delay/Dist)</strong><br>
+        <span>RIGHT KNOB:</span> <strong>Click to Cycle Master (Filter/Repeat/Speed)</strong><br>
+        <br>
+        <span style="color:#aaa; display:block; margin-top:5px; border-top:1px solid #444; padding-top:5px;">
+        <strong>UNDO:</strong> Tap to Undo Layer / Hold to Clear Track<br>
+        <strong>RESET:</strong> Tap Pause (Stop) / Tap again to Resume All
+        </span>
+
+    </p>
+    <p style="font-size: 12px; color: #888; margin-top: 10px;">
+        Headphones Recommended.<br>
+        Microphone Access Required.
+    </p>
+    <button id="start-btn">START JAMMING</button>
+</div>
+
+<script>
+/**
+ * FOREST'S POCKET JAMROOM - V17.8
+ * Updates:
+ * - Fixed Overdub Interval Independence: When overdubbing an existing track, 
+ * the system now respects THAT track's length instead of forcing the Master Loop Length. 
+ * This allows long vocal loops to be overdubbed completely without cutting off at the drum loop length.
+ */
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let ctx;
+let masterGain, compressor;
+// --- NEW KNOB STATE VARIABLES ---
+let masterFilter; // The node
+let distortionNode; // The node
+let distortionGain; // To control amount
+let masterHighPass; // New variable
+
+// 0=OFF, 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
+let rightKnobMode = 0; 
+// 0=OFF, 1=Reverb(Green), 2=Delay(Blue), 3=Distortion(Red)
+let leftKnobMode = 0;
+// NEW BUSES
+let loopBus, liveBus;
+
+let analyser;
+let micStream, micNode;
+let micCompressor;
+
+// --- Multi-Track Architecture ---
+const TRACKS = ['drums', 'synth', 'voice'];
+let trackCtx = {
+    drums: { bus: null, gain: null, buffer: null, source: null, loopGain: null, mute: false, hasContent: false },
+    synth: { bus: null, gain: null, buffer: null, source: null, loopGain: null, mute: false, hasContent: false },
+    voice: { bus: null, gain: null, buffer: null, source: null, loopGain: null, mute: false, hasContent: false }
+};
+
+// Undo Storage
+let undoBackup = null; 
+let undoTrackName = null;
+let isUndoHeld = false; 
+let clearAllTimer = null; // New timer for delete all
+
+// FX Nodes
+let reverbBuffer = null;
+let fxBus, fxReturn; 
+let instReverb, instDelay, instFeedback, instDelayGain;
+
+// Dedicated Voice FX (No Monitoring)
+let voiceReverb, voiceReverbGain;
+let voiceDelay, voiceDelayFeedback, voiceDelayGain;
+
+// Recording Gates
+let recGates = { drums: null, synth: null, voice: null };
+// Special Bus for Voice Recording (Mic + Samples)
+let voiceRecordingBus; 
+
+let micGateGain;     
+let micMonitorGain;
+
+// Sample Playback State
+let isSamplePlaying = false;
+let samplePlayTimer = null;
+
+const STATE = { 
+    IDLE: 0, 
+    ARMED: 1, 
+    RECORDING_1: 2, 
+    PLAYING: 3, 
+    OVERDUB: 4, 
+    SAMPLING_ARMED: 5, 
+    SAMPLING_REC: 6,
+    OVERDUB_ARMED: 7,
+    WAITING_FOR_SYNC: 8 
+};
+let currentState = STATE.IDLE;
+let currentMode = 'drums';
+let lastInstrumentMode = 'drums'; 
+let isPowered = true;
+let isMinorScale = false;
+let isPaused = false;
+let pauseStart = 0;
+
+// Interaction State
+let heldInstrument = null; 
+let instHoldStartTime = 0;
+
+// EXPANDED SOUND LIBRARY
+const DRUM_STYLES = ['Standard', '808', 'Glass', 'Zap', 'Glitch', 'Game', 'Custom 1', 'Custom 2'];
+const SYNTH_STYLES = ['Saw Lead', 'Deep Bass', 'Soft Sine', 'Retro Pad', 'Pluck', 'Chords', 'Acid', 'Dream'];
+let currentDrumIdx = 0; let currentSynthIdx = 0;
+const DRUM_PADS = ['kick', 'snare', 'hat', 'tom', 'clap', 'perc1', 'perc2', 'crash'];
+
+// SCALES (Root C4)
+const SCALE_MAJOR = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+const SCALE_MINOR = [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25];
+
+// Loop State
+let masterLoopLength = 0; 
+let loopStartTime = 0;
+let inputThreshold = 0.04;
+let undoStack = []; let undoTimeout; let hasReset = false;
+let minLoopLength = 2000;
+let autoStopTimer = null; 
+
+let userSamples = new Array(8).fill(null);
+let heldPadIndex = -1;
+let recordingPadIndex = -1; 
+let sampleRecBuffer = [];
+let preRollBuffer = [];
+
+let playbackRate = 1.0;
+let recStartTime = 0; 
+let recPressTime = 0; 
+let recordingStream = [];
+
+// UI
+const els = {
+    knobSpeed: document.getElementById('knob-speed'),
+    knobGlitch: document.getElementById('knob-glitch'), 
+    recBtn: document.getElementById('btn-rec'),
+    undoBtn: document.getElementById('btn-undo'),
+    overlay: document.getElementById('overlay'),
+    startBtn: document.getElementById('start-btn'),
+    padsGrid: document.getElementById('pads-grid'),
+    modes: document.querySelectorAll('.mode-btn'),
+    status: document.getElementById('status-log'),
+    device: document.getElementById('device'),
+    powerSwitch: document.getElementById('power-switch'),
+    scaleSwitch: document.getElementById('scale-switch'),
+    ledStrip: document.getElementById('led-strip'),
+    ledCells: Array.from(document.querySelectorAll('.led-cell'))
+};
+
+function log(msg) {
+    els.status.innerText = msg;
+    setTimeout(() => { if(els.status.innerText === msg) els.status.innerText = ''; }, 2000);
+}
+
+// Mobile Pinch Prevent
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+document.addEventListener('touchmove', function(e) { if(e.scale !== 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+
+
+els.startBtn.addEventListener('click', async () => {
+    try {
+        ctx = new AudioContext();
+        await ctx.resume();
+
+        // --- PRE-WARM MICROPHONE PERMISSION ---
+        // This asks for permission ONCE at the start.
+        // We immediately stop it to restore volume/quality.
+        // Subsequent calls to enableMic() will likely not prompt the user.
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop()); 
+            // log("MIC PERMISSION GRANTED");
+        } catch(err) {
+            console.warn("Initial Mic Check Failed", err);
+        }
+
+        // --- MASTER BUS SETUP ---
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.9;
+        
+        masterFilter = ctx.createBiquadFilter();
+        masterFilter.type = 'lowpass';
+        masterFilter.frequency.value = 22000;
+        masterFilter.Q.value = 1;
+
+        masterHighPass = ctx.createBiquadFilter();
+        masterHighPass.type = 'highpass';
+        masterHighPass.frequency.value = 0;
+        masterHighPass.Q.value = 1;
+
+        compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = -12;
+        compressor.ratio.value = 12;
+        
+        compressor.connect(masterHighPass);
+        masterHighPass.connect(masterFilter);
+        masterFilter.connect(masterGain);
+        masterGain.connect(ctx.destination);
+
+        // --- SEPARATE BUSES ---
+        loopBus = ctx.createGain();
+        loopBus.connect(compressor);
+        
+        liveBus = ctx.createGain();
+        liveBus.connect(compressor);
+
+        // --- TRACK SETUP ---
+        TRACKS.forEach(track => {
+            trackCtx[track].bus = ctx.createGain(); 
+            trackCtx[track].loopGain = ctx.createGain(); 
+            trackCtx[track].loopGain.connect(loopBus); 
+            
+            recGates[track] = ctx.createGain();
+            recGates[track].gain.value = (currentMode === track) ? 1 : 0;
+            
+            if (track !== 'voice') {
+                trackCtx[track].bus.connect(recGates[track]);
+                trackCtx[track].bus.connect(liveBus);
+            }
+        });
+
+        // --- VOICE SETUP ---
+        voiceRecordingBus = ctx.createGain();
+        voiceRecordingBus.connect(recGates['voice']);
+
+        // --- FX SETUP ---
+        setupSharedFX();
+        setupDistortion();
+
+        TRACKS.forEach(track => {
+            trackCtx[track].bus.connect(fxBus);
+        });
+
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+
+        // --- FIX: INITIALIZE MIC GATE GLOBAL VARS ---
+        micGateGain = ctx.createGain();
+        micGateGain.gain.value = 0; 
+        
+        // Connect Gate to recording buses immediately
+        micGateGain.connect(voiceRecordingBus);
+        
+        // Connect Gate to Wet FX
+        // Note: voiceReverb/Delay were created in setupSharedFX()
+        if(voiceReverb) {
+            micGateGain.connect(voiceReverb); 
+            voiceReverbGain.connect(voiceRecordingBus);
+        }
+        if(voiceDelay) {
+            micGateGain.connect(voiceDelay);
+            voiceDelayGain.connect(voiceRecordingBus);
+        }
+
+        // --- START SYSTEM ---
+        // FIX: Only call these ONCE
+        initUI(); 
+        initPads(); 
+        setupKeys();
+
+        initKnobs();
+        
+        requestAnimationFrame(updateLoop);
+        
+        els.overlay.style.display = 'none';
+        els.powerSwitch.classList.add('power-active'); 
+        
+        // Start the recorder engine (with KeepAlive)
+        setupRecorder();
+        
+    } catch (e) { alert("Audio Init Failed: " + e); }
+});
+
+function setupSharedFX() {
+    reverbBuffer = createReverbBuffer();
+
+    // -- SHARED FX (Instruments) --
+    fxBus = ctx.createGain();
+    fxReturn = ctx.createGain();
+    
+    instReverb = ctx.createConvolver(); instReverb.buffer = reverbBuffer;
+    let irGain = ctx.createGain(); irGain.gain.value = 0; instReverb.gainNode = irGain;
+    
+    fxBus.connect(instReverb); instReverb.connect(irGain); irGain.connect(fxReturn);
+    
+    instDelay = ctx.createDelay(1.0); instDelay.delayTime.value = 0.3;
+    instFeedback = ctx.createGain(); instFeedback.gain.value = 0.3;
+    instDelayGain = ctx.createGain(); instDelayGain.gain.value = 0;
+    
+    fxBus.connect(instDelay); instDelay.connect(instFeedback); instFeedback.connect(instDelay);
+    instDelay.connect(instDelayGain); instDelayGain.connect(fxReturn);
+    
+    // FX Returns go to Live Bus AND Recorder (via setupRecorder)
+    fxReturn.connect(liveBus);
+    
+    // -- DEDICATED VOICE FX (Recorded but NOT Monitored) --
+    voiceReverb = ctx.createConvolver(); voiceReverb.buffer = reverbBuffer;
+    voiceReverbGain = ctx.createGain(); voiceReverbGain.gain.value = 0;
+    voiceReverb.connect(voiceReverbGain);
+    
+    voiceDelay = ctx.createDelay(1.0); voiceDelay.delayTime.value = 0.3;
+    voiceDelayFeedback = ctx.createGain(); voiceDelayFeedback.gain.value = 0.3;
+    voiceDelayGain = ctx.createGain(); voiceDelayGain.gain.value = 0;
+    
+    voiceDelay.connect(voiceDelayFeedback); voiceDelayFeedback.connect(voiceDelay);
+    voiceDelay.connect(voiceDelayGain);
+    // Note: Connections to voiceRecordingBus happen in Mic Setup to ensure chain order
+}
+
+function setupDistortion() {
+    distortionNode = ctx.createWaveShaper();
+    distortionNode.curve = makeDistortionCurve(400); // 400 = amount
+    distortionNode.oversample = '4x';
+    
+    distortionGain = ctx.createGain();
+    distortionGain.gain.value = 0;
+
+    // Connect to FX Bus
+    fxBus.connect(distortionNode);
+    distortionNode.connect(distortionGain);
+    distortionGain.connect(fxReturn);
+}
+
+function makeDistortionCurve(amount) {
+    const k = typeof amount === 'number' ? amount : 50;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+        const x = i * 2 / n_samples - 1;
+        curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+}
+
+function updateKnobLed(elementId, mode, colorMap) {
+    const el = document.getElementById(elementId);
+    el.className = 'knob-led'; // Reset
+    if (mode === 0) return; // OFF
+    
+    // colorMap example: {1: 'led-green', 2: 'led-red', 3: 'led-blue'}
+    if (colorMap[mode]) el.classList.add(colorMap[mode]);
+}
+
+function createReverbBuffer() {
+    const len = ctx.sampleRate * 2.0; 
+    const buffer = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+        const data = buffer.getChannelData(c);
+        for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    }
+    return buffer;
+}
+
+// --- Sound Engine ---
+function playDrum(type) {
+    const t = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(trackCtx.drums.bus);
+
+    const hit = (freq, decay, type, vol) => {
+       const osc = ctx.createOscillator(); osc.type = type;
+       osc.frequency.setValueAtTime(freq, t); osc.frequency.exponentialRampToValueAtTime(10, t + decay);
+       gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
+       osc.connect(gain); osc.start(t); osc.stop(t + decay);
+    };
+    const noise = (dur, vol, time, hpFreq) => {
+       const bSize = ctx.sampleRate * dur; const buf = ctx.createBuffer(1, bSize, ctx.sampleRate);
+       const d = buf.getChannelData(0); for(let i=0; i<bSize; i++) d[i] = Math.random() * 2 - 1;
+       const src = ctx.createBufferSource(); src.buffer = buf;
+       const nGain = ctx.createGain(); nGain.gain.setValueAtTime(vol, time); nGain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       if(hpFreq) { const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=hpFreq; src.connect(f); f.connect(nGain); }
+       else { src.connect(nGain); } nGain.connect(gain); src.start(time);
+    };
+    const playFM = (c, mRatio, idx, dur, vol, time) => {
+       const car = ctx.createOscillator(); const mod = ctx.createOscillator(); const mGain = ctx.createGain(); const out = ctx.createGain();
+       car.frequency.value = c; mod.frequency.value = c * mRatio; mGain.gain.value = idx;
+       out.gain.setValueAtTime(vol, time); out.gain.exponentialRampToValueAtTime(0.01, time + dur);
+       mod.connect(mGain); mGain.connect(car.frequency); car.connect(out); out.connect(gain);
+       car.start(time); mod.start(time); car.stop(time+dur); mod.stop(time+dur);
+    };
+
+    if (false) {} // placeholder
+// KIT 0: Standard
+else if (currentDrumIdx === 0) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 1: 808
+else if (currentDrumIdx === 1) {
+  
+  if (type === 'kick') {
+    hit(150, 0.8, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(200, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 2: Glass
+else if (currentDrumIdx === 2) {
+  
+  if (type === 'kick') {
+    playFM(150, 225, 200, 0.3, 0.8, t);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    playFM(1500, 6300, 300, 0.05, 0.8, t);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 500, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 3: Zap
+else if (currentDrumIdx === 3) {
+  
+  if (type === 'kick') {
+    hit(300, 0.15, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 2000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    playFM(200, 300, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 4: Glitch
+else if (currentDrumIdx === 4) {
+  
+  if (type === 'kick') {
+    hit(150, 0.05, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0);
+    noise(0.02, 1, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.01, 0.6, t, 8000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 5: Game
+else if (currentDrumIdx === 5) {
+  
+  if (type === 'kick') {
+    playFM(150, 75, 50, 0.3, 0.8, t);
+  }
+  else if (type === 'snare') {
+    hit(400, 0.15, 'triangle', 0.5);
+    noise(0.2, 0.5, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(1500, 3750, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 6: Custom 1
+else if (currentDrumIdx === 6) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+// KIT 7: Custom 2
+else if (currentDrumIdx === 7) {
+  
+  if (type === 'kick') {
+    hit(150, 0.3, 'sine', 1);
+  }
+  else if (type === 'snare') {
+    hit(250, 0.15, 'triangle', 0.19999999999999996);
+    noise(0.2, 0.8, t, 1000);
+  }
+  else if (type === 'hat') {
+    noise(0.05, 0.6, t, 6000);
+  }
+  else if (type === 'tom') {
+    hit(200, 0.4, 'sine', 1);
+  }
+  else if (type === 'clap') {
+    hit(800, 0.15, 'triangle', 0.09999999999999998);
+    noise(0.15, 0.9, t, 1500);
+  }
+  else if (type === 'perc1') {
+    playFM(800, 2000, 200, 0.1, 0.8, t);
+  }
+  else if (type === 'perc2') {
+    hit(1200, 0.2, 'sine', 1);
+  }
+  else if (type === 'crash') {
+    noise(1.2, 0.6, t, 3000);
+  }
+}
+}
+
+function makeNoise(duration, vol, time, highpass = false, dest) {
+    const bufferSize = ctx.sampleRate * duration; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource(); noise.buffer = buffer; const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(vol, time); noiseGain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+    noise.connect(noiseGain); 
+    
+    if(highpass) { 
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5000; 
+        noiseGain.connect(hp); hp.connect(dest); 
+    } 
+    else { noiseGain.connect(dest); } 
+    noise.start(time);
+}
+
+function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const outGain = ctx.createGain();
+
+    carrier.frequency.value = carrierFreq;
+    modulator.frequency.value = modFreq;
+    modGain.gain.value = modIndex;
+
+    outGain.gain.setValueAtTime(vol, time);
+    outGain.gain.exponentialRampToValueAtTime(0.01, time + decay);
+
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    carrier.connect(outGain);
+    outGain.connect(trackCtx.drums.bus);
+
+    carrier.start(time); modulator.start(time);
+    carrier.stop(time + decay); modulator.stop(time + decay);
+}
+
+function playSynth(rawFreq) {
+    const t = ctx.currentTime;
+    const gain = ctx.createGain(); 
+    gain.connect(trackCtx.synth.bus); 
+    
+    if (false) {} // placeholder
+// STYLE 0: Saw Lead
+else if (currentSynthIdx === 0) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 2;
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.linearRampToValueAtTime(3000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
+}
+// STYLE 1: Deep Bass
+else if (currentSynthIdx === 1) {
+    const osc = ctx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.value = rawFreq * 0.25; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(50, t);
+    filter.frequency.linearRampToValueAtTime(300, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(50, t + 0.6);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.6 + 0.5);
+}
+// STYLE 2: Soft Sine
+else if (currentSynthIdx === 2) {
+    const osc = ctx.createOscillator(); osc.type = 'sine';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(1000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 0.8);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.8 + 0.5);
+}
+// STYLE 3: Retro Pad
+else if (currentSynthIdx === 3) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(300, t);
+    filter.frequency.linearRampToValueAtTime(1500, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(300, t + 1);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 3;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 20; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1 + 0.5);
+}
+// STYLE 4: Pluck
+else if (currentSynthIdx === 4) {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 8;
+    filter.frequency.setValueAtTime(2000, t);
+    filter.frequency.linearRampToValueAtTime(200, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(2000, t + 0.3);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.3 + 0.5);
+}
+// STYLE 5: Chords
+else if (currentSynthIdx === 5) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 1; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.linearRampToValueAtTime(2000, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(200, t + 1.5);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 0.5;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 50; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
+}
+// STYLE 6: Acid
+else if (currentSynthIdx === 6) {
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+    osc.frequency.value = rawFreq * 0.5; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 15;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(2500, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 0.4);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
+}
+// STYLE 7: Dream
+else if (currentSynthIdx === 7) {
+    const osc = ctx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.value = rawFreq * 2; // Octave
+    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.linearRampToValueAtTime(800, t + 0.1);
+    filter.frequency.exponentialRampToValueAtTime(100, t + 1.5);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 4;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 80; 
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
+}
+}
+
+function playSample(index) {
+    if(!userSamples[index]) return;
+    
+    // Note: We do NOT call enableMic() here. 
+    // Playback should remain in High Quality mode.
+    
+    isSamplePlaying = true;
+    // updateMicGate(); // Removed this line, not needed for playback only
+    
+    if(samplePlayTimer) clearTimeout(samplePlayTimer);
+    
+    const src = ctx.createBufferSource(); src.buffer = userSamples[index]; 
+    
+    // Connect to LiveBus so we hear it, but NOT to the recording bus 
+    // unless we are actually recording (which is handled by mixer logic)
+    src.connect(trackCtx.voice.bus); 
+    src.connect(liveBus); 
+    
+    src.start(0);
+    
+    samplePlayTimer = setTimeout(() => {
+        isSamplePlaying = false;
+        // updateMicGate(); // Removed
+    }, src.buffer.duration * 1000);
+}
+
+function isRecordingState() {
+    return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC);
+}
+
+// --- Recorder ---
+const bufferSize = 2048;
+let recorderNode;
+
+function setupRecorder() {
+    if(recorderNode) return;
+    
+    // We use ScriptProcessor (deprecated but works). 
+    // The AudioWorklet warning is normal, but we fix the "Sleep" issue below.
+    recorderNode = ctx.createScriptProcessor(bufferSize, 1, 1);
+    
+    // --- FIX: KEEP ALIVE OSCILLATOR ---
+    // This feeds a tiny, inaudible signal into the recorder.
+    // It tricks the browser into keeping the thread active even when the Mic is off.
+    const keepAlive = ctx.createOscillator();
+    const keepAliveGain = ctx.createGain();
+    keepAliveGain.gain.value = 0.0001; // Silent
+    keepAlive.connect(keepAliveGain);
+    keepAliveGain.connect(recorderNode);
+    keepAlive.start();
+    // ----------------------------------
+
+    recorderNode.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        
+        // Pre-Roll Buffer
+        if (currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.SAMPLING_ARMED) {
+            preRollBuffer.push(new Float32Array(input));
+            if (preRollBuffer.length > 2) preRollBuffer.shift(); 
+        }
+
+        if (!isRecordingState()) return;
+        
+        let rms = 0; for(let i=0; i<input.length; i++) rms += input[i]*input[i]; rms = Math.sqrt(rms/input.length);
+        
+        // Silence Gate
+        if (currentState === STATE.SAMPLING_ARMED || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED) {
+             if (rms < 0.001) { for(let i=0; i<input.length; i++) input[i] = 0; }
+        }
+
+        // Trigger Logic
+        if (currentState === STATE.SAMPLING_ARMED && rms > inputThreshold) {
+            currentState = STATE.SAMPLING_REC; sampleRecBuffer = [...preRollBuffer]; preRollBuffer = [];
+            if (recordingPadIndex !== -1) els.padsGrid.children[recordingPadIndex].classList.add('recording');
+            log("SAMPLING..."); updateMicGate(); updateBackingTrackVolume(); updateRecBtnVisual();
+            return; 
+        }
+        else if (currentState === STATE.ARMED && rms > inputThreshold) {
+            startFirstRecording();
+            return; 
+        }
+        else if (currentState === STATE.OVERDUB_ARMED && rms > inputThreshold) {
+            startOverdubRecording();
+            return; 
+        }
+
+        // Capture
+        if (currentState === STATE.SAMPLING_REC) { sampleRecBuffer.push(new Float32Array(input)); return; }
+        
+        if (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.WAITING_FOR_SYNC) {
+            recordingStream.push(new Float32Array(input));
+        }
+        
+        // Mute output to prevent feedback
+        const output = e.outputBuffer.getChannelData(0); for (let i = 0; i < output.length; i++) output[i] = 0; 
+    };
+    
+    // Connect Inputs to Recorder
+    TRACKS.forEach(t => recGates[t].connect(recorderNode));
+    if(fxReturn) fxReturn.connect(recorderNode);
+    
+    // Required for Chrome to process the node
+    const zeroGain = ctx.createGain(); zeroGain.gain.value = 0; 
+    recorderNode.connect(zeroGain); 
+    zeroGain.connect(ctx.destination);
+}
+
+function toggleMute(trackName) {
+    const t = trackCtx[trackName];
+    t.mute = !t.mute;
+    updateBackingTrackVolume();
+    updateUI();
+    log(t.mute ? `MUTE ${trackName.toUpperCase()}` : `UNMUTE ${trackName.toUpperCase()}`);
+}
+
+function clearTrack(trackName) {
+    trackCtx[trackName].buffer = null;
+    trackCtx[trackName].hasContent = false; 
+    trackCtx[trackName].mute = false;
+    
+    const allCleared = TRACKS.every(t => !trackCtx[t].hasContent);
+    
+    if (allCleared) {
+        resetDevice();
+    } else {
+        if (masterLoopLength > 0) {
+            trackCtx[trackName].buffer = ctx.createBuffer(1, masterLoopLength, ctx.sampleRate);
+            if(trackCtx[trackName].source) restartPlayback(trackName); // Soft restart specific
+        }
+        selectTrack(trackName); 
+        log(`CLEARED ${trackName.toUpperCase()}`);
+        updateRecBtnVisual();
+    }
+}
+
+function updateBackingTrackVolume() {
+    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
+    const isVoiceOverdub = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB));
+    
+    TRACKS.forEach(t => {
+        let targetGain = 1.0;
+        if (trackCtx[t].mute) {
+            targetGain = 0.0;
+        } else {
+            if (isSampling) { targetGain = 0.0; }
+            else if (isVoiceOverdub) { targetGain = 0.3; }
+        }
+        if (trackCtx[t].loopGain) {
+            trackCtx[t].loopGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
+        }
+    });
+}
+
+function updateRecBtnVisual() {
+    // Reset classes
+    els.recBtn.classList.remove('state-recording', 'state-playing', 'state-overdub', 'state-standby-red', 'state-standby-yellow', 'state-finishing');
+    
+    const trackHasContent = trackCtx[currentMode].hasContent;
+
+    if (currentState === STATE.RECORDING_1 || currentState === STATE.SAMPLING_REC) {
+        els.recBtn.classList.add('state-recording');
+    }
+    else if (currentState === STATE.WAITING_FOR_SYNC) {
+        els.recBtn.classList.add('state-finishing');
+    } 
+    else if (currentState === STATE.OVERDUB) {
+        if (trackHasContent) {
+            els.recBtn.classList.add('state-overdub'); // Yellow
+        } else {
+            els.recBtn.classList.add('state-recording'); // Red (Recording new track)
+        }
+    } 
+    else if (currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED) {
+         els.recBtn.classList.add('state-standby-red');
+    }
+    else if (currentState === STATE.OVERDUB_ARMED) {
+        if (trackHasContent) {
+            els.recBtn.classList.add('state-standby-yellow');
+        } else {
+            els.recBtn.classList.add('state-standby-red');
+        }
+    } 
+    else if (currentState === STATE.PLAYING) {
+        els.recBtn.classList.add('state-playing');
+    }
+}
+
+// --- MICROPHONE MANAGEMENT ---
+
+async function enableMic() {
+    // If already active, don't do anything (prevents glitches)
+    if (micStream && micStream.active) return;
+
+    try {
+        // Request stream - echoCancellation: false is CRITICAL for music quality
+        micStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { 
+                echoCancellation: false, 
+                noiseSuppression: false, 
+                autoGainControl: false, 
+                latency: 0 
+            }
+        });
+        
+        micNode = ctx.createMediaStreamSource(micStream);
+        micCompressor = ctx.createDynamicsCompressor();
+        
+        // Compressor Settings (Light compression for input)
+        micCompressor.threshold.value = -24;
+        micCompressor.knee.value = 30;
+        micCompressor.ratio.value = 12;
+        micCompressor.attack.value = 0.003;
+        micCompressor.release.value = 0.25;
+
+        // Reset Gate to Open
+        micGateGain.gain.cancelScheduledValues(ctx.currentTime);
+        micGateGain.gain.setValueAtTime(1, ctx.currentTime);
+
+        // Wiring
+        micNode.connect(micCompressor);
+        micCompressor.connect(analyser); 
+        micCompressor.connect(micGateGain); // Connect to existing gate
+        
+        // Visual Log
+        // console.log("Mic Hardware Started - Call Mode Active");
+    } catch (e) {
+        console.warn("Mic Error:", e);
+        log("MIC DENIED");
+    }
+}
+
+async function disableMic() {
+    if (!micStream) return;
+
+    // 1. HARD STOP: Kill the hardware tracks immediately
+    micStream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+    });
+    micStream = null;
+    
+    // 2. DISCONNECT: Remove the node from the graph
+    if (micNode) { 
+        try { micNode.disconnect(); } catch(e){} 
+        micNode = null; 
+    }
+    
+    // 3. FORCE MODE SWITCH (The "Soft Reset" Hack)
+    // We suspend the context briefly. This tells the OS "Hey, audio is done."
+    // The OS drops Call Mode. Then we resume, and it comes back in Media Mode.
+    if (ctx.state === 'running') {
+        try {
+            await ctx.suspend();
+            // Tiny delay to let the OS process the change
+            setTimeout(async () => {
+                await ctx.resume();
+            }, 50);
+        } catch(e) {
+            console.warn("Context reset failed", e);
+        }
+    }
+    
+    updateLedBar(0); 
+    log("MIC OFF / VOL RESET");
+}
+
+function onRecPress() {
+    if(!isPowered) return;
+    
+    // --- 1. CLEAR ALL GESTURE ---
+    if (isUndoHeld) {
+        els.recBtn.classList.add('state-finishing'); 
+        log("HOLD TO CLEAR...");
+        clearAllTimer = setTimeout(() => {
+             resetDevice();
+             clearAllTimer = null;
+        }, 1500); 
+        return;
+    }
+    
+    // --- 2. PRIORITY: SAMPLING (Check this BEFORE unpausing) ---
+    // A. Sampling (Holding Pad + Rec)
+    if (currentMode === 'voice' && heldPadIndex !== -1) {
+        enableMic(); // <--- ACTIVATE MIC
+        recordingPadIndex = heldPadIndex;
+        currentState = STATE.SAMPLING_ARMED; 
+        
+        const pad = els.padsGrid.children[recordingPadIndex];
+        if(pad) pad.classList.add('recording-armed');
+        log("ARMED: SPEAK"); 
+        updateMicGate(); 
+        updateBackingTrackVolume(); 
+        updateRecBtnVisual();
+        return; // <--- EXIT HERE so we don't unpause
+    }
+
+    // --- 3. AUTO-UNPAUSE (Only if not sampling) ---
+    if (isPaused) {
+        if (masterLoopLength > 0) {
+            TRACKS.forEach(t => trackCtx[t].mute = false);
+            updateBackingTrackVolume();
+            updateUI();
+            loopStartTime = ctx.currentTime;
+            startPlayback(); 
+        }
+        isPaused = false;
+        if(pauseBtn) {
+            pauseBtn.classList.remove('paused');
+            pauseBtn.innerText = "❚❚";
+        }
+    }
+
+    recPressTime = Date.now();
+
+    // --- 4. MAIN LOOP RECORDING LOGIC ---
+    // B. Main Loop Recording
+    if (currentState === STATE.IDLE) {
+        // ONLY enable mic if we are in Voice Mode
+        if(currentMode === 'voice') enableMic(); 
+        
+        currentState = STATE.ARMED; 
+        recordingStream = []; preRollBuffer = [];
+        log("ARMED: MAKE SOUND"); updateMicGate();
+    } 
+    else if (currentState === STATE.ARMED) {
+        currentState = STATE.IDLE; 
+        disableMic(); 
+        log("CANCELLED"); updateMicGate();
+    }
+    else if (currentState === STATE.PLAYING) {
+        // ONLY enable mic for overdub if in Voice Mode
+        if(currentMode === 'voice') enableMic();
+        armOverdub();
+    }
+    else if (currentState === STATE.OVERDUB_ARMED) {
+        currentState = STATE.PLAYING; 
+        disableMic(); 
+        log("CANCELLED"); updateMicGate();
+    }
+    else if (currentState === STATE.RECORDING_1) {
+        finishFirstLoop(); 
+    }
+    else if (currentState === STATE.OVERDUB) {
+        handleOverdubStop(); 
+    }
+    else if (currentState === STATE.WAITING_FOR_SYNC) {
+        log("FORCE FINISH");
+        performStopOverdub(true);
+    }
+    updateRecBtnVisual();
+}
+
+function onRecRelease() {
+    // Check Clear All Timer
+    if (clearAllTimer) {
+        clearTimeout(clearAllTimer);
+        clearAllTimer = null;
+        log("CANCELLED CLEAR");
+        updateRecBtnVisual(); 
+        return;
+    }
+
+    if (currentState === STATE.SAMPLING_REC || currentState === STATE.SAMPLING_ARMED) {
+        finishSampling(); return;
+    }
+const duration = Date.now() - recPressTime;
+    const isLongPress = duration > 500;
+
+    if (isLongPress) {
+        if (currentState === STATE.RECORDING_1) {
+             finishFirstLoop(); 
+        }
+        else if (currentState === STATE.ARMED) {
+             currentState = STATE.IDLE; 
+             disableMic(); // <--- ADD THIS
+             log("CANCELLED"); updateMicGate(); 
+        }
+        else if (currentState === STATE.OVERDUB_ARMED) {
+             currentState = STATE.PLAYING; 
+             disableMic(); // <--- ADD THIS
+             log("CANCELLED"); updateMicGate(); 
+        }
+    }
+    updateRecBtnVisual();
+}
+
+function finishSampling() {
+    if (currentState === STATE.SAMPLING_REC && sampleRecBuffer.length > 0 && recordingPadIndex !== -1) {
+        const totalSamples = sampleRecBuffer.length * bufferSize;
+        const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
+        const data = rawBuffer.getChannelData(0); let offset = 0;
+        for(let chunk of sampleRecBuffer) { data.set(chunk, offset); offset += chunk.length; }
+        userSamples[recordingPadIndex] = rawBuffer;
+        log("SAMPLE SAVED");
+    } else { log("SAMPLE CANCELLED"); }
+    
+    if (recordingPadIndex !== -1) {
+        const pad = els.padsGrid.children[recordingPadIndex];
+        if(pad) { pad.classList.remove('recording'); pad.classList.remove('recording-armed'); }
+    }
+    
+    recordingPadIndex = -1;
+    currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE; 
+    
+    updateMicGate(); 
+    updateBackingTrackVolume(); 
+    updatePadVisuals();
+    updateRecBtnVisual();
+    disableMic();
+}
+
+function startFirstRecording() {
+    currentState = STATE.RECORDING_1;
+    // INJECT PRE-ROLL
+    recordingStream = [...preRollBuffer]; 
+    preRollBuffer = [];
+    recStartTime = ctx.currentTime; 
+    log("RECORDING..."); 
+    updateMicGate();
+    updateBackingTrackVolume(); 
+    updateRecBtnVisual();
+}
+
+function finishFirstLoop() {
+    const totalSamples = recordingStream.length * bufferSize;
+    if(totalSamples < minLoopLength) { currentState = STATE.IDLE; log("TOO SHORT"); updateMicGate(); updateRecBtnVisual(); return; }
+    
+    currentState = STATE.PLAYING; 
+    masterLoopLength = totalSamples;
+    
+    const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate); 
+    const data = rawBuffer.getChannelData(0); let offset = 0;
+    for(let chunk of recordingStream) { data.set(chunk, offset); offset += chunk.length; }
+    
+    undoTrackName = currentMode;
+    undoBackup = null; 
+    
+    // FIX: Force reset loop start time so playback starts exactly at "0"
+    loopStartTime = 0;
+
+    trackCtx[currentMode].buffer = rawBuffer;
+    trackCtx[currentMode].hasContent = true;
+
+    TRACKS.forEach(t => {
+        if (t !== currentMode) {
+            trackCtx[t].buffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
+            trackCtx[t].hasContent = false;
+        }
+    });
+
+    disableMic();
+    startPlayback(); log("LOOPING"); 
+    updateMicGate(); 
+    updateBackingTrackVolume(); 
+    updateUI();
+    updateRecBtnVisual();
+}
+
+function armOverdub() {
+    if(masterLoopLength === 0) return;
+    currentState = STATE.OVERDUB_ARMED;
+    log("ARMED: DUB");
+    updateMicGate();
+    updateRecBtnVisual();
+}
+
+function startOverdubRecording() {
+    // INJECT PRE-ROLL
+    recordingStream = [...preRollBuffer];
+    preRollBuffer = [];
+
+    const isOverdubbingExisting = trackCtx[currentMode].hasContent;
+    
+    if (masterLoopLength > 0 && isOverdubbingExisting) {
+        // --- FIX: USE SPECIFIC TRACK LENGTH ---
+        // If track exists, use its length. If not (should not happen here), fallback.
+        const currentBuffer = trackCtx[currentMode].buffer;
+        const loopLen = currentBuffer ? currentBuffer.length : masterLoopLength;
+        const loopDuration = loopLen / ctx.sampleRate;
+        
+        const rate = Math.abs(playbackRate) || 1.0;
+        const timeToRecord = loopDuration / rate; 
+        
+        clearTimeout(autoStopTimer);
+        autoStopTimer = setTimeout(() => {
+            if (currentState === STATE.OVERDUB) {
+                log("AUTO STOP");
+                performStopOverdub(); 
+            }
+        }, timeToRecord * 1000);
+    }
+
+    currentState = STATE.OVERDUB; 
+    recStartTime = ctx.currentTime; 
+    log("DUBBING..."); 
+    updateMicGate();
+    updateBackingTrackVolume(); 
+    updateRecBtnVisual();
+}
+
+// FIX 2: QUANTIZED SMART SYNC (The "Continue Recording" Fix)
+function handleOverdubStop() {
+    const isNewTrack = !trackCtx[currentMode].hasContent;
+    
+    if (isNewTrack && masterLoopLength > 0) {
+        const currentSampleCount = recordingStream.length * bufferSize;
+        const ratios = [0.25, 0.5, 1.0, 2.0, 4.0];
+        const targets = ratios.map(r => Math.floor(masterLoopLength * r));
+        
+        let bestTarget = targets[0];
+        let minDiff = Math.abs(currentSampleCount - bestTarget);
+        
+        for (let t of targets) {
+            const diff = Math.abs(currentSampleCount - t);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestTarget = t;
+            }
+        }
+        
+        // --- QUANTIZATION LOGIC ---
+        // If we are stopping EARLY (before the bar ends), we wait.
+        const samplesShort = bestTarget - currentSampleCount;
+        
+        // If we are significantly short (more than 50ms worth of samples), wait.
+        if (samplesShort > (ctx.sampleRate * 0.05)) {
+            currentState = STATE.WAITING_FOR_SYNC;
+            log("FINISHING BAR...");
+            updateRecBtnVisual(); // Updates to Flashing RED
+            
+            const timeToWait = (samplesShort / ctx.sampleRate) * 1000;
+            setTimeout(() => {
+                // Check if user cancelled in meantime? No, state check inside perform
+                if (currentState === STATE.WAITING_FOR_SYNC) {
+                    performStopOverdub(true);
+                }
+            }, timeToWait / Math.abs(playbackRate));
+            
+            return;
+        }
+        
+        // If we are close or late, perform immediate crop/snap
+        performStopOverdub(true);
+        return;
+    }
+    
+    performStopOverdub(false);
+}
+
+function performStopOverdub(isQuantized = false) {
+    clearTimeout(autoStopTimer); 
+    
+    // Call this first to trigger the volume fix immediately
+    disableMic();
+    
+    currentState = STATE.PLAYING;
+    updateMicGate();
+    updateBackingTrackVolume(); 
+    
+    if(masterLoopLength === 0 || recordingStream.length === 0) { updateRecBtnVisual(); return; }
+
+    const isOverdubbingExisting = trackCtx[currentMode].hasContent;
+
+    // Undo Prep
+    if (trackCtx[currentMode].buffer) {
+        const existingBuf = trackCtx[currentMode].buffer;
+        undoBackup = ctx.createBuffer(1, existingBuf.length, existingBuf.sampleRate);
+        undoBackup.copyToChannel(existingBuf.getChannelData(0), 0);
+        undoTrackName = currentMode;
+        log("DUBBED (UNDO AVAIL)");
+    } else {
+        undoBackup = null;
+        undoTrackName = currentMode;
+    }
+
+    // --- CRITICAL SYNC FIX: UNIFIED BUFFER CREATION ---
+    let targetBuffer;
+    
+    if (isOverdubbingExisting && !isQuantized) {
+        targetBuffer = trackCtx[currentMode].buffer;
+    } else {
+        // Create new track buffer logic
+        const totalSamples = recordingStream.length * bufferSize;
+        let finalBufferLength = totalSamples;
+        
+        if (isQuantized && masterLoopLength > 0) {
+            const ratios = [0.25, 0.5, 1.0, 2.0, 4.0];
+            const targets = ratios.map(r => Math.floor(masterLoopLength * r));
+            let bestTarget = targets[0];
+            let minDiff = Math.abs(totalSamples - bestTarget);
+            for (let t of targets) {
+                const diff = Math.abs(totalSamples - t);
+                if (diff < minDiff) { minDiff = diff; bestTarget = t; }
+            }
+            finalBufferLength = bestTarget;
+        }
+        
+        // Initialize Silent Buffer of Correct Length
+        trackCtx[currentMode].buffer = ctx.createBuffer(1, finalBufferLength, ctx.sampleRate);
+        targetBuffer = trackCtx[currentMode].buffer;
+        trackCtx[currentMode].hasContent = true;
+    }
+
+    // --- UNIFIED PASTE LOGIC ---
+    const targetData = targetBuffer.getChannelData(0);
+    const loopTotalSamples = targetBuffer.length;
+    
+    let timeElapsed = ctx.currentTime - loopStartTime;
+    let currentLoopPos = (timeElapsed * ctx.sampleRate * playbackRate) % loopTotalSamples;
+    
+    // Normalize position
+    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+
+    // Latency Compensation
+    let latencySamples = 2048; // ~42ms @ 48kHz - Tighter standard latency for instruments
+    
+    // UPDATED: Voice-Specific Latency Boost
+    if (currentMode === 'voice') {
+        latencySamples = 4096; // ~85ms - Optimized voice latency
+    }
+    
+    currentLoopPos -= (playbackRate * latencySamples);
+    while(currentLoopPos < 0) currentLoopPos += loopTotalSamples;
+    while(currentLoopPos >= loopTotalSamples) currentLoopPos -= loopTotalSamples;
+
+    // Flatten recorded stream
+    const flatRecLen = recordingStream.length * bufferSize;
+    const flatRec = new Float32Array(flatRecLen);
+    let off = 0;
+    for(let chunk of recordingStream) { flatRec.set(chunk, off); off += chunk.length; }
+    
+    // Mix/Paste Loop
+    for (let i = 0; i < flatRecLen; i++) {
+        const inputSample = flatRec[flatRecLen - 1 - i];
+        let targetIndex = currentLoopPos - (i * playbackRate);
+        
+        while(targetIndex < 0) targetIndex += loopTotalSamples;
+        while(targetIndex >= loopTotalSamples) targetIndex -= loopTotalSamples;
+        
+        targetData[Math.floor(targetIndex)] += inputSample;
+    }
+
+    if (!isOverdubbingExisting) {
+        log("NEW LOOP ADDED");
+        restartPlayback(currentMode);
+    }
+    
+    updateUI();
+    updateRecBtnVisual();
+}
+
+function startPlayback(specificTrack = null) {
+    let globalElapsed = 0;
+    if (loopStartTime > 0) {
+        globalElapsed = ctx.currentTime - loopStartTime;
+    } else {
+        loopStartTime = ctx.currentTime;
+    }
+    
+    const tracksToStart = specificTrack ? [specificTrack] : TRACKS;
+
+    tracksToStart.forEach(t => {
+        if(trackCtx[t].source) { try { trackCtx[t].source.stop(); } catch(e){} trackCtx[t].source = null; }
+        
+        if(trackCtx[t].buffer) {
+            trackCtx[t].source = ctx.createBufferSource();
+            trackCtx[t].source.buffer = trackCtx[t].buffer;
+            trackCtx[t].source.loop = true;
+            
+            // CRITICAL FIX: Calculate offset based on THIS TRACK'S duration
+            const trackDuration = trackCtx[t].buffer.duration;
+            const startOffset = globalElapsed % trackDuration;
+
+            trackCtx[t].source.playbackRate.value = playbackRate;
+            trackCtx[t].source.connect(trackCtx[t].loopGain); 
+            trackCtx[t].source.start(0, startOffset);
+        }
+    });
+}
+
+function stopAllSources() {
+    TRACKS.forEach(t => {
+        if(trackCtx[t].source) { try { trackCtx[t].source.stop(); } catch(e){} trackCtx[t].source = null; }
+    });
+}
+
+function restartPlayback(specificTrack = null) {
+    if(masterLoopLength > 0) startPlayback(specificTrack);
+}
+
+// --- UI Logic ---
+function initPads() {
+    els.padsGrid.innerHTML = '';
+    for(let i=0; i<8; i++) {
+        const btn = document.createElement('div'); btn.className = 'pad';
+        btn.addEventListener('pointerdown', (e) => { 
+            e.preventDefault(); if(!isPowered) return;
+            btn.setPointerCapture(e.pointerId); heldPadIndex = i; btn.classList.add('active'); hitPad(i, btn); 
+        });
+        btn.addEventListener('pointerup', (e) => { heldPadIndex = -1; btn.classList.remove('active'); btn.releasePointerCapture(e.pointerId); });
+        btn.addEventListener('pointercancel', (e) => { heldPadIndex = -1; btn.classList.remove('active'); btn.releasePointerCapture(e.pointerId); });
+        els.padsGrid.appendChild(btn);
+    }
+}
+
+function updatePadVisuals() {
+    const pads = Array.from(els.padsGrid.children);
+    pads.forEach((pad, i) => {
+        pad.classList.remove('has-sample');
+        if (currentMode === 'voice' && userSamples[i]) pad.classList.add('has-sample');
+    });
+    if(currentMode === 'voice') els.padsGrid.classList.add('mode-voice');
+    else els.padsGrid.classList.remove('mode-voice');
+}
+
+function hitPad(index, el) {
+    // --- NEW: FORCE VOLUME RESET ---
+    // If I hit a drum pad and the mic was left on by accident, kill it.
+    if (currentMode !== 'voice' && micStream) {
+         disableMic();
+    }
+    // -------------------------------
+
+    if (currentMode === 'voice') {
+        if (userSamples[index]) playSample(index);
+    } else {
+        if (currentMode === 'drums') playDrum(DRUM_PADS[index]);
+        else if (currentMode === 'synth') {
+            const freqs = isMinorScale ? SCALE_MINOR : SCALE_MAJOR;
+            playSynth(freqs[index]);
+        }
+    }
+}
+
+function updateMicGate() {
+    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
+    const isVoiceRecording = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC));
+    
+    let target = (isSampling || isVoiceRecording) ? 1.0 : 0.0;
+    if (isSamplePlaying) target = 0.0;
+    micGateGain.gain.setTargetAtTime(target, ctx.currentTime, 0.05);
+}
+
+// Helper to select track without cycling
+function selectTrack(newMode) {
+    // EXISTING CODE...
+    // Safety: If we switch away from voice while armed, kill mic
+    if (currentMode === 'voice' && newMode !== 'voice') {
+        disableMic();
+    }
+    
+    // --- NEW: FORCE VOLUME RESET ---
+    // If we are just jamming (not recording), ensure mic is off 
+    // to guarantee full volume on the new instrument.
+    if (!isRecordingState() && micStream) {
+        disableMic();
+    }
+    // -------------------------------
+
+    const btn = Array.from(els.modes).find(b => b.dataset.mode === newMode);
+    
+    // ... REST OF YOUR EXISTING FUNCTION ...
+    TRACKS.forEach(t => {
+        recGates[t].gain.setTargetAtTime((t === newMode) ? 1 : 0, ctx.currentTime, 0.02);
+    });
+
+    if(currentMode !== 'voice') lastInstrumentMode = currentMode;
+    currentMode = newMode; 
+    updateUI();
+    updatePadVisuals(); 
+    updateMicGate();
+    updateBackingTrackVolume(); 
+    updateRecBtnVisual();
+    log("MODE: " + currentMode.toUpperCase());
+}
+
+function cycleSound(mode) {
+    if(mode === 'drums') { 
+        currentDrumIdx = (currentDrumIdx + 1) % DRUM_STYLES.length; 
+        log("DRUMS: " + DRUM_STYLES[currentDrumIdx]); 
+    } else if(mode === 'synth') { 
+        currentSynthIdx = (currentSynthIdx + 1) % SYNTH_STYLES.length; 
+        log("SYNTH: " + SYNTH_STYLES[currentSynthIdx]); 
+    }
+    const btn = Array.from(els.modes).find(b => b.dataset.mode === mode);
+    btn.style.transform = "scale(0.9)"; setTimeout(() => btn.style.transform = "", 100);
+}
+
+function initUI() {
+    // Clear any existing listeners to be safe (though simpler to just call once)
+    
+    els.modes.forEach(btn => {
+        const mode = btn.dataset.mode;
+        
+        btn.onpointerdown = (e) => { 
+            if(!isPowered) return;
+            btn.setPointerCapture(e.pointerId); 
+            
+            btn.dataset.wasSelected = (mode === currentMode);
+            heldInstrument = mode; 
+            instHoldStartTime = Date.now();
+            selectTrack(mode);
+        };
+        
+        btn.onpointerup = (e) => { 
+            if(!isPowered) return;
+            btn.releasePointerCapture(e.pointerId);
+
+            const duration = Date.now() - instHoldStartTime;
+            if (duration < 300) {
+                 if (btn.dataset.wasSelected === 'true') {
+                     cycleSound(mode);
+                 }
+            }
+            heldInstrument = null; 
+        };
+    });
+
+    els.scaleSwitch.onclick = () => {
+        if(!isPowered) return;
+        isMinorScale = !isMinorScale;
+        els.scaleSwitch.classList.toggle('minor', isMinorScale);
+        log("SCALE: " + (isMinorScale ? "MINOR" : "MAJOR"));
+    };
+
+    // Use onpointerdown/up properties instead of addEventListener to prevent duplicates if init runs twice
+    els.recBtn.onpointerdown = (e) => { 
+        if(!isPowered) return; 
+        e.preventDefault(); 
+        els.recBtn.setPointerCapture(e.pointerId); 
+        onRecPress(); 
+    };
+    
+    els.recBtn.onpointerup = (e) => { 
+        e.preventDefault(); 
+        onRecRelease(); 
+        els.recBtn.releasePointerCapture(e.pointerId); 
+    };
+    
+    els.recBtn.onpointercancel = (e) => { 
+        onRecRelease(); 
+        els.recBtn.releasePointerCapture(e.pointerId); 
+    };
+    
+    els.powerSwitch.onclick = togglePower;
+    
+    // Initialize Knobs
+    // (Knob initialization logic remains outside this function in the main script body or requires deduping, 
+    // but the knob code you have handles its own setup safely via closures)
+}
+
+function togglePower() {
+    isPowered = !isPowered;
+    if(isPowered) { els.powerSwitch.classList.add('power-active'); els.device.classList.remove('powered-off'); ctx.resume(); log("RESUME"); } 
+    else { els.powerSwitch.classList.remove('power-active'); els.device.classList.add('powered-off'); ctx.suspend(); }
+    updateRecBtnVisual();
+}
+
+function setupKnob(el, onValueChange, onClick = null, magnet = false) {
+    let startY = 0;
+    let initialY = 0;
+    let currentDeg = -135; 
+    let isPushed = false;
+
+    // Internal Render: Combines Rotation AND Scale
+    const render = () => {
+        let visualDeg = currentDeg; 
+        if (magnet && Math.abs(currentDeg) < 15) visualDeg = 0;
+        
+        // Add scale to the transform string so we don't overwrite rotation
+        const scale = isPushed ? 0.9 : 1.0;
+        el.style.transform = `rotate(${visualDeg}deg) scale(${scale})`;
+    };
+
+    el.addEventListener('pointerdown', e => { 
+        if(!isPowered) return; 
+        startY = e.clientY; 
+        initialY = e.clientY;
+        el.setPointerCapture(e.pointerId);
+        
+        // Visuals
+        isPushed = true;
+        el.classList.add('pushed');
+        render(); // Re-render to show push immediately
+
+        const move = e => {
+            const delta = startY - e.clientY; 
+            // Update rotation
+            currentDeg = Math.min(135, Math.max(-135, currentDeg + (delta * 2.5)));
+            render();
+            startY = e.clientY;
+            
+            // Calculate value and callback
+            const val = (currentDeg + 135) / 270;
+            onValueChange(val);
+        };
+        
+        const up = (e) => { 
+            isPushed = false;
+            el.classList.remove('pushed');
+            render(); // Re-render to show release
+
+            el.removeEventListener('pointermove', move); 
+            el.removeEventListener('pointerup', up); 
+            el.releasePointerCapture(e.pointerId);
+            
+            if (Math.abs(e.clientY - initialY) < 3 && onClick) {
+                onClick();
+            }
+        };
+        
+        el.addEventListener('pointermove', move); 
+        el.addEventListener('pointerup', up);
+    });
+
+    return {
+        // Updated setValue with Instant Snap option
+        setValue: (val, instant = false) => {
+            const deg = (val * 270) - 135;
+            currentDeg = deg;
+            
+            if(instant) {
+                el.style.transition = 'none'; // Disable animation
+            }
+            
+            render();
+            
+            if(instant) {
+                // Force browser to apply 'no transition' immediately
+                void el.offsetWidth; 
+                el.style.transition = ''; // Restore CSS transition
+            }
+        }
+    };
+}
+
+function updateLedBar(micLevel) {
+    const isRecording = (currentState === STATE.RECORDING_1 || currentState === STATE.ARMED);
+    const isPlaying = (currentState === STATE.PLAYING || currentState === STATE.OVERDUB || currentState === STATE.WAITING_FOR_SYNC);
+    
+    els.ledCells.forEach(led => led.className = 'led-cell');
+
+    if (isRecording) {
+        const level = Math.min(8, Math.floor(micLevel / 10)); 
+        for(let i=0; i<level; i++) els.ledCells[i].classList.add('active-red');
+    } 
+    else if (isPlaying && masterLoopLength > 0) {
+        const duration = masterLoopLength / ctx.sampleRate;
+        const current = ((ctx.currentTime - loopStartTime) * Math.abs(playbackRate)) % duration;
+        const progress = current / duration; 
+        const activeIdx = Math.floor(progress * 8); 
+
+        // Visual indicator for Waiting For Sync
+        const colorClass = (currentState === STATE.WAITING_FOR_SYNC) ? 'active-red' : 
+                           (currentState === STATE.OVERDUB) ? 'active-yellow' : 'active-green';
+        
+        for(let i=0; i<=activeIdx; i++) if(i < 8) els.ledCells[i].classList.add(colorClass);
+    }
+}
+
+function updateLoop() {
+    let micLevel = 0;
+    if(isPowered) {
+        if (analyser) {
+            const data = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data);
+            let sum = 0; for(let v of data) sum += v;
+            micLevel = sum / data.length;
+        }
+        updateLedBar(micLevel);
+    } 
+    requestAnimationFrame(updateLoop);
+}
+
+// Shortcuts
+function setupKeys() {
+    const padKeys = { 'q':0, 'w':1, 'e':2, 'r':3, 'a':4, 's':5, 'd':6, 'f':7 };
+    let recKeyDown = false;
+    let undoKeyDown = false;
+
+    window.addEventListener('keydown', (e) => {
+        if(!isPowered) return;
+        if(e.repeat) return;
+        
+        if(e.key === '1') { 
+            const btn = document.getElementById('btn-synth');
+            btn.dataset.wasSelected = ('synth' === currentMode);
+            heldInstrument = 'synth'; 
+            instHoldStartTime = Date.now(); 
+            selectTrack('synth'); 
+        }
+        if(e.key === '2') { 
+            const btn = document.getElementById('btn-voice');
+            btn.dataset.wasSelected = ('voice' === currentMode);
+            heldInstrument = 'voice'; 
+            instHoldStartTime = Date.now(); 
+            selectTrack('voice'); 
+        }
+        if(e.key === '3') { 
+            const btn = document.getElementById('btn-drums');
+            btn.dataset.wasSelected = ('drums' === currentMode);
+            heldInstrument = 'drums'; 
+            instHoldStartTime = Date.now(); 
+            selectTrack('drums'); 
+        }
+
+        if(e.key === 'Control') {
+            if(!undoKeyDown) {
+                undoKeyDown = true;
+                els.undoBtn.classList.add('active-key');
+                startUndoTimer({ pointerId: -1 }); 
+            }
+        }
+
+        const k = e.key.toLowerCase();
+        if(k in padKeys) {
+            const idx = padKeys[k]; heldPadIndex = idx;
+            const btn = els.padsGrid.children[idx];
+            if(btn) { btn.classList.add('active'); hitPad(idx, btn); }
+        }
+        if(e.key === 'Shift') { if(!recKeyDown) { recKeyDown = true; els.recBtn.classList.add('active-key'); onRecPress(); } }
+        if(e.key === ' ') { e.preventDefault(); togglePower(); }
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        if(!isPowered) return;
+        
+        if(e.key === '1' || e.key === '2' || e.key === '3') {
+             // Handle Keyboard Tap vs Hold logic
+             const duration = Date.now() - instHoldStartTime;
+             let mode = (e.key==='1'?'synth':(e.key==='3'?'drums':'voice'));
+             let btn = (mode==='synth'?document.getElementById('btn-synth'):(mode==='drums'?document.getElementById('btn-drums'):document.getElementById('btn-voice')));
+             
+             if(duration < 300) {
+                 if(btn.dataset.wasSelected === 'true') {
+                     if(e.key === '1') cycleSound('synth');
+                     if(e.key === '3') cycleSound('drums');
+                 }
+             }
+             heldInstrument = null;
+        }
+
+        if(e.key === 'Control') {
+            undoKeyDown = false;
+            els.undoBtn.classList.remove('active-key');
+            endUndoTimer({ pointerId: -1 });
+        }
+
+        const k = e.key.toLowerCase();
+        if(k in padKeys) {
+            const idx = padKeys[k]; heldPadIndex = -1;
+            const btn = els.padsGrid.children[idx]; if(btn) btn.classList.remove('active');
+        }
+        if(e.key === 'Shift') { recKeyDown = false; els.recBtn.classList.remove('active-key'); onRecRelease(); }
+    });
+}
+
+// Undo
+els.undoBtn.addEventListener('pointerdown', startUndoTimer);
+els.undoBtn.addEventListener('pointerup', endUndoTimer);
+els.undoBtn.addEventListener('pointercancel', endUndoTimer);
+
+function startUndoTimer(e) { 
+    if(!isPowered) return; 
+    if(e.pointerId >= 0) els.undoBtn.setPointerCapture(e.pointerId); 
+    hasReset = false; 
+    isUndoHeld = true; // Flag for Rec combo
+    
+    undoTimeout = setTimeout(() => {
+        // HOLD ACTION (1s) -> CLEAR CURRENT TRACK
+        hasReset = true;
+        clearTrack(currentMode);
+        
+    }, 1000); 
+}
+
+function endUndoTimer(e) { 
+    clearTimeout(undoTimeout); 
+    if(e.pointerId >= 0) els.undoBtn.releasePointerCapture(e.pointerId);
+    isUndoHeld = false;
+    if (!hasReset && isPowered) {
+        performUndo(); 
+    }
+}
+
+// FIX 1: UNDO / REDO SWAP LOGIC
+function performUndo() {
+    if(currentMode === 'voice' && heldPadIndex !== -1) {
+        if(userSamples[heldPadIndex]) { userSamples[heldPadIndex] = null; updatePadVisuals(); log("SAMPLE DELETED"); return; }
+    }
+    
+    if(undoTrackName && undoTrackName === undoTrackName) {
+        const activeTracksCount = TRACKS.filter(t => trackCtx[t].hasContent).length;
+        if (undoBackup === null && activeTracksCount <= 1) {
+            log("CAN'T UNDO LAST");
+            return;
+        }
+
+        const t = undoTrackName;
+        const tempBuffer = trackCtx[t].buffer;
+        trackCtx[t].buffer = undoBackup;
+        undoBackup = tempBuffer;
+        
+        trackCtx[t].hasContent = !!trackCtx[t].buffer;
+        
+        log(trackCtx[t].buffer ? "REDO" : "UNDO");
+        
+        if(currentState === STATE.PLAYING || currentState === STATE.OVERDUB) {
+             restartPlayback(t); // Soft restart specific track
+        }
+        updateUI();
+        updateRecBtnVisual();
+        return;
+    }
+
+    log("NOTHING TO UNDO");
+}
+
+function resetDevice() {
+    hasReset = true; stopAllSources();
+    masterLoopLength = 0; recordingStream = []; 
+    TRACKS.forEach(t => { 
+        trackCtx[t].buffer = null; 
+        trackCtx[t].mute = false; 
+        trackCtx[t].hasContent = false;
+    });
+    
+    undoBackup = null; 
+    undoTrackName = null;
+
+    updateUI();
+    currentState = STATE.IDLE; 
+    updateRecBtnVisual(); 
+    els.undoBtn.classList.add('reset-flash'); setTimeout(() => els.undoBtn.classList.remove('reset-flash'), 500);
+    log("RESET ALL");
+}
+
+function updateUI() {
+    els.modes.forEach(btn => {
+        const mode = btn.dataset.mode;
+        btn.classList.remove('selected', 'has-audio', 'muted');
+        
+        if (mode === currentMode) btn.classList.add('selected');
+        if (trackCtx[mode].mute) btn.classList.add('muted');
+        
+        if (mode !== currentMode && !trackCtx[mode].mute && trackCtx[mode].buffer) {
+            if (masterLoopLength > 0) btn.classList.add('has-audio');
+        }
+    });
+}
+
+function updatePlaybackRate() {
+    TRACKS.forEach(t => { if(trackCtx[t].source) trackCtx[t].source.playbackRate.value = playbackRate; });
+}
+
+function resetLoopPoints() {
+    TRACKS.forEach(t => {
+        if(trackCtx[t].source && trackCtx[t].buffer) {
+            trackCtx[t].source.loopEnd = trackCtx[t].buffer.duration;
+        }
+    });
+}
+
+function applyBeatRepeat(division) {
+    TRACKS.forEach(t => {
+        if(trackCtx[t].source && trackCtx[t].buffer) {
+            const dur = trackCtx[t].buffer.duration;
+            // "Lock" the beat based on current time
+            // Note: This is a simple implementation. It shortens the loop length.
+            trackCtx[t].source.loopEnd = dur * division;
+        }
+    });
+}
+
+// --- UPDATED PAUSE BUTTON (Stop, Reset & Unmute All) ---
+const pauseBtn = document.getElementById('btn-pause');
+
+pauseBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); 
+    
+    // 1. SHORTCUT CHECK: Is an instrument held? (Mute/Unmute Track)
+    if (heldInstrument) {
+        toggleMute(heldInstrument);
+        return;
+    }
+
+    // 2. MAIN PAUSE LOGIC
+    if (isPaused) {
+        // --- UNPAUSE (PLAY FROM START) ---
+        if (masterLoopLength > 0) {
+            
+            // A. UNMUTE EVERYTHING
+            TRACKS.forEach(t => trackCtx[t].mute = false);
+            updateBackingTrackVolume(); // Apply volume change
+            updateUI(); // Update button visuals (remove red X)
+
+            // B. RESET CLOCK
+            loopStartTime = ctx.currentTime;
+            
+            // C. RESTART ENGINE
+            startPlayback(); 
+        }
+        
+        isPaused = false;
+        pauseBtn.classList.remove('paused');
+        pauseBtn.innerText = "❚❚";
+        
+    } else {
+        // --- PAUSE (STOP) ---
+        stopAllSources(); 
+        isPaused = true;
+        pauseBtn.classList.add('paused');
+        pauseBtn.innerText = "▶";
+    }
+});
+
+function initKnobs() {
+    // --- RIGHT KNOB (MASTER / POST FX) ---
+    // Cycle: 1=Filter(Green), 2=BeatRepeat(Red), 3=Speed(Blue)
+    rightKnobMode = 1; 
+    updateKnobLed('led-master', 1, {1:'led-green', 2:'led-red', 3:'led-blue'});
+
+    const knobRightEl = document.getElementById('knob-right');
+    
+    // Define Audio Logic for Right Knob
+    const onRightRotate = (val) => {
+        if (rightKnobMode === 1) { 
+            // FILTER (Green) - DJ Style
+            // Reset both first (Open)
+            if(masterFilter) masterFilter.frequency.setTargetAtTime(22000, ctx.currentTime, 0.05);
+            if(masterHighPass) masterHighPass.frequency.setTargetAtTime(0, ctx.currentTime, 0.05);
+
+            if (val < 0.45) {
+                // Low Pass closing down
+                const norm = val / 0.45; 
+                const freq = 100 + (Math.pow(norm, 3) * 20000); 
+                if(masterFilter) masterFilter.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
+            } 
+            else if (val > 0.55) {
+                // High Pass opening up
+                const norm = (val - 0.55) / 0.45;
+                const freq = 50 + (Math.pow(norm, 2) * 5000);
+                if(masterHighPass) masterHighPass.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
+            }
+        }
+        else if (rightKnobMode === 2) { 
+            // BEAT REPEAT (Red)
+            let div = 1;
+            if (val < 0.1) div = 1;          
+            else if (val < 0.3) div = 0.5;   
+            else if (val < 0.5) div = 0.25; 
+            else if (val < 0.7) div = 0.125;
+            else if (val < 0.9) div = 0.0625; 
+            else div = 0.03125; 
+            applyBeatRepeat(div);
+        }
+        else if (rightKnobMode === 3) { 
+            // SPEED (Blue)
+            if (val > 0.45 && val < 0.55) { playbackRate = 1.0; }
+            else if (val >= 0.55) { if (val < 0.9) { playbackRate = 1.0 + ((val-0.55)/0.35)*1.5; } else { playbackRate = -2.0; } } 
+            else if (val <= 0.45) { playbackRate = 1.0 - ((0.45 - val) / 0.225); }
+            if (Math.abs(playbackRate) < 0.001) playbackRate = 0.001;
+            updatePlaybackRate();
+        }
+    };
+
+    // Initialize Right Knob Wrapper
+    const rightKnobCtrl = setupKnob(knobRightEl, onRightRotate, () => {
+        // CLICK LOGIC
+        rightKnobMode = (rightKnobMode % 3) + 1;
+        updateKnobLed('led-master', rightKnobMode, {1:'led-green', 2:'led-red', 3:'led-blue'});
+        
+        // RESET LOGIC
+        playbackRate = 1.0; updatePlaybackRate();
+        if(masterFilter) masterFilter.frequency.setTargetAtTime(22000, ctx.currentTime, 0.1);
+        if(masterHighPass) masterHighPass.frequency.setTargetAtTime(0, ctx.currentTime, 0.1);
+        resetLoopPoints();
+
+        // Snap Knob Position
+        if (rightKnobMode === 1 || rightKnobMode === 3) {
+            rightKnobCtrl.setValue(0.5, true); 
+            onRightRotate(0.5);
+        } else {
+            rightKnobCtrl.setValue(0.0, true); 
+            onRightRotate(0.0);
+        }
+    }, true);
+    
+    // Set Initial Position (Center)
+    rightKnobCtrl.setValue(0.5, true);
+
+
+    // --- LEFT KNOB (PRE FX) ---
+    // Cycle: 1=Reverb(Green), 2=Delay(Blue), 3=Distortion(Red)
+    leftKnobMode = 1;
+    updateKnobLed('led-fx', 1, {1:'led-green', 2:'led-blue', 3:'led-red'});
+    
+    const knobLeftEl = document.getElementById('knob-left');
+    let currentLeftVal = 0.0; // Track value locally
+
+    const onLeftRotate = (val) => {
+        currentLeftVal = val; // Store value
+        if(!instReverb) return;
+        // Reset all momentarily to avoid bleed
+        instReverb.gainNode.gain.value = 0;
+        instDelayGain.gain.value = 0;
+        distortionGain.gain.value = 0;
+
+        if (leftKnobMode === 1) { 
+            instReverb.gainNode.gain.value = val * 1.5; 
+        }
+        else if (leftKnobMode === 2) { 
+            instDelayGain.gain.value = val;
+            instFeedback.gain.value = 0.3 + (val * 0.4); 
+        }
+        else if (leftKnobMode === 3) { 
+            distortionGain.gain.value = val * 0.8; 
+        }
+    };
+
+    const leftKnobCtrl = setupKnob(knobLeftEl, onLeftRotate, () => {
+        // CLICK LOGIC
+        leftKnobMode = (leftKnobMode % 3) + 1;
+        updateKnobLed('led-fx', leftKnobMode, {1:'led-green', 2:'led-blue', 3:'led-red'});
+
+        // UPDATE AUDIO IMMEDIATELY (Do NOT reset visual position)
+        // This applies the current knob position to the NEW mode immediately
+        onLeftRotate(currentLeftVal);
+        
+    }, true);
+    
+    // Set Initial Position (Off)
+    leftKnobCtrl.setValue(0.0, true);
+}
+</script>
+</body>
+</html>

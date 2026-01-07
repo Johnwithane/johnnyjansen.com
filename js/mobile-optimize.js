@@ -1,0 +1,72 @@
+// js/mobile-optimize.js - Aggressive iframe lazy loading for mobile
+
+(function() {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
+    if (!isMobile) return; // Desktop doesn't need this optimization
+    
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // 1. MAKE HERO GRID SCROLL NORMALLY (not fixed position)
+        const heroGrid = document.getElementById('hero-grid');
+        if (heroGrid) {
+            heroGrid.style.position = 'absolute';
+            heroGrid.style.transform = 'none';
+            heroGrid.style.willChange = 'auto';
+        }
+        
+        // Make hero section normal height so grid scrolls away
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            hero.style.position = 'relative';
+        }
+        
+        // 2. CONVERT ALL IFRAMES TO LAZY LOAD
+        const iframes = document.querySelectorAll('iframe[src]');
+        iframes.forEach(iframe => {
+            const src = iframe.getAttribute('src');
+            iframe.setAttribute('data-src', src);
+            iframe.removeAttribute('src'); // Critical: remove src completely
+        });
+        
+        // 2. INTERSECTION OBSERVER - only load when scrolling near
+        const iframeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const iframe = entry.target;
+                
+                if (entry.isIntersecting) {
+                    // Load iframe when it comes into view
+                    const src = iframe.getAttribute('data-src');
+                    if (src && !iframe.src) {
+                        iframe.src = src;
+                    }
+                } else {
+                    // CRITICAL FOR MEMORY: Unload iframe when it scrolls far away
+                    if (iframe.src && entry.intersectionRatio === 0) {
+                        // Only unload if completely out of view
+                        const rect = iframe.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        
+                        // If more than 2 viewports away, unload it
+                        if (Math.abs(rect.top) > viewportHeight * 2) {
+                            iframe.setAttribute('data-src', iframe.src);
+                            iframe.src = '';
+                        }
+                    }
+                }
+            });
+        }, {
+            rootMargin: '300px', // Start loading 300px before visible
+            threshold: 0
+        });
+        
+        // Observe all iframes
+        document.querySelectorAll('iframe').forEach(iframe => {
+            iframeObserver.observe(iframe);
+        });
+        
+        console.log('Mobile optimizations applied - iframes will lazy load');
+    });
+    
+})();
