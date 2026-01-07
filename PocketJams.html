@@ -262,8 +262,40 @@
         }
         
         .inst-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
-        .inst-btn.selected { background: var(--led-gold); opacity: 1; box-shadow: 0 0 10px rgba(255, 179, 0, 0.4); }
-        .inst-btn.muted { background: rgb(129, 128, 128) !important; color: #000; box-shadow: none; opacity: 0.6; }
+        .inst-btn.selected { 
+            background: #fff; 
+            opacity: 1; 
+            color: #000;
+        }
+
+        /* Specific Instrument Colors */
+        .inst-btn[data-mode="synth"].selected {
+            background: var(--led-red);
+            box-shadow: 0 0 15px rgba(255, 75, 75, 0.6);
+            border-color: #ffcccc;
+        }
+        
+        .inst-btn[data-mode="voice"].selected {
+            background: var(--led-blue);
+            box-shadow: 0 0 15px rgba(41, 121, 255, 0.6);
+            border-color: #ccccff;
+        }
+
+        .inst-btn[data-mode="drums"].selected {
+            background: var(--led-green);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.6);
+            border-color: #ccffcc;
+        }
+
+        /* Muted State Overrides */
+        .inst-btn.muted { 
+            background: #333 !important;
+            color: #888 !important;
+            border-color: #444 !important;
+            box-shadow: none !important;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
 
         /* --- 5. Pads Grid (Non-LED) --- */
         .pads-container {
@@ -613,83 +645,80 @@ function drawOled() {
     oCtx.fillStyle = '#000000';
     oCtx.fillRect(0,0,128,32);
 
-    // --- 1. WAVEFORM LAYERING ---
-    // We draw unselected tracks first (background), then selected track (foreground)
-    
-    // Define Colors
+// --- 1. WAVEFORM LAYERING ---
     const colors = { drums: '#00e676', synth: '#ff4b4b', voice: '#2979ff' };
 
-    // Sort tracks: Selected instrument goes LAST (draws on top)
     const drawOrder = [...TRACKS].sort((a, b) => {
-        if (a === currentMode) return 1; // Move selected to end
+        if (a === currentMode) return 1; 
         if (b === currentMode) return -1;
         return 0;
     });
 
     drawOrder.forEach(track => {
+        // SKIP IF MUTED
+        if (trackCtx[track].mute) return; 
+
         const analyser = trackCtx[track].analyser;
         if (!analyser) return;
 
+        // ... (rest of waveform drawing code is same as before) ...
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteTimeDomainData(dataArray);
 
-        // Optimization: Don't draw silence
         let hasSignal = false;
         let sum = 0;
-        for(let i=0; i<bufferLength; i+=10) { 
-            sum += Math.abs(dataArray[i]-128);
-        }
-        if(sum < 10 && track !== currentMode) return; // Skip silent background tracks
+        for(let i=0; i<bufferLength; i+=10) sum += Math.abs(dataArray[i]-128);
+        if(sum < 10 && track !== currentMode) return; 
 
         oCtx.beginPath();
         oCtx.strokeStyle = colors[track];
         
-        // Visual Hierarchy
         if (track === currentMode) {
             oCtx.globalAlpha = 1.0; 
-            oCtx.lineWidth = 1.5; // Thicker line for selected
+            oCtx.lineWidth = 1.5; 
         } else {
-            oCtx.globalAlpha = 0.4; // Ghostly for others
+            oCtx.globalAlpha = 0.4; 
             oCtx.lineWidth = 1;
         }
 
         const sliceWidth = 128 / bufferLength;
         let x = 0;
-        
-        // Draw Wave
         for(let i = 0; i < bufferLength; i++) {
             const v = dataArray[i] / 128.0;
-            // Center Y is 16. Amplitude scales based on selection.
             const amp = (track === currentMode) ? 14 : 10; 
             const y = 16 + (v - 1) * amp;
-
-            if(i === 0) oCtx.moveTo(x, y);
-            else oCtx.lineTo(x, y);
+            if(i === 0) oCtx.moveTo(x, y); else oCtx.lineTo(x, y);
             x += sliceWidth;
         }
         oCtx.stroke();
     });
     
-    oCtx.globalAlpha = 1.0; // Reset Alpha
+    oCtx.globalAlpha = 1.0;
 
     // --- 2. UI TEXT OVERLAY ---
     
     // TOP LEFT: Instrument
-    oCtx.fillStyle = colors[currentMode]; // Match instrument color
-    oCtx.font = "bold 10px monospace"; // Slightly larger/smoother
+    oCtx.fillStyle = colors[currentMode]; 
+    oCtx.font = "bold 10px monospace"; 
     oCtx.textAlign = "left";
     oCtx.fillText(currentMode.toUpperCase(), 2, 10);
     
-    // TOP RIGHT: Style
-    oCtx.fillStyle = "#888";
+    // TOP RIGHT: Style OR Disabled
     oCtx.textAlign = "right";
     oCtx.font = "10px monospace";
-    let presetName = "";
-    if(currentMode === 'drums') presetName = DRUM_STYLES[currentDrumIdx];
-    else if(currentMode === 'synth') presetName = SYNTH_STYLES[currentSynthIdx];
-    else if(currentMode === 'voice') presetName = "MIC";
-    oCtx.fillText(presetName, 126, 10);
+    
+    if (trackCtx[currentMode].mute) {
+        oCtx.fillStyle = "#f00"; // Red text for warning
+        oCtx.fillText("DISABLED", 126, 10);
+    } else {
+        oCtx.fillStyle = "#888";
+        let presetName = "";
+        if(currentMode === 'drums') presetName = DRUM_STYLES[currentDrumIdx];
+        else if(currentMode === 'synth') presetName = SYNTH_STYLES[currentSynthIdx];
+        else if(currentMode === 'voice') presetName = "MIC";
+        oCtx.fillText(presetName, 126, 10);
+    }
 
     // BOTTOM LEFT: PRE FX
     oCtx.textAlign = "left";
@@ -1704,7 +1733,8 @@ function updateRecBtnVisual() {
     
     const trackHasContent = trackCtx[currentMode].hasContent;
 
-    if (currentState === STATE.RECORDING_1 || currentState === STATE.SAMPLING_REC) {
+    // CHANGED: Removed STATE.SAMPLING_REC from this check
+    if (currentState === STATE.RECORDING_1) {
         els.recBtn.classList.add('state-recording');
     }
     else if (currentState === STATE.WAITING_FOR_SYNC) {
@@ -1714,7 +1744,8 @@ function updateRecBtnVisual() {
         if (trackHasContent) els.recBtn.classList.add('state-overdub');
         else els.recBtn.classList.add('state-recording');
     } 
-    else if (currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED) {
+    // CHANGED: Removed STATE.SAMPLING_ARMED from here too
+    else if (currentState === STATE.ARMED) {
         els.recBtn.classList.add('state-standby-red');
     }
     else if (currentState === STATE.OVERDUB_ARMED) {
@@ -2048,38 +2079,44 @@ function initPads() {
 }
 
 function handlePadRelease(btn, e) {
-    // 1. CANCEL TIMER if released before 600ms (Nothing happens)
+    // 1. WAS IT A TAP? (Released before timer finished)
     if (padArmTimer) {
         clearTimeout(padArmTimer);
         padArmTimer = null;
-        // Clean up visual if we released early
+
+        // Visual feedback for tap on empty pad
+        if (currentMode === 'voice' && heldPadIndex !== -1 && !userSamples[heldPadIndex]) {
+             triggerOledPopup("HOLD", "TO SAMPLE");
+             // Optional: Flash pad red briefly
+             btn.classList.add('recording-armed');
+             setTimeout(() => btn.classList.remove('recording-armed'), 200);
+        }
+
+        // Clean up
         btn.classList.remove('active');
+        btn.classList.remove('voice-arming');
         heldPadIndex = -1;
         return; 
     }
 
-    // 2. STOP RECORDING (If we passed the mark and are recording)
+    // 2. FINISH RECORDING (User held long enough, signal started)
     if (currentMode === 'voice' && currentState === STATE.SAMPLING_REC && heldPadIndex === recordingPadIndex) {
         finishSampling();
     }
-    // 3. CANCEL ARMING (If we held long enough to arm, but released before speaking/recording started)
+    // 3. CANCEL ARMING (User held long enough to arm, but didn't speak)
     else if (currentMode === 'voice' && currentState === STATE.SAMPLING_ARMED && heldPadIndex === recordingPadIndex) {
          log("CANCELLED");
+         triggerOledPopup("SILENCE", "DETECTED");
          recordingPadIndex = -1;
          currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE;
          disableMic();
-         
-         // Clean up specific classes
-         btn.classList.remove('voice-arming');
-         btn.classList.remove('recording');
-         updateRecBtnVisual();
     }
 
-    // --- VISUAL CLEANUP ---
+    // --- GLOBAL CLEANUP ---
     heldPadIndex = -1; 
     btn.classList.remove('active'); 
     btn.classList.remove('voice-arming');
-    btn.classList.remove('recording-armed');
+    btn.classList.remove('recording'); // This removes the solid red from the pad
     
     if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
 }
@@ -2097,18 +2134,15 @@ function updatePadVisuals() {
 function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
     
-    // SAFETY: Prevent multi-touch if already recording or arming another pad
-    if (currentMode === 'voice' && (currentState === STATE.SAMPLING_REC || padArmTimer)) return; 
-
     if (currentMode === 'voice') { 
         if (userSamples[index]) {
             playSample(index); 
         } else {
-            // REMOVED: triggerEmptySlotVisuals(el); 
-            // REMOVED: triggerOledPopup("HOLD REC", "TO SAMPLE");
-
-            // --- 1 SECOND SAFETY DELAY ---
+            // --- 1. SECOND SAFETY DELAY ---
             padArmTimer = setTimeout(() => {
+                // IMPORTANT: Clear the timer ID so release knows we held long enough
+                padArmTimer = null; 
+
                 enableMic().then(() => {
                     recordingPadIndex = index;
                     currentState = STATE.SAMPLING_ARMED; 
@@ -2116,19 +2150,21 @@ function hitPad(index, el) {
                     sampleRecBuffer = []; 
                     preRollBuffer = []; 
                     
-                    // Add classes to the specific element triggered
+                    // Visuals on the PAD only
                     el.classList.add('voice-arming');
                     
                     log("LISTENING..."); 
                     updateMicGate(); 
                     updateBackingTrackVolume(); 
-                    // removed updateRecBtnVisual() here to prevent it turning red prematurely
+                    // We do NOT call updateRecBtnVisual() here anymore
                 });
             }, 600); 
         }
     } 
     else {
-        if (currentMode === 'drums') playDrum(DRUM_PADS[index]);
+        if (currentMode === 'drums') {
+            if(DRUM_PADS[index]) playDrum(DRUM_PADS[index]);
+        }
         else if (currentMode === 'synth') {
             const freqs = isMinorScale ? SCALE_MINOR : SCALE_MAJOR;
             playSynth(freqs[index]);
@@ -2171,40 +2207,77 @@ function selectTrack(newMode) {
 }
 
 function cycleSound(mode) {
-    if(mode === 'drums') { 
-        currentDrumIdx = (currentDrumIdx + 1) % DRUM_STYLES.length; 
-    } 
-    else if(mode === 'synth') { 
-        currentSynthIdx = (currentSynthIdx + 1) % SYNTH_STYLES.length; 
+    // 1. Check if Muted
+    if (trackCtx[mode].mute) {
+        triggerOledPopup("HOLD", "TO ENABLE");
+        return;
     }
+
+    if(mode === 'drums') { currentDrumIdx = (currentDrumIdx + 1) % DRUM_STYLES.length; log("KIT: " + DRUM_STYLES[currentDrumIdx]); } 
+    else if(mode === 'synth') { currentSynthIdx = (currentSynthIdx + 1) % SYNTH_STYLES.length; log("SYNTH: " + SYNTH_STYLES[currentSynthIdx]); }
+    
+    // Animation
     const btn = Array.from(els.modes).find(b => b.dataset.mode === mode);
-    btn.style.transform = "scale(0.9)"; setTimeout(() => btn.style.transform = "", 100);
+    if(btn) {
+        btn.style.transform = "scale(0.9)"; 
+        setTimeout(() => btn.style.transform = "", 100);
+    }
 }
 
 function initUI() {
+    let instHoldTimer = null; // Timer for long press
+    let didLongPress = false; // Flag to prevent click action if we held
+
     els.modes.forEach(btn => {
         const mode = btn.dataset.mode;
+        
         btn.onpointerdown = (e) => { 
             if(!isPowered) return;
             btn.setPointerCapture(e.pointerId); 
+            
+            // Setup for Potential Tap
             btn.dataset.wasSelected = (mode === currentMode);
-            heldInstrument = mode; instHoldStartTime = Date.now();
+            heldInstrument = mode; 
+            instHoldStartTime = Date.now();
+            didLongPress = false;
+            
+            // Select track immediately (visual feedback)
             selectTrack(mode);
+
+            // START LONG PRESS TIMER (1s to toggle mute)
+            instHoldTimer = setTimeout(() => {
+                didLongPress = true;
+                toggleMute(mode);
+            }, 800); 
         };
+
         btn.onpointerup = (e) => { 
             if(!isPowered) return;
             btn.releasePointerCapture(e.pointerId);
-            const duration = Date.now() - instHoldStartTime;
-            if (duration < 300) { if (btn.dataset.wasSelected === 'true') cycleSound(mode); }
+            
+            // Clear the hold timer immediately
+            if(instHoldTimer) clearTimeout(instHoldTimer);
+
+            // If we didn't hold long enough, treat as a TAP
+            if (!didLongPress) {
+                const duration = Date.now() - instHoldStartTime;
+                // If previously selected AND not muted, cycle sound
+                if (duration < 300 && btn.dataset.wasSelected === 'true') {
+                    cycleSound(mode);
+                }
+            }
+            
             heldInstrument = null; 
         };
     });
 
+    // ... (Rest of initUI: scaleSwitch, recBtn, powerSwitch etc. remains the same) ...
     if(els.scaleSwitch) {
         els.scaleSwitch.onclick = () => {
             if(!isPowered) return;
             isMinorScale = !isMinorScale;
             els.scaleSwitch.classList.toggle('minor', isMinorScale);
+            log("SCALE: " + (isMinorScale ? "MINOR" : "MAJOR"));
         };
     }
 
@@ -2218,11 +2291,12 @@ function initUI() {
 
     if(els.powerSwitch) els.powerSwitch.onclick = togglePower;
 
+    // ... (Tape logic) ...
     if (saveBtn) {
-        
-        saveBtn.addEventListener('click', () => {
+       // ... (Keep existing Tape logic) ...
+       saveBtn.addEventListener('click', () => {
+            // ... copy your existing tape click logic here ...
             if(!isPowered || !mediaRecorder) return;
-            
             if (isTapeCountingDown) {
                 clearTimeout(tapeCountdownTimer);
                 isTapeCountingDown = false;
@@ -2231,16 +2305,12 @@ function initUI() {
                 triggerOledPopup("ABORTED", "TAPE");
                 return;
             }
-
             if(!isTapeRecording) {
                 isTapeCountingDown = true;
                 saveBtn.classList.add('tape-countdown');
-                
                 let count = 3;
-                
                 const runCountdown = () => {
                     if (!isTapeCountingDown) return; 
-                    
                     if (count > 0) {
                         saveBtn.innerText = `${count}... TAP TO CANCEL`;
                         triggerOledPopup("REC IN", count);
@@ -2249,54 +2319,48 @@ function initUI() {
                     } else {
                         isTapeCountingDown = false;
                         saveBtn.classList.remove('tape-countdown');
-                        
                         audioChunks = [];
                         shouldSaveTape = true; 
                         mediaRecorder.start();
                         isTapeRecording = true;
-                        
                         saveBtn.classList.add('tape-recording');
                         saveBtn.innerText = "Save Recording (hold to discard)"; 
                         triggerOledPopup("ROLLING", "TAPE");
                     }
                 };
-                
                 runCountdown();
-            } 
-            else {
+            } else {
                 if (saveBtn.classList.contains('tape-canceling')) return;
                 mediaRecorder.stop();
                 isTapeRecording = false;
                 saveBtn.classList.remove('tape-recording');
                 saveBtn.innerText = "RECORD JAM"; 
+                triggerOledPopup("SAVED", "TAPE");
             }
-        });
+       });
 
-        saveBtn.addEventListener('pointerdown', (e) => {
-            if (!isTapeRecording || !isPowered) return;
-            saveBtn.setPointerCapture(e.pointerId);
-            
-            tapeHoldTimer = setTimeout(() => {
-                saveBtn.classList.add('tape-canceling');
-                saveBtn.innerText = "DISCARDING...";
-                
-                setTimeout(() => {
-                    shouldSaveTape = false; 
-                    mediaRecorder.stop();
-                    isTapeRecording = false;
-                    
-                    saveBtn.classList.remove('tape-recording');
-                    saveBtn.classList.remove('tape-canceling');
-                    saveBtn.innerText = "RECORD JAM";
-                }, 500);
-                
-            }, 800); 
-        });
+       saveBtn.addEventListener('pointerdown', (e) => {
+           if (!isTapeRecording || !isPowered) return;
+           saveBtn.setPointerCapture(e.pointerId);
+           tapeHoldTimer = setTimeout(() => {
+               saveBtn.classList.add('tape-canceling');
+               saveBtn.innerText = "DISCARDING...";
+               setTimeout(() => {
+                   shouldSaveTape = false; 
+                   mediaRecorder.stop();
+                   isTapeRecording = false;
+                   saveBtn.classList.remove('tape-recording');
+                   saveBtn.classList.remove('tape-canceling');
+                   saveBtn.innerText = "RECORD JAM";
+                   triggerOledPopup("TRASHED", "TAPE");
+               }, 500);
+           }, 800); 
+       });
 
-        saveBtn.addEventListener('pointerup', (e) => {
-            if (tapeHoldTimer) clearTimeout(tapeHoldTimer);
-            saveBtn.releasePointerCapture(e.pointerId);
-        });
+       saveBtn.addEventListener('pointerup', (e) => {
+           if (tapeHoldTimer) clearTimeout(tapeHoldTimer);
+           saveBtn.releasePointerCapture(e.pointerId);
+       });
     }
 }
 
