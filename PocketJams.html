@@ -2835,43 +2835,38 @@ function initKnobs() {
     leftKnobCtrl.setValue(0.0, true);
 }
 
-// --- MOBILE AUDIO FIX (UPDATED) ---
-// 1. Aggressive Resume on ANY Interaction
-// Mobile browsers (especially iOS) put AudioContext into 'interrupted' state
-// when backgrounded. It CANNOT be resumed automatically in visibilitychange;
-// it MUST be resumed inside a UI event (touch/click).
+// --- MOBILE AUDIO FIX (FINAL) ---
+// Logic: iOS often reports the AudioContext as 'running' even when
+// the hardware output is muted after switching apps. 
+// We must force .resume() on every touch without checking state first.
 
 const forceResumeAudio = async () => {
-    if (!ctx) return;
-    
-    // If the context is not running, try to wake it up
-    if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
-        try {
-            await ctx.resume();
-            console.log("Audio Context Force Resumed:", ctx.state);
-        } catch (e) {
-            console.warn("Resume failed", e);
-        }
+    // Only try if context exists and device is turned on
+    if (!ctx || !isPowered) return;
+
+    // Aggressively try to resume context time on every interaction
+    // This acts like a "keep awake" signal for the audio engine
+    try {
+        await ctx.resume();
+    } catch (e) {
+        // Ignore errors if already running
     }
 };
 
-// Listen to every possible user interaction to ensure we wake up immediately
-['touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(event => {
-    document.addEventListener(event, forceResumeAudio, { passive: true });
+// We attach this to 'capture' phase (true) to ensure it runs before anything else
+['touchstart', 'touchend', 'mousedown', 'keydown', 'click', 'pointerdown'].forEach(event => {
+    document.addEventListener(event, forceResumeAudio, { passive: true, capture: true });
 });
 
-// 2. Visibility Handler (Optional helper)
-// This tries to resume on Android (where it sometimes works without touch)
-// and logs the state for debugging.
+// Handle Tab Switching
 document.addEventListener('visibilitychange', async () => {
-    if (!document.hidden && ctx) {
-        console.log("App foregrounded. Audio state:", ctx.state);
-        // Attempt resume (works on some Androids / Desktop)
-        if (ctx.state !== 'running') {
-            try { await ctx.resume(); } catch(e) {}
-        }
-        // Force a UI update just in case
-        if (isPowered) updateUI();
+    // If we just came back to the app...
+    if (!document.hidden && ctx && isPowered) {
+        // Try to resume immediately (Works on Android/Desktop)
+        try { await ctx.resume(); } catch(e) {}
+        
+        // Force a UI refresh to ensure visuals match state
+        requestAnimationFrame(updateLoop);
     }
 });
 
