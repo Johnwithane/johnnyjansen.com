@@ -234,22 +234,44 @@
             margin-bottom: 20px; padding: 0 12px; z-index: 2; flex-shrink: 0;
         }
 
-        .switch-container { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .switch-track {
-            width: 36px; height: 16px; background: #111; border-radius: 8px;
-            position: relative; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); cursor: pointer;
+        /* Scale Button Wrapper */
+        .scale-button-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            margin-right: 12px;
+            padding-bottom: 2px;
         }
-        .switch-thumb {
-            width: 16px; height: 16px; background: #666; border-radius: 50%;
-            position: absolute; left: 0; top: 0; transition: left 0.2s;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.5); border: 2px solid #333;
+
+        /* The Physical Circle Button (No LED) */
+        .circle-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #252528; /* Matches Chassis */
+            border: 2px solid #111; /* Dark ring */
+            box-shadow: 
+                0 3px 5px rgba(0,0,0,0.5), /* Drop shadow */
+                inset 0 1px 2px rgba(255,255,255,0.1); /* Top highlight */
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.05s;
         }
-        .scale-toggle.minor .switch-thumb { left: 20px; }
+
+        /* Pressed State */
+        .circle-btn:active {
+            transform: translateY(2px);
+            box-shadow: 
+                0 0 0 rgba(0,0,0,0),
+                inset 0 2px 4px rgba(0,0,0,0.6); /* Deep press shadow */
+            background: #1a1a1a;
+        }
         
         .inst-select { display: flex; gap: 8px; }
         
         .inst-btn {
-            width: 75px; height: 30px; border-radius: 4px; 
+            width: 75px; height: 40px; border-radius: 4px; 
             border: none; 
             color: #000; 
             display: flex; justify-content: center; align-items: center;
@@ -447,11 +469,9 @@
     </div>
 
     <div class="mode-row">
-        <div class="switch-container" id="scale-wrapper">
-            <div class="knob-label">maj / min</div>
-            <div class="switch-track scale-toggle" id="scale-switch">
-                <div class="switch-thumb"></div>
-            </div>
+        <div class="scale-button-wrapper">
+            <div class="knob-label" style="margin-bottom:2px;">SCALE</div>
+            <div id="btn-scale" class="circle-btn"></div>
         </div>
         
         <div class="inst-select">
@@ -616,7 +636,7 @@ const els = {
     modes: document.querySelectorAll('.inst-btn'),
     device: document.getElementById('device'),
     powerSwitch: document.getElementById('power-switch'),
-    scaleSwitch: document.getElementById('scale-switch')
+    scaleBtn: document.getElementById('btn-scale'),
 };
 
 // --- OLED DRAWING SYSTEM ---
@@ -698,11 +718,20 @@ function drawOled() {
 
     // --- 2. UI TEXT OVERLAY ---
     
-    // TOP LEFT: Instrument
+// TOP LEFT: Instrument
     oCtx.fillStyle = colors[currentMode]; 
     oCtx.font = "bold 10px monospace"; 
     oCtx.textAlign = "left";
-    oCtx.fillText(currentMode.toUpperCase(), 2, 10);
+    
+    let title = currentMode.toUpperCase();
+    
+    // NEW: Add Scale info ONLY if we are in Synth mode
+    if (currentMode === 'synth') {
+        title += isMinorScale ? " (MIN)" : " (MAJ)";
+    }
+    
+    oCtx.fillText(title, 2, 10);
+    
     
     // TOP RIGHT: Style OR Disabled
     oCtx.textAlign = "right";
@@ -2269,15 +2298,37 @@ function initUI() {
             
             heldInstrument = null; 
         };
+        const resumeAudio = () => {
+        if (isPowered && ctx && (ctx.state === 'suspended' || ctx.state === 'interrupted')) {
+            ctx.resume().then(() => {
+                console.log("Audio Context Resumed by User Interaction");
+            });
+        }
+    };
+
+    // Attach to the whole document
+    document.body.addEventListener('touchstart', resumeAudio, { passive: true });
+    document.body.addEventListener('click', resumeAudio);
     });
 
     // ... (Rest of initUI: scaleSwitch, recBtn, powerSwitch etc. remains the same) ...
-    if(els.scaleSwitch) {
-        els.scaleSwitch.onclick = () => {
+// --- Scale Button Logic ---
+    if(els.scaleBtn) {
+        els.scaleBtn.onpointerdown = (e) => {
             if(!isPowered) return;
+            e.preventDefault();
+            els.scaleBtn.setPointerCapture(e.pointerId);
+            
+            // Toggle Scale
             isMinorScale = !isMinorScale;
-            els.scaleSwitch.classList.toggle('minor', isMinorScale);
-            log("SCALE: " + (isMinorScale ? "MINOR" : "MAJOR"));
+            
+            
+            // Force OLED redraw immediately to update top-left text
+            // (The loop handles it, but this ensures instant response)
+        };
+        
+        els.scaleBtn.onpointerup = (e) => {
+            els.scaleBtn.releasePointerCapture(e.pointerId);
         };
     }
 
@@ -2432,12 +2483,8 @@ function setupKnob(el, onValueChange, onClick = null, magnet = false) {
 }
 
 function setupKeys() {
-    const padKeys = { 
-        '1':0, '2':1, '3':2, '4':3,
-        'q':4, 'w':5, 'e':6, 'r':7, 
-        'a':8, 's':9, 'd':10, 'f':11,
-        'z':12, 'x':13, 'c':14, 'v':15
-    };
+    const padKeys = { 'q':0, 'w':1, 'e':2, 'r':3, 'a':4, 's':5, 'd':6, 'f':7 };
+
     let recKeyDown = false; let undoKeyDown = false;
 
     window.addEventListener('keydown', (e) => {
