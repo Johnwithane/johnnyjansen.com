@@ -1689,7 +1689,12 @@ function onRecPress() {
         clearAllTimer = setTimeout(() => { resetDevice(); clearAllTimer = null; }, 1500); 
         return;
     }
+
+    // --- UPDATED BLOCK STARTS HERE ---
     if (currentMode === 'voice' && heldPadIndex !== -1) {
+        // KILL THE TIMER SO IT DOESN'T FIRE LATER
+        if (padArmTimer) clearTimeout(padArmTimer); 
+
         enableMic(); recordingPadIndex = heldPadIndex;
         currentState = STATE.SAMPLING_ARMED; 
         const pad = els.padsGrid.children[recordingPadIndex];
