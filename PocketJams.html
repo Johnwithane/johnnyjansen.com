@@ -1748,18 +1748,27 @@ function clearTrack(trackName) {
 }
 
 function updateBackingTrackVolume() {
-    // CHANGED: Added "|| padArmTimer !== null" to mute immediately when holding
-    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || padArmTimer !== null);
-    const isVoiceOverdub = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB));
+    // 1. MUTE if we are sampling a specific pad (holding pad down)
+    const isSamplingPad = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || padArmTimer !== null);
+    
+    // 2. DUCK ONLY if we are Overdubbing/Recording AND the source is the MIC
+    // We check 'recordingSource' to ensure we don't duck when playing pads
+    const isMicRecording = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB) && recordingSource === 'mic');
 
     TRACKS.forEach(t => {
         let targetGain = 1.0;
+        
         if (trackCtx[t].mute) {
             targetGain = 0.0;
         } else {
-            if (isSampling) { targetGain = 0.0; } // Mute during hold & record
-            else if (isVoiceOverdub) { targetGain = 0.5; }
+            if (isSamplingPad) { 
+                targetGain = 0.0; // Mute backing tracks while sampling a specific pad
+            } 
+            else if (isMicRecording) { 
+                targetGain = 0.3; // Duck ONLY if using the Microphone
+            }
         }
+        
         if (trackCtx[t].loopGain) {
             trackCtx[t].loopGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.05);
         }
