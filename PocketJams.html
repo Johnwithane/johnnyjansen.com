@@ -249,9 +249,8 @@
         #btn-rec.state-overdub { background: var(--led-gold); color: #000; box-shadow: 0 0 15px var(--led-gold), 0 3px 0 #850; }
         #btn-rec.state-standby-red { animation: pulse-red 1s infinite; background: #500; color: #fff; }
         #btn-rec.state-standby-yellow { 
-        animation: pulse-yellow 1s infinite; 
+        animation: pulse-yellow 3s infinite; 
         background: #b37e00; /* Darker orange base */
-        color: #fff; 
         border-color: var(--led-gold);
     }
         #btn-rec.state-finishing { animation: flash-white 0.2s infinite; }
@@ -379,7 +378,7 @@
             width: 300px; padding: 25px;
             background: rgba(10,10,10,0.9); border: 1px solid #333; border-radius: 16px;
             backdrop-filter: blur(10px); color: #888; font-size: 11px;
-            display: none; z-index: 100; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            display: none; z-index: 0; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
         }
         @media (min-width: 900px) { #desktop-instructions { display: block; } }
         #desktop-instructions h3 { color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
@@ -400,6 +399,58 @@
             transition: all 0.2s;
         }
         #start-btn:hover { background: #fff; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+
+/* --- NEW BOTTOM RECORD SECTION --- */
+.tape-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px solid #111;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+#btn-save {
+    background: #1a1a1a;
+    color: #666;
+    border: 1px solid #333;
+    padding: 12px 40px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+    width: 100%; /* Makes it span full width like a distinct bar */
+}
+
+#btn-save:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+#btn-save.tape-recording {
+    background: #00e676; /* Bright Green */
+    color: #000;
+    border-color: #00e676;
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+    animation: flash-tape 1s infinite;
+}
+
+#btn-save.tape-countdown {
+    background: #b37e00; /* Dark Orange/Gold */
+    border-color: #ffb300;
+    animation: pulse-yellow 1s infinite;
+}
+
+#btn-save.tape-canceling {
+    background: #f00 !important;
+    color: #fff !important;
+    border-color: #f00 !important;
+    box-shadow: 0 0 15px #f00;
+}
 
     </style>
 </head>
@@ -492,15 +543,15 @@
     <div class="transport-deck">
         <div class="transport-btn" id="btn-pause">
             <span style="font-size:14px; margin-bottom:2px;">▶/❚❚</span>
-           
         </div>
+        
         <div class="transport-btn" id="btn-rec">
             <span style="font-size:20px; margin-bottom:0px;">●</span>
             REC
         </div>
+        
         <div class="transport-btn" id="btn-undo">
             <span style="font-size:23px; margin-bottom:2px;">↺</span>
-            
         </div>
     </div>
 
@@ -520,7 +571,12 @@
     </div>
 
     <div class="pads-container" id="pads-grid"></div>
-</div>
+
+        <div class="tape-section">
+            <button id="btn-save">RECORD JAM</button>
+        </div>
+
+    </div>
 
 <div id="overlay">
     <h1 style="color:#fff; margin-bottom:0; font-weight:800;">FOREST JAMS</h1>
@@ -541,6 +597,15 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let ctx;
 let masterGain, compressor;
+// --- NEW TAPE VARS ---
+let mediaRecorder = null;
+let audioChunks = [];
+let isTapeRecording = false;
+let isTapeCountingDown = false;
+let tapeCountdownTimer = null;
+let tapeHoldTimer = null;
+let shouldSaveTape = true; // New flag to control saving
+const saveBtn = document.getElementById('btn-save');
 
 let masterFilter; 
 let distortionNode; 
@@ -696,8 +761,49 @@ els.startBtn.addEventListener('click', async () => {
         compressor.connect(masterHighPass);
         masterHighPass.connect(masterFilter);
         masterFilter.connect(masterGain);
-        masterGain.connect(ctx.destination);
+masterGain.connect(ctx.destination); // Existing line
 
+        // --- ADD THIS BLOCK ---
+        const dest = ctx.createMediaStreamDestination();
+        masterGain.connect(dest);
+        
+        // Setup MediaRecorder
+        try {
+            mediaRecorder = new MediaRecorder(dest.stream);
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                // --- NEW CHECK: Only save if we didn't cancel ---
+                if (shouldSaveTape) {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    
+                    const now = new Date();
+                    const time = `${now.getHours()}-${now.getMinutes()}`;
+                    a.download = `forest-jam-${time}.webm`; 
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                    log("SAVED TO DISK");
+                } else {
+                    log("RECORDING DISCARDED");
+                }
+                
+                audioChunks = [];
+            };
+        } catch(e) { console.warn("MediaRecorder not supported"); }
+        // ---------------------
         loopBus = ctx.createGain();
         loopBus.connect(compressor);
         
@@ -1583,7 +1689,7 @@ function onRecPress() {
             loopStartTime = ctx.currentTime; startPlayback(); 
         }
         isPaused = false;
-        if(pauseBtn) { pauseBtn.classList.remove('paused'); pauseBtn.innerHTML = '<span style="font-size:14px; margin-bottom:2px;">⏯</span> PLAY'; }
+        if(pauseBtn) { pauseBtn.classList.remove('paused'); pauseBtn.innerHTML = '<span style="font-size:14px; margin-bottom:2px;">▶︎/❚❚</span>'; }
     }
 
     recPressTime = Date.now();
@@ -1985,19 +2091,123 @@ function initUI() {
         };
     });
 
-    els.scaleSwitch.onclick = () => {
-        if(!isPowered) return;
-        isMinorScale = !isMinorScale;
-        els.scaleSwitch.classList.toggle('minor', isMinorScale);
-        log("SCALE: " + (isMinorScale ? "MINOR" : "MAJOR"));
-    };
+    if(els.scaleSwitch) {
+        els.scaleSwitch.onclick = () => {
+            if(!isPowered) return;
+            isMinorScale = !isMinorScale;
+            els.scaleSwitch.classList.toggle('minor', isMinorScale);
+            log("SCALE: " + (isMinorScale ? "MINOR" : "MAJOR"));
+        };
+    }
 
-    els.recBtn.onpointerdown = (e) => { 
-        if(!isPowered) return; e.preventDefault(); els.recBtn.setPointerCapture(e.pointerId); onRecPress(); 
-    };
-    els.recBtn.onpointerup = (e) => { e.preventDefault(); onRecRelease(); els.recBtn.releasePointerCapture(e.pointerId); };
-    els.recBtn.onpointercancel = (e) => { onRecRelease(); els.recBtn.releasePointerCapture(e.pointerId); };
-    els.powerSwitch.onclick = togglePower;
+    // --- SAFETY CHECK ADDED HERE ---
+    if (els.recBtn) {
+        els.recBtn.onpointerdown = (e) => { 
+            if(!isPowered) return; e.preventDefault(); els.recBtn.setPointerCapture(e.pointerId); onRecPress(); 
+        };
+        els.recBtn.onpointerup = (e) => { e.preventDefault(); onRecRelease(); els.recBtn.releasePointerCapture(e.pointerId); };
+        els.recBtn.onpointercancel = (e) => { onRecRelease(); els.recBtn.releasePointerCapture(e.pointerId); };
+    } else {
+        console.warn("REC BUTTON NOT FOUND!");
+    }
+
+    if(els.powerSwitch) els.powerSwitch.onclick = togglePower;
+
+    // --- TAPE / DOWNLOAD LOGIC ---
+    if (saveBtn) {
+        
+        // 1. CLICK HANDLER (Start, Countdown, Stop)
+        saveBtn.addEventListener('click', () => {
+            if(!isPowered || !mediaRecorder) return;
+            
+            // A. If currently Counting Down -> CANCEL EVERYTHING
+            if (isTapeCountingDown) {
+                clearTimeout(tapeCountdownTimer);
+                isTapeCountingDown = false;
+                saveBtn.classList.remove('tape-countdown');
+                saveBtn.innerText = "RECORD JAM";
+                log("CANCELED");
+                return;
+            }
+
+            // B. If Idle -> START COUNTDOWN
+            if(!isTapeRecording) {
+                isTapeCountingDown = true;
+                saveBtn.classList.add('tape-countdown');
+                
+                let count = 3;
+                
+                const runCountdown = () => {
+                    if (!isTapeCountingDown) return; // Stop if canceled
+                    
+                    if (count > 0) {
+                        saveBtn.innerText = `${count}... TAP TO CANCEL`;
+                        log(`STARTING IN ${count}...`);
+                        count--;
+                        tapeCountdownTimer = setTimeout(runCountdown, 1000);
+                    } else {
+                        // COUNTDOWN FINISHED -> START RECORDING
+                        isTapeCountingDown = false;
+                        saveBtn.classList.remove('tape-countdown');
+                        
+                        audioChunks = [];
+                        shouldSaveTape = true; // Reset flag
+                        mediaRecorder.start();
+                        isTapeRecording = true;
+                        
+                        saveBtn.classList.add('tape-recording');
+                        saveBtn.innerText = "Save Recording (hold to discard)"; 
+                        log("TAPE ROLLING...");
+                    }
+                };
+                
+                runCountdown();
+            } 
+            // C. If Recording -> STOP & SAVE (Normal Click)
+            else {
+                // If we are currently holding to cancel, ignore the click event
+                if (saveBtn.classList.contains('tape-canceling')) return;
+                
+                mediaRecorder.stop();
+                isTapeRecording = false;
+                saveBtn.classList.remove('tape-recording');
+                saveBtn.innerText = "RECORD JAM"; 
+                log("FINALIZING...");
+            }
+        });
+
+        // 2. HOLD HANDLER (Cancel while recording)
+        saveBtn.addEventListener('pointerdown', (e) => {
+            if (!isTapeRecording || !isPowered) return;
+            saveBtn.setPointerCapture(e.pointerId);
+            
+            // Start a timer to detect hold
+            tapeHoldTimer = setTimeout(() => {
+                // If held for 1 second...
+                saveBtn.classList.add('tape-canceling');
+                saveBtn.innerText = "DISCARDING...";
+                
+                // Wait briefly then kill it
+                setTimeout(() => {
+                    shouldSaveTape = false; // Mark to discard
+                    mediaRecorder.stop();
+                    isTapeRecording = false;
+                    
+                    saveBtn.classList.remove('tape-recording');
+                    saveBtn.classList.remove('tape-canceling');
+                    saveBtn.innerText = "RECORD JAM";
+                }, 500);
+                
+            }, 800); // 800ms hold to trigger cancel logic
+        });
+
+        // 3. RELEASE HANDLER (Clear hold timer)
+        saveBtn.addEventListener('pointerup', (e) => {
+            if (tapeHoldTimer) clearTimeout(tapeHoldTimer);
+            saveBtn.releasePointerCapture(e.pointerId);
+            // If we released early, the 'click' event above will fire and save normally.
+        });
+    }
 }
 
 function togglePower() {
