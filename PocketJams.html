@@ -91,12 +91,12 @@
         .jack-output { bottom: 80px; right: -7px; }
         
         .thumbwheel-container {
-            position: absolute; top: 40px; right: -8px; 
-            width: 16px; height: 40px; z-index: 5;
+            position: absolute; top: 190px; right: -8px; 
+            width: 16px; height: 250px; z-index: 5;
             display: flex; flex-direction: column; align-items: center;
         }
         .thumbwheel {
-            width: 12px; height: 36px; background: #1a1a1a;
+            width: 25px; height: 50px; background: #1a1a1a;
             border-radius: 2px;
             border: 1px solid #000;
             box-shadow: -2px 0 4px rgba(0,0,0,0.5);
@@ -424,7 +424,7 @@
         
         <div class="inst-select">
             <div class="inst-btn" data-mode="synth" id="btn-synth">SYNTH</div>
-            <div class="inst-btn" data-mode="voice" id="btn-voice">MIC</div>
+            <div class="inst-btn" data-mode="voice" id="btn-voice">VOICE</div>
             <div class="inst-btn selected" data-mode="drums" id="btn-drums">DRUMS</div>
         </div>
     </div>
@@ -732,17 +732,17 @@ function drawOled() {
         }
         else if (currentState === STATE.RECORDING_1) { 
             const time = (ctx.currentTime - recStartTime).toFixed(1);
-            msg = "RECORDING " + time + "s"; 
+            msg = "REC " + time + "s"; 
             oCtx.fillStyle = "#f00";
         }
         else if (currentState === STATE.OVERDUB) { 
             const time = (ctx.currentTime - recStartTime).toFixed(1);
             // Logic Check: Are we adding to existing notes or making a new track on the loop?
             if (trackCtx[currentMode].hasContent) {
-                msg = "DUBBING " + time + "s"; 
+                msg = "DUB " + time + "s"; 
                 oCtx.fillStyle = "#fb0"; // Gold
             } else {
-                msg = "RECORDING " + time + "s"; // New track, red text
+                msg = "REC " + time + "s"; // New track, red text
                 oCtx.fillStyle = "#f00";
             }
         }
@@ -784,7 +784,7 @@ function drawOled() {
         const pct = current / duration;
         const width = Math.floor(pct * 128); // 128 is internal resolution width
         
-        oCtx.fillStyle = "#00e676"; // Bright Green
+        oCtx.fillStyle = "#00000"; 
         oCtx.fillRect(0, 31, width, 1); // Y=31 is the very bottom pixel
     }
 
@@ -1040,6 +1040,8 @@ function playDrum(type) {
     const t = ctx.currentTime;
     const gain = ctx.createGain();
     gain.connect(trackCtx.drums.bus);
+
+    gain.connect(trackCtx.drums.analyser);
 
     const hit = (freq, decay, type, vol) => {
        const osc = ctx.createOscillator(); osc.type = type;
@@ -1346,195 +1348,210 @@ function playFM(carrierFreq, modFreq, modIndex, decay, vol, time) {
 function playSynth(rawFreq) {
     const t = ctx.currentTime;
     const gain = ctx.createGain(); 
+    
+    // 1. Connect to Audio Bus (Hear it)
     gain.connect(trackCtx.synth.bus); 
     
-    if (false) {} // placeholder
-// STYLE 0: Saw Lead
-else if (currentSynthIdx === 0) {
-    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
-    osc.frequency.value = rawFreq * 1; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 2;
-    filter.frequency.setValueAtTime(200, t);
-    filter.frequency.linearRampToValueAtTime(3000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+    // 2. Connect to Visualizer (See it) - Safety check included
+    if (trackCtx.synth.analyser) {
+        gain.connect(trackCtx.synth.analyser);
+    }
     
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
-}
-// STYLE 1: Deep Bass
-else if (currentSynthIdx === 1) {
-    const osc = ctx.createOscillator(); osc.type = 'triangle';
-    osc.frequency.value = rawFreq * 0.25; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(50, t);
-    filter.frequency.linearRampToValueAtTime(300, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(50, t + 0.6);
-    
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.6 + 0.5);
-}
-// STYLE 2: Soft Sine
-else if (currentSynthIdx === 2) {
-    const osc = ctx.createOscillator(); osc.type = 'sine';
-    osc.frequency.value = rawFreq * 1; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(100, t);
-    filter.frequency.linearRampToValueAtTime(1000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(100, t + 0.8);
-    
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.8 + 0.5);
-}
-// STYLE 3: Retro Pad
-else if (currentSynthIdx === 3) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 1; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(300, t);
-    filter.frequency.linearRampToValueAtTime(1500, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(300, t + 1);
+    // STYLE 0: Saw Lead
+    if (currentSynthIdx === 0) {
+        const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+        osc.frequency.value = rawFreq; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 2;
+        filter.frequency.setValueAtTime(200, t);
+        filter.frequency.linearRampToValueAtTime(3000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.5);
+    }
+    // STYLE 1: Deep Bass
+    else if (currentSynthIdx === 1) {
+        const osc = ctx.createOscillator(); osc.type = 'triangle';
+        osc.frequency.value = rawFreq * 0.5; // Octave down
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(50, t);
+        filter.frequency.linearRampToValueAtTime(300, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(50, t + 0.6);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.5, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.7);
+    }
+    // STYLE 2: Soft Sine
+    else if (currentSynthIdx === 2) {
+        const osc = ctx.createOscillator(); osc.type = 'sine';
+        osc.frequency.value = rawFreq; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(100, t);
+        filter.frequency.linearRampToValueAtTime(1000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(100, t + 0.8);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.5, t + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.0);
+    }
+    // STYLE 3: Retro Pad
+    else if (currentSynthIdx === 3) {
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(300, t);
+        filter.frequency.linearRampToValueAtTime(1500, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(300, t + 1);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 3;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 20; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1 + 0.5);
-}
-// STYLE 4: Pluck
-else if (currentSynthIdx === 4) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 1; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 8;
-    filter.frequency.setValueAtTime(2000, t);
-    filter.frequency.linearRampToValueAtTime(200, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(2000, t + 0.3);
-    
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.3 + 0.5);
-}
-// STYLE 5: Chords
-else if (currentSynthIdx === 5) {
-    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
-    osc.frequency.value = rawFreq * 1; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
-    filter.frequency.setValueAtTime(200, t);
-    filter.frequency.linearRampToValueAtTime(2000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(200, t + 1.5);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 20; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.2);
+    }
+    // STYLE 4: Pluck
+    else if (currentSynthIdx === 4) {
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 8;
+        filter.frequency.setValueAtTime(2000, t);
+        filter.frequency.linearRampToValueAtTime(200, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(2000, t + 0.3);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4);
+    }
+    // STYLE 5: Chords (Poly-ish)
+    else if (currentSynthIdx === 5) {
+        const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+        osc.frequency.value = rawFreq; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
+        filter.frequency.setValueAtTime(200, t);
+        filter.frequency.linearRampToValueAtTime(2000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(200, t + 1.5);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 0.5;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 50; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
-}
-// STYLE 6: Acid
-else if (currentSynthIdx === 6) {
-    const osc = ctx.createOscillator(); osc.type = 'sawtooth';
-    osc.frequency.value = rawFreq * 0.5; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 15;
-    filter.frequency.setValueAtTime(100, t);
-    filter.frequency.linearRampToValueAtTime(2500, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(100, t + 0.4);
-    
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
-}
-// STYLE 7: Dream
-else if (currentSynthIdx === 7) {
-    const osc = ctx.createOscillator(); osc.type = 'triangle';
-    osc.frequency.value = rawFreq * 2; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(100, t);
-    filter.frequency.linearRampToValueAtTime(800, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(100, t + 1.5);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 50; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.6);
+    }
+    // STYLE 6: Acid
+    else if (currentSynthIdx === 6) {
+        const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+        osc.frequency.value = rawFreq * 0.5; // Octave down
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 15;
+        filter.frequency.setValueAtTime(100, t);
+        filter.frequency.linearRampToValueAtTime(2500, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(100, t + 0.4);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.5);
+    }
+    // STYLE 7: Dream
+    else if (currentSynthIdx === 7) {
+        const osc = ctx.createOscillator(); osc.type = 'triangle';
+        osc.frequency.value = rawFreq * 2; // Octave up
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(100, t);
+        filter.frequency.linearRampToValueAtTime(800, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(100, t + 1.5);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 4;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 80; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.4);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.5 + 0.5);
-}
-
-// STYLE 8: CRAZYTRAIN
-else if (currentSynthIdx === 8) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 0.125; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(2000, t);
-    filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(2000, t + 2);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 80; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.6);
+    }
+    // STYLE 8: CRAZYTRAIN
+    else if (currentSynthIdx === 8) {
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq * 0.125;
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(2000, t);
+        filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(2000, t + 2);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 0.1;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 1000; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 2);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 2 + 0.5);
-}
-
-// STYLE 9: WOW
-else if (currentSynthIdx === 9) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 0.5; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
-    filter.frequency.setValueAtTime(260, t);
-    filter.frequency.linearRampToValueAtTime(3700, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(260, t + 0.4);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 1000; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 2);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 2.1);
+    }
+    // STYLE 9: WOW
+    else if (currentSynthIdx === 9) {
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq * 0.5;
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 3;
+        filter.frequency.setValueAtTime(260, t);
+        filter.frequency.linearRampToValueAtTime(3700, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(260, t + 0.4);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 6.2;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 30; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.4 + 0.5);
-}
-
-// STYLE 10: Riser Bass
-else if (currentSynthIdx === 10) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 0.125; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 5;
-    filter.frequency.setValueAtTime(850, t);
-    filter.frequency.linearRampToValueAtTime(7900, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(850, t + 0.5);
-    
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.5);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.5 + 0.5);
-}
-
-// STYLE 11: Spooky
-else if (currentSynthIdx === 11) {
-    const osc = ctx.createOscillator(); osc.type = 'square';
-    osc.frequency.value = rawFreq * 0.25; // Octave
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
-    filter.frequency.setValueAtTime(1490, t);
-    filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
-    filter.frequency.exponentialRampToValueAtTime(1490, t + 1);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 30; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.5);
+    }
+    // STYLE 10: Riser
+    else if (currentSynthIdx === 10) {
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq * 0.125;
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 5;
+        filter.frequency.setValueAtTime(850, t);
+        filter.frequency.linearRampToValueAtTime(7900, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(850, t + 0.5);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 0.6);
+    }
+    // STYLE 11: Spooky
+    else {
+        // Default Fallback / Spooky
+        const osc = ctx.createOscillator(); osc.type = 'square';
+        osc.frequency.value = rawFreq * 0.25; 
+        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1;
+        filter.frequency.setValueAtTime(1490, t);
+        filter.frequency.linearRampToValueAtTime(10000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(1490, t + 1);
+        
         const lfo = ctx.createOscillator(); lfo.frequency.value = 5.9;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 560; 
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
-    osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1 + 0.5);
+        const lfoGain = ctx.createGain(); lfoGain.gain.value = 560; 
+        lfo.connect(lfoGain); lfoGain.connect(osc.detune); lfo.start(t);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.4, t + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
+        osc.connect(filter); filter.connect(gain); osc.start(t); osc.stop(t + 1.1);
+    }
 }
 
-}
 
 function playSample(index) {
     if(!userSamples[index]) return;
@@ -1545,6 +1562,9 @@ function playSample(index) {
     src.buffer = userSamples[index]; 
     src.connect(trackCtx.voice.bus); 
     src.connect(liveBus); 
+
+    src.connect(trackCtx.voice.analyser);
+
     src.start(0);
     
     samplePlayTimer = setTimeout(() => {
@@ -1723,7 +1743,7 @@ async function enableMic() {
         micGateGain.gain.setValueAtTime(1, ctx.currentTime);
 
         micNode.connect(micCompressor);
-        // Removed micCompressor.connect(analyser) here because analyser is on Master now
+        micCompressor.connect(trackCtx.voice.analyser);
         micCompressor.connect(micGateGain);
     } catch (e) { triggerOledPopup("MIC", "DENIED"); }
 }
@@ -1732,7 +1752,14 @@ async function disableMic() {
     if (!micStream) return;
     micStream.getTracks().forEach(track => { track.stop(); track.enabled = false; });
     micStream = null;
-    if (micNode) { try { micNode.disconnect(); } catch(e){} micNode = null; }
+    if (micNode) { 
+        try { 
+            micNode.disconnect(); 
+            // Disconnect from analyser to stop noise
+            if(micCompressor) micCompressor.disconnect(trackCtx.voice.analyser);
+        } catch(e){} 
+        micNode = null; 
+    }
     if (ctx.state === 'running') {
         try { await ctx.suspend(); setTimeout(async () => { await ctx.resume(); }, 50); } catch(e) {}
     }
@@ -1965,14 +1992,25 @@ function startPlayback(specificTrack = null) {
     const tracksToStart = specificTrack ? [specificTrack] : TRACKS;
     tracksToStart.forEach(t => {
         if(trackCtx[t].source) { try { trackCtx[t].source.stop(); } catch(e){} trackCtx[t].source = null; }
+        
         if(trackCtx[t].buffer) {
             trackCtx[t].source = ctx.createBufferSource();
             trackCtx[t].source.buffer = trackCtx[t].buffer;
             trackCtx[t].source.loop = true;
+            
             const trackDuration = trackCtx[t].buffer.duration;
             const startOffset = globalElapsed % trackDuration;
+            
             trackCtx[t].source.playbackRate.value = playbackRate;
+            
+            // 1. Connect to Loop Gain (Audio Output)
             trackCtx[t].source.connect(trackCtx[t].loopGain); 
+            
+            // 2. CONNECT TO ANALYSER (Visual Output) -- ADD THIS
+            if(trackCtx[t].analyser) {
+                trackCtx[t].source.connect(trackCtx[t].analyser);
+            }
+            
             trackCtx[t].source.start(0, startOffset);
         }
     });
@@ -2010,26 +2048,40 @@ function initPads() {
 }
 
 function handlePadRelease(btn, e) {
+    // 1. CANCEL TIMER if released before 600ms (Nothing happens)
     if (padArmTimer) {
         clearTimeout(padArmTimer);
         padArmTimer = null;
+        // Clean up visual if we released early
+        btn.classList.remove('active');
+        heldPadIndex = -1;
+        return; 
     }
 
+    // 2. STOP RECORDING (If we passed the mark and are recording)
     if (currentMode === 'voice' && currentState === STATE.SAMPLING_REC && heldPadIndex === recordingPadIndex) {
         finishSampling();
     }
+    // 3. CANCEL ARMING (If we held long enough to arm, but released before speaking/recording started)
     else if (currentMode === 'voice' && currentState === STATE.SAMPLING_ARMED && heldPadIndex === recordingPadIndex) {
+         log("CANCELLED");
          recordingPadIndex = -1;
          currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE;
          disableMic();
+         
+         // Clean up specific classes
+         btn.classList.remove('voice-arming');
+         btn.classList.remove('recording');
+         updateRecBtnVisual();
     }
 
+    // --- VISUAL CLEANUP ---
     heldPadIndex = -1; 
     btn.classList.remove('active'); 
     btn.classList.remove('voice-arming');
     btn.classList.remove('recording-armed');
     
-    if(e) btn.releasePointerCapture(e.pointerId);
+    if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
 }
 
 function updatePadVisuals() {
@@ -2045,25 +2097,32 @@ function updatePadVisuals() {
 function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
     
+    // SAFETY: Prevent multi-touch if already recording or arming another pad
+    if (currentMode === 'voice' && (currentState === STATE.SAMPLING_REC || padArmTimer)) return; 
+
     if (currentMode === 'voice') { 
         if (userSamples[index]) {
             playSample(index); 
         } else {
-            triggerOledPopup("HOLD", "TO SAMPLE");
-            triggerEmptySlotVisuals(el);
-            
+            // REMOVED: triggerEmptySlotVisuals(el); 
+            // REMOVED: triggerOledPopup("HOLD REC", "TO SAMPLE");
+
+            // --- 1 SECOND SAFETY DELAY ---
             padArmTimer = setTimeout(() => {
                 enableMic().then(() => {
                     recordingPadIndex = index;
                     currentState = STATE.SAMPLING_ARMED; 
                     
                     sampleRecBuffer = []; 
-                    preRollBuffer = [];
+                    preRollBuffer = []; 
                     
+                    // Add classes to the specific element triggered
                     el.classList.add('voice-arming');
                     
+                    log("LISTENING..."); 
                     updateMicGate(); 
                     updateBackingTrackVolume(); 
+                    // removed updateRecBtnVisual() here to prevent it turning red prematurely
                 });
             }, 600); 
         }
