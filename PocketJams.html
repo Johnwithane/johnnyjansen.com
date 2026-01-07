@@ -2229,7 +2229,6 @@ function hitPad(index, el) {
         if (userSamples[index]) {
             playSample(index);
         } else {
-            triggerOledPopup("HOLD REC", "TO SAMPLE");
             triggerEmptySlotVisuals(el);
             
             // --- 1 SECOND SAFETY DELAY ---
