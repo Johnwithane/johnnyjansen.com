@@ -586,6 +586,12 @@ let isMinorScale = false;
 let isPaused = false;
 let pauseStart = 0;
 
+// --- NEW VARIABLES FOR CHROMATIC MODE ---
+let isChromaticMode = false;
+let chromaticRootIndex = -1; // The index of the sample being played as a keyboard
+const INTERVALS_MAJOR = [0, 2, 4, 5, 7, 9, 11, 12];
+const INTERVALS_MINOR = [0, 2, 3, 5, 7, 8, 10, 12];
+
 let heldInstrument = null; 
 let instHoldStartTime = 0;
 
@@ -722,15 +728,19 @@ function drawOled() {
 
     // --- 2. UI TEXT OVERLAY ---
     
-// TOP LEFT: Instrument
+    // TOP LEFT: Instrument
     oCtx.fillStyle = colors[currentMode]; 
     oCtx.font = "bold 10px monospace"; 
     oCtx.textAlign = "left";
     
     let title = currentMode.toUpperCase();
     
-    // NEW: Add Scale info ONLY if we are in Synth mode
-    if (currentMode === 'synth') {
+    // NEW: Chromatic Mode Display
+    if (isChromaticMode) {
+        title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
+        oCtx.fillStyle = "#ff00ff"; // Purple for special mode
+    } 
+    else if (currentMode === 'synth') {
         title += isMinorScale ? " (MIN)" : " (MAJ)";
     }
     
@@ -747,9 +757,15 @@ function drawOled() {
     } else {
         oCtx.fillStyle = "#888";
         let presetName = "";
-        if(currentMode === 'drums') presetName = DRUM_STYLES[currentDrumIdx];
+        
+        if (isChromaticMode) {
+            presetName = "PAD " + (chromaticRootIndex + 1);
+            oCtx.fillStyle = "#fff";
+        }
+        else if(currentMode === 'drums') presetName = DRUM_STYLES[currentDrumIdx];
         else if(currentMode === 'synth') presetName = SYNTH_STYLES[currentSynthIdx];
         else if(currentMode === 'voice') presetName = "MIC";
+        
         oCtx.fillText(presetName, 126, 10);
     }
 
@@ -1640,6 +1656,28 @@ function playSample(index) {
     }, src.buffer.duration * 1000);
 }
 
+function playSamplePitched(sampleIdx, scaleStep) {
+    if(!userSamples[sampleIdx]) return;
+    
+    // Determine pitch based on scale step (0-7)
+    const intervals = isMinorScale ? INTERVALS_MINOR : INTERVALS_MAJOR;
+    // Map the 8 pads to the scale intervals
+    const semitones = intervals[scaleStep % 8]; 
+    const playbackRateCalc = Math.pow(2, semitones / 12);
+
+    const src = ctx.createBufferSource(); 
+    src.buffer = userSamples[sampleIdx]; 
+    
+    // Apply Pitch
+    src.playbackRate.value = playbackRateCalc;
+
+    src.connect(trackCtx.voice.bus); 
+    src.connect(liveBus); 
+    src.connect(trackCtx.voice.analyser);
+
+    src.start(0);
+}
+
 function isRecordingState() {
     return (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB || currentState === STATE.ARMED || currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || currentState === STATE.OVERDUB_ARMED || currentState === STATE.WAITING_FOR_SYNC);
 }
@@ -2226,6 +2264,21 @@ function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
     
     if (currentMode === 'voice') { 
+        // --- NEW CHROMATIC LOGIC ---
+        if (isChromaticMode) {
+            playSamplePitched(chromaticRootIndex, index);
+            
+            // Visual feedback
+            el.style.transform = "translateY(2px)";
+            el.style.backgroundColor = isMinorScale ? "#300" : "#003";
+            setTimeout(() => { 
+                el.style.transform = ""; 
+                el.style.backgroundColor = "";
+            }, 100);
+            return;
+        }
+        // ---------------------------
+
         if (userSamples[index]) {
             playSample(index);
         } else {
@@ -2250,7 +2303,6 @@ function hitPad(index, el) {
                 });
             }, 600);
 
-            // CHANGED: Mute immediately when hold starts
             updateBackingTrackVolume(); 
         }
     } 
@@ -2292,6 +2344,14 @@ function updateMicGate() {
 }
 
 function selectTrack(newMode) {
+    // --- RESET CHROMATIC MODE ---
+    if (isChromaticMode) {
+        isChromaticMode = false;
+        chromaticRootIndex = -1;
+        triggerOledPopup("VOICE", "NORMAL");
+        // If we clicked the voice button to exit, we still want to ensure UI updates below
+    }
+
     if (currentMode === 'voice' && newMode !== 'voice') disableMic();
     if (!isRecordingState() && micStream) disableMic();
     
@@ -2391,12 +2451,37 @@ function initUI() {
             e.preventDefault();
             els.scaleBtn.setPointerCapture(e.pointerId);
             
-            // Toggle Scale
+            // --- NEW: CHROMATIC MODE TRIGGER ---
+            if (currentMode === 'voice') {
+                // Scenario A: Already in Chromatic Mode -> Toggle Scale
+                if (isChromaticMode) {
+                    isMinorScale = !isMinorScale;
+                    triggerOledPopup("SCALE", isMinorScale ? "MINOR" : "MAJOR");
+                    return;
+                }
+
+                // Scenario B: Holding a Pad -> Enter Chromatic Mode
+                if (heldPadIndex !== -1) {
+                    if (userSamples[heldPadIndex]) {
+                        isChromaticMode = true;
+                        chromaticRootIndex = heldPadIndex;
+                        triggerOledPopup("KEYBOARD", "MODE");
+                        
+                        // Clear the arming timer so we don't accidentally record
+                        if (padArmTimer) { clearTimeout(padArmTimer); padArmTimer = null; }
+                        
+                        return;
+                    } else {
+                        triggerOledPopup("EMPTY", "PAD");
+                        return;
+                    }
+                }
+            }
+            // -----------------------------------
+
+            // Standard Toggle Scale
             isMinorScale = !isMinorScale;
-            
-            
-            // Force OLED redraw immediately to update top-left text
-            // (The loop handles it, but this ensures instant response)
+            triggerOledPopup("SCALE", isMinorScale ? "MINOR" : "MAJOR");
         };
         
         els.scaleBtn.onpointerup = (e) => {
