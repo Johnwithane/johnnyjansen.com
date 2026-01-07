@@ -1748,15 +1748,16 @@ function clearTrack(trackName) {
 }
 
 function updateBackingTrackVolume() {
-    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC);
+    // CHANGED: Added "|| padArmTimer !== null" to mute immediately when holding
+    const isSampling = (currentState === STATE.SAMPLING_ARMED || currentState === STATE.SAMPLING_REC || padArmTimer !== null);
     const isVoiceOverdub = (currentMode === 'voice' && (currentState === STATE.RECORDING_1 || currentState === STATE.OVERDUB));
-    
+
     TRACKS.forEach(t => {
         let targetGain = 1.0;
         if (trackCtx[t].mute) {
             targetGain = 0.0;
         } else {
-            if (isSampling) { targetGain = 0.0; }
+            if (isSampling) { targetGain = 0.0; } // Mute during hold & record
             else if (isVoiceOverdub) { targetGain = 0.5; }
         }
         if (trackCtx[t].loopGain) {
@@ -2158,7 +2159,6 @@ function handlePadRelease(btn, e) {
         // Visual feedback for tap on empty pad
         if (currentMode === 'voice' && heldPadIndex !== -1 && !userSamples[heldPadIndex]) {
              triggerOledPopup("HOLD", "TO SAMPLE");
-             // Optional: Flash pad red briefly
              btn.classList.add('recording-armed');
              setTimeout(() => btn.classList.remove('recording-armed'), 200);
         }
@@ -2167,6 +2167,9 @@ function handlePadRelease(btn, e) {
         btn.classList.remove('active');
         btn.classList.remove('voice-arming');
         heldPadIndex = -1;
+
+        // CHANGED: Unmute audio if we released early
+        updateBackingTrackVolume(); 
         return; 
     }
 
@@ -2181,13 +2184,14 @@ function handlePadRelease(btn, e) {
          recordingPadIndex = -1;
          currentState = (masterLoopLength > 0) ? STATE.PLAYING : STATE.IDLE;
          disableMic();
+         updateBackingTrackVolume(); // Ensure volume returns
     }
 
     // --- GLOBAL CLEANUP ---
     heldPadIndex = -1; 
     btn.classList.remove('active'); 
     btn.classList.remove('voice-arming');
-    btn.classList.remove('recording'); // This removes the solid red from the pad
+    btn.classList.remove('recording'); 
     
     if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
 }
@@ -2207,29 +2211,32 @@ function hitPad(index, el) {
     
     if (currentMode === 'voice') { 
         if (userSamples[index]) {
-            playSample(index); 
+            playSample(index);
         } else {
-            // --- 1. SECOND SAFETY DELAY ---
+            triggerOledPopup("HOLD REC", "TO SAMPLE");
+            triggerEmptySlotVisuals(el);
+            
+            // --- 1 SECOND SAFETY DELAY ---
             padArmTimer = setTimeout(() => {
-                // IMPORTANT: Clear the timer ID so release knows we held long enough
                 padArmTimer = null; 
 
                 enableMic().then(() => {
                     recordingPadIndex = index;
-                    currentState = STATE.SAMPLING_ARMED; 
+                    currentState = STATE.SAMPLING_ARMED;
                     
-                    sampleRecBuffer = []; 
-                    preRollBuffer = []; 
+                    sampleRecBuffer = [];
+                    preRollBuffer = [];
                     
-                    // Visuals on the PAD only
                     el.classList.add('voice-arming');
                     
-                    log("LISTENING..."); 
-                    updateMicGate(); 
+                    log("LISTENING...");
+                    updateMicGate();
                     updateBackingTrackVolume(); 
-                    // We do NOT call updateRecBtnVisual() here anymore
                 });
-            }, 600); 
+            }, 600);
+
+            // CHANGED: Mute immediately when hold starts
+            updateBackingTrackVolume(); 
         }
     } 
     else {
