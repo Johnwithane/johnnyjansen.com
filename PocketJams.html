@@ -779,28 +779,33 @@ function drawOled() {
             // No message, show waveforms clearly
         }
         else if (currentState === STATE.ARMED) { 
-            msg = "PLAY TO REC"; 
+            msg = "READY TO RECORD"; 
             oCtx.fillStyle = "#f00"; 
             oCtx.font = "bold 9px monospace";
         }
         else if (currentState === STATE.OVERDUB_ARMED) {
-            msg = "PLAY TO DUB";
-            oCtx.fillStyle = "#fb0"; // Gold
+            if (trackCtx[currentMode].hasContent) {
+                msg = "READY TO DUB";
+                oCtx.fillStyle = "#fb0"; // Gold (Dubbing)
+            } else {
+                msg = "READY TO RECORD";
+                oCtx.fillStyle = "#f00"; // Red (New Track)
+            }
             oCtx.font = "bold 9px monospace";
         }
         else if (currentState === STATE.RECORDING_1) { 
             const time = (ctx.currentTime - recStartTime).toFixed(1);
-            msg = "REC " + time + "s"; 
+            msg = "RECORDING " + time + "s"; 
             oCtx.fillStyle = "#f00";
         }
         else if (currentState === STATE.OVERDUB) { 
             const time = (ctx.currentTime - recStartTime).toFixed(1);
             // Logic Check: Are we adding to existing notes or making a new track on the loop?
             if (trackCtx[currentMode].hasContent) {
-                msg = "DUB " + time + "s"; 
+                msg = "DUBBING " + time + "s"; 
                 oCtx.fillStyle = "#fb0"; // Gold
             } else {
-                msg = "REC " + time + "s"; // New track, red text
+                msg = "RECORDING " + time + "s"; // New track, red text
                 oCtx.fillStyle = "#f00";
             }
         }
