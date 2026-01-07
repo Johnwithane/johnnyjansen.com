@@ -736,21 +736,27 @@ function drawOled() {
     oCtx.font = "bold 10px monospace"; 
     oCtx.textAlign = "left";
     
-// Inside drawOled(), find the TOP LEFT text section:
+// --- OLED DRAWING SYSTEM: TOP LEFT TITLE ---
     let title = currentMode.toUpperCase();
-    
-    if (isSelectingForKeyboard) {
-        title = "SELECT PAD";
-        oCtx.fillStyle = "#ffb300"; // Gold color for selection mode
+    oCtx.fillStyle = colors[currentMode]; 
+
+    // Only show Keyboard/Selection titles if we are actually LOOKING at the voice track
+    if (currentMode === 'voice') {
+        if (isSelectingForKeyboard) {
+            title = "SELECT PAD";
+            oCtx.fillStyle = "#ffb300"; // Gold
+        } 
+        else if (isChromaticMode) {
+            title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
+            oCtx.fillStyle = "#ff00ff"; // Purple
+        }
     } 
-    else if (isChromaticMode) {
-        title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
-        oCtx.fillStyle = "#ff00ff"; 
-    }
     else if (currentMode === 'synth') {
         title += isMinorScale ? " (MIN)" : " (MAJ)";
     }
     
+    oCtx.font = "bold 10px monospace"; 
+    oCtx.textAlign = "left";
     oCtx.fillText(title, 2, 10);
     
     
@@ -2003,16 +2009,17 @@ function finishSampling() {
         const rawBuffer = ctx.createBuffer(1, totalSamples, ctx.sampleRate);
         const data = rawBuffer.getChannelData(0); let offset = 0;
         for(let chunk of sampleRecBuffer) { data.set(chunk, offset); offset += chunk.length; }
+        
         userSamples[recordingPadIndex] = rawBuffer;
         
-        // --- NEW: Auto-switch to Keyboard Mode if pending ---
+        // --- NEW: Handle Auto-Switch to Keyboard ---
         if (pendingKeyboardAutoSwitch) {
             chromaticRootIndex = recordingPadIndex;
             isChromaticMode = true;
             pendingKeyboardAutoSwitch = false;
-            triggerOledPopup("KEYBOARD", "ACTIVE");
+            triggerOledPopup("KEYBOARD", "READY");
         } else {
-             triggerOledPopup("SAVED", "SAMPLE");
+            triggerOledPopup("SAVED", "SAMPLE");
         }
         // ----------------------------------------------------
 
@@ -2282,17 +2289,35 @@ function hitPad(index, el) {
     if (currentMode !== 'voice' && micStream) disableMic();
     
     if (currentMode === 'voice') { 
-        // --- SELECTION MODE FOR KEYBOARD ---
+// --- SELECTION MODE FOR KEYBOARD ---
         if (isSelectingForKeyboard) {
             if (userSamples[index]) {
+                // If pad has a sample, select it and activate keyboard
                 chromaticRootIndex = index;
                 isChromaticMode = true;
                 isSelectingForKeyboard = false;
                 triggerOledPopup("KEYBOARD", "ACTIVE");
             } else {
-                triggerOledPopup("EMPTY", "PAD");
+                // If pad is empty, start recording and set "Pending" to auto-activate keyboard after
+                isSelectingForKeyboard = false; 
+                pendingKeyboardAutoSwitch = true; // Flag to activate keyboard once rec finishes
+                
+                // Trigger standard sampling logic immediately
+                triggerEmptySlotVisuals(el);
+                padArmTimer = setTimeout(() => {
+                    padArmTimer = null; 
+                    enableMic().then(() => {
+                        recordingPadIndex = index;
+                        currentState = STATE.SAMPLING_ARMED;
+                        sampleRecBuffer = []; preRollBuffer = [];
+                        el.classList.add('voice-arming');
+                        updateMicGate(); updateBackingTrackVolume(); 
+                    });
+                }, 600);
+                updateBackingTrackVolume();
+                triggerOledPopup("REC SAMPLE", "FOR KEYS");
             }
-            return; // Don't play the sample yet, just select it
+            return; 
         }
 
         // --- KEYBOARD PLAYBACK ---
@@ -2367,18 +2392,19 @@ function updateMicGate() {
 }
 
 function selectTrack(newMode) {
-    // --- RESET CHROMATIC / SELECTION MODES ---
-    if (isChromaticMode && newMode !== 'voice') {
-        isChromaticMode = false;
-        // Keep root index for later
-    }
-    isSelectingForKeyboard = false; // Always reset selection state on track change
+    // --- PERSISTENT VOICE MODE LOGIC ---
+    // We no longer force isChromaticMode = false here.
+    // We only reset the temporary selection/pending flags.
+    isSelectingForKeyboard = false; 
     pendingKeyboardAutoSwitch = false; 
 
     if (currentMode === 'voice' && newMode !== 'voice') disableMic();
     if (!isRecordingState() && micStream) disableMic();
     
-    TRACKS.forEach(t => { recGates[t].gain.setTargetAtTime((t === newMode) ? 1 : 0, ctx.currentTime, 0.02); });
+    TRACKS.forEach(t => { 
+        recGates[t].gain.setTargetAtTime((t === newMode) ? 1 : 0, ctx.currentTime, 0.02); 
+    });
+
     if(currentMode !== 'voice') lastInstrumentMode = currentMode;
     currentMode = newMode; 
     
@@ -2386,10 +2412,8 @@ function selectTrack(newMode) {
     updatePadVisuals(); 
     updateMicGate(); 
     updateBackingTrackVolume(); 
-    
     updateRecBtnVisual(); 
 }
-
 function cycleSound(mode) {
     // 1. Check if Muted
     if (trackCtx[mode].mute) {
@@ -2442,45 +2466,40 @@ function initUI() {
             }, 800); 
         };
 
-btn.onpointerup = (e) => { 
+        btn.onpointerup = (e) => { 
             if(!isPowered) return;
             
-            // If we didn't hold long enough, treat as a TAP
             if (!didLongPress) {
                 const duration = Date.now() - instHoldStartTime;
                 
+                // If the button was already selected, we handle the sub-mode toggle
                 if (duration < 500 && btn.dataset.wasSelected === 'true') {
                     
-                    // --- REFINED VOICE BUTTON LOGIC ---
                     if (mode === 'voice') {
                         if (isChromaticMode) {
-                            // Already in keyboard mode? Switch back to normal samples
+                            // If in Keyboard mode, toggle back to Sample mode
                             isChromaticMode = false;
                             isSelectingForKeyboard = false;
                             triggerOledPopup("VOICE", "SAMPLES");
                         } 
                         else {
-                            // Enter "Select a Sample" state every time we try to enter keyboard mode
+                            // If in Sample mode, trigger "Select a Sample" to enter Keyboard mode
                             const hasSamples = userSamples.some(s => s !== null);
                             
                             if (hasSamples) {
                                 isSelectingForKeyboard = true;
-                                isChromaticMode = false; // Ensure we aren't playing while selecting
                                 triggerOledPopup("SELECT", "A SAMPLE");
                             } else {
-                                // No samples recorded yet
                                 pendingKeyboardAutoSwitch = true;
                                 triggerOledPopup("REC SAMPLE", "FIRST");
                             }
                         }
                     } 
-                    // --- STANDARD INSTRUMENT LOGIC ---
                     else {
                         cycleSound(mode);
                     }
                 }
             }
-            
             clearHold(e);
         };
         
