@@ -740,15 +740,19 @@ function drawOled() {
     let title = currentMode.toUpperCase();
     oCtx.fillStyle = colors[currentMode]; 
 
-    // Only show Keyboard/Selection titles if we are actually LOOKING at the voice track
     if (currentMode === 'voice') {
         if (isSelectingForKeyboard) {
             title = "SELECT PAD";
             oCtx.fillStyle = "#ffb300"; // Gold
         } 
         else if (isChromaticMode) {
-            title = "KEYBOARD " + (isMinorScale ? "(MIN)" : "(MAJ)");
-            oCtx.fillStyle = "#ff00ff"; // Purple
+            title = "VOICE " + (isMinorScale ? "(MIN)" : "(MAJ)");
+            oCtx.fillStyle = "#2979ff"; // Purple
+        } 
+        else {
+            // CHANGE THIS LINE:
+            title = "VOICE"; 
+            oCtx.fillStyle = colors['2979ff']; // Blue
         }
     } 
     else if (currentMode === 'synth') {
@@ -764,23 +768,32 @@ function drawOled() {
     oCtx.textAlign = "right";
     oCtx.font = "10px monospace";
     
-    if (trackCtx[currentMode].mute) {
-        oCtx.fillStyle = "#f00"; // Red text for warning
-        oCtx.fillText("DISABLED", 126, 10);
-    } else {
-        oCtx.fillStyle = "#888";
-        let presetName = "";
-        
+// TOP RIGHT: Style logic inside drawOled()
+if (trackCtx[currentMode].mute) {
+    oCtx.fillStyle = "#f00";
+    oCtx.fillText("DISABLED", 126, 10);
+} else {
+    oCtx.fillStyle = "#888";
+    let presetName = "";
+
+    // Fix: Only show the "PAD #" text if we are on the voice track AND keyboard is on
+    if (currentMode === 'voice') {
         if (isChromaticMode) {
-            presetName = "PAD " + (chromaticRootIndex + 1);
-            oCtx.fillStyle = "#fff";
+            presetName = "Keyboard";
+            oCtx.fillStyle = "#888"; // Bright white for active keyboard
+        } else {
+            presetName = "Sample";
         }
-        else if(currentMode === 'drums') presetName = DRUM_STYLES[currentDrumIdx];
-        else if(currentMode === 'synth') presetName = SYNTH_STYLES[currentSynthIdx];
-        else if(currentMode === 'voice') presetName = "MIC";
-        
-        oCtx.fillText(presetName, 126, 10);
+    } 
+    else if (currentMode === 'drums') {
+        presetName = DRUM_STYLES[currentDrumIdx];
+    } 
+    else if (currentMode === 'synth') {
+        presetName = SYNTH_STYLES[currentSynthIdx];
     }
+    
+    oCtx.fillText(presetName, 126, 10);
+}
 
     // BOTTOM LEFT: PRE FX
     oCtx.textAlign = "left";
@@ -2466,42 +2479,69 @@ function initUI() {
             }, 800); 
         };
 
-        btn.onpointerup = (e) => { 
-            if(!isPowered) return;
-            
-            if (!didLongPress) {
-                const duration = Date.now() - instHoldStartTime;
-                
-                // If the button was already selected, we handle the sub-mode toggle
-                if (duration < 500 && btn.dataset.wasSelected === 'true') {
-                    
-                    if (mode === 'voice') {
-                        if (isChromaticMode) {
-                            // If in Keyboard mode, toggle back to Sample mode
-                            isChromaticMode = false;
-                            isSelectingForKeyboard = false;
-                            triggerOledPopup("VOICE", "SAMPLES");
-                        } 
-                        else {
-                            // If in Sample mode, trigger "Select a Sample" to enter Keyboard mode
-                            const hasSamples = userSamples.some(s => s !== null);
-                            
-                            if (hasSamples) {
-                                isSelectingForKeyboard = true;
-                                triggerOledPopup("SELECT", "A SAMPLE");
-                            } else {
-                                pendingKeyboardAutoSwitch = true;
-                                triggerOledPopup("REC SAMPLE", "FIRST");
-                            }
-                        }
-                    } 
-                    else {
-                        cycleSound(mode);
+/* --- Replace the Up, Leave, and Cancel listeners inside initUI --- */
+
+btn.onpointerup = (e) => { 
+    if(!isPowered) return;
+    
+    // 1. CLEAR THE TIMER IMMEDIATELY
+    if(instHoldTimer) {
+        clearTimeout(instHoldTimer);
+        instHoldTimer = null;
+    }
+
+    // 2. Only perform the "Tap" action if we didn't trigger a Long Press
+    if (!didLongPress) {
+        const duration = Date.now() - instHoldStartTime;
+        
+        if (duration < 500 && btn.dataset.wasSelected === 'true') {
+            if (mode === 'voice') {
+                if (isChromaticMode) {
+                    isChromaticMode = false;
+                    isSelectingForKeyboard = false;
+                } else {
+                    const hasSamples = userSamples.some(s => s !== null);
+                    if (hasSamples) {
+                        isSelectingForKeyboard = true;
+                        triggerOledPopup("SELECT", "A SAMPLE");
+                    } else {
+                        pendingKeyboardAutoSwitch = true;
+                        triggerOledPopup("REC SAMPLE", "FIRST");
                     }
                 }
+                updateUI();
+                updatePadVisuals();
+            } else {
+                cycleSound(mode);
             }
-            clearHold(e);
-        };
+        }
+    }
+    
+    // 3. FULL RESET OF STATE
+    didLongPress = false;
+    heldInstrument = null;
+    if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
+};
+
+// CRITICAL: Ensure moving the mouse off the button acts as a clean release
+btn.onpointerleave = (e) => {
+    if(instHoldTimer) {
+        clearTimeout(instHoldTimer);
+        instHoldTimer = null;
+    }
+    didLongPress = false;
+    heldInstrument = null;
+    if(e && e.pointerId) btn.releasePointerCapture(e.pointerId);
+};
+
+btn.onpointercancel = (e) => {
+    if(instHoldTimer) {
+        clearTimeout(instHoldTimer);
+        instHoldTimer = null;
+    }
+    didLongPress = false;
+    heldInstrument = null;
+};
         
         // --- FIX FOR BUG: PAUSE DISABLING LAYER ---
         // Ensure state clears if finger slides off or event cancels
