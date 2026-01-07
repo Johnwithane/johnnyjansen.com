@@ -1846,31 +1846,31 @@ function onRecPress() {
         return;
     }
 
-    // --- VOICE LOGIC ---
+    // --- VOICE LOGIC (UPDATED FOR MOMENTARY HOLD) ---
     if (currentMode === 'voice') {
-        // Start the timer to detect a HOLD
+        // Start the timer to detect a HOLD vs TAP
         recHoldTimer = setTimeout(() => {
-            // User HELD the button -> Enable MIC Recording
+            // User HELD the button -> MOMENTARY RECORDING START
             recordingSource = 'mic';
             enableMic();
-            
-            if (currentState === STATE.IDLE) {
-                currentState = STATE.ARMED;
-                recordingStream = []; preRollBuffer = [];
-                triggerOledPopup("MIC ARMED", "SING NOW");
-            } else if (currentState === STATE.PLAYING) {
-                armOverdub();
-                triggerOledPopup("MIC DUB", "ARMED");
-            }
-            updateMicGate();
-            updateRecBtnVisual();
             recHoldTimer = null; // Mark as handled
-        }, 500); // 500ms Hold Threshold
+
+            if (currentState === STATE.IDLE) {
+                // Start NEW LOOP immediately
+                triggerOledPopup("VOICE", "RECORDING");
+                startFirstRecording(); 
+            } else if (currentState === STATE.PLAYING) {
+                // Start OVERDUB immediately
+                triggerOledPopup("VOICE", "DUBBING");
+                startOverdubRecording();
+            }
+            
+            updateRecBtnVisual();
+        }, 300); // Reduced to 300ms for snappier response
         return;
     }
 
     // --- STANDARD INSTRUMENT LOGIC (Drums/Synth) ---
-    // Immediate action for other instruments
     recordingSource = 'internal'; 
     handleStandardRecTrigger();
 }
@@ -1903,27 +1903,34 @@ function onRecRelease() {
     // 1. Clear Reset Timer (Undo+Rec)
     if (clearAllTimer) { clearTimeout(clearAllTimer); clearAllTimer = null; triggerOledPopup("ABORTED", "CLEAR"); updateRecBtnVisual(); return; }
 
-    // 2. Handle Voice Mode Tap Logic
+    // 2. Handle Voice Mode Logic
     if (currentMode === 'voice') {
-        // If timer exists, it means we let go BEFORE the hold threshold (It's a TAP)
+        // A. WAS IT A TAP? (Released before 300ms)
         if (recHoldTimer) {
             clearTimeout(recHoldTimer);
             recHoldTimer = null;
 
-            // Check if we have samples
+            // Existing logic: If samples exist on pads, record internal. If not, show help.
             const hasSamples = userSamples.some(s => s !== null);
-
             if (hasSamples) {
-                // Samples exist -> Record internal audio (Pads) like other instruments
                 recordingSource = 'internal';
-                disableMic(); // Ensure mic doesn't bleed in
-                handleStandardRecTrigger(); // Trigger standard arm/record logic
+                disableMic(); 
+                handleStandardRecTrigger(); 
             } else {
-                // No samples -> Show Instruction
-                triggerOledPopup("HOLD TO", "REC VOICE");
+                triggerOledPopup("HOLD REC", "TO SING");
             }
+            return;
         }
-        // If recHoldTimer was null, it means the HOLD action already fired in onRecPress. Do nothing.
+
+        // B. WAS IT A HOLD? (Momentary Release)
+        // We are here because the timer fired in onRecPress. 
+        // Now we must STOP the recording immediately.
+        if (currentState === STATE.RECORDING_1) {
+            finishFirstLoop(); // Stop and define loop length
+        } 
+        else if (currentState === STATE.OVERDUB) {
+            handleOverdubStop(); // Stop dubbing
+        }
         return;
     }
 
@@ -2886,39 +2893,41 @@ function initKnobs() {
     leftKnobCtrl.setValue(0.0, true);
 }
 
-// --- MOBILE AUDIO FIX (FINAL) ---
-// Logic: iOS often reports the AudioContext as 'running' even when
-// the hardware output is muted after switching apps. 
-// We must force .resume() on every touch without checking state first.
+// --- MOBILE AUDIO FIX (ROBUST) ---
+// Problem: Mobile browsers detach audio hardware on tab switch but keep state as 'running'.
+// Fix: Force a 'suspend' when hidden, so the next touch forces a hard 'resume'.
 
-const forceResumeAudio = async () => {
-    // Only try if context exists and device is turned on
-    if (!ctx || !isPowered) return;
-
-    // Aggressively try to resume context time on every interaction
-    // This acts like a "keep awake" signal for the audio engine
-    try {
-        await ctx.resume();
-    } catch (e) {
-        // Ignore errors if already running
+const handleVisibilityChange = async () => {
+    if (document.hidden) {
+        // User left the app: Suspend immediately to release hardware lock
+        if (ctx && ctx.state === 'running') {
+            await ctx.suspend();
+        }
     }
 };
 
-// We attach this to 'capture' phase (true) to ensure it runs before anything else
-['touchstart', 'touchend', 'mousedown', 'keydown', 'click', 'pointerdown'].forEach(event => {
-    document.addEventListener(event, forceResumeAudio, { passive: true, capture: true });
-});
+const forceAudioWake = async (e) => {
+    if (!ctx || !isPowered) return;
 
-// Handle Tab Switching
-document.addEventListener('visibilitychange', async () => {
-    // If we just came back to the app...
-    if (!document.hidden && ctx && isPowered) {
-        // Try to resume immediately (Works on Android/Desktop)
-        try { await ctx.resume(); } catch(e) {}
-        
-        // Force a UI refresh to ensure visuals match state
-        requestAnimationFrame(updateLoop);
+    // On the very first interaction after coming back, 'resume' will fire
+    // effectively restarting the audio engine connection.
+    if (ctx.state !== 'running') {
+        try {
+            await ctx.resume();
+            // Optional: Restart Loop gain if it got zeroed out by glitch
+            if(masterLoopLength > 0) updateBackingTrackVolume();
+        } catch (err) {
+            console.warn("Audio wake failed", err);
+        }
     }
+};
+
+// 1. Listen for Tab Switching
+document.addEventListener('visibilitychange', handleVisibilityChange);
+
+// 2. Listen for ANY touch to wake up the engine
+['touchstart', 'pointerdown', 'click', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, forceAudioWake, { passive: true, capture: true });
 });
 
 </script>
