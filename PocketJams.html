@@ -768,17 +768,30 @@ masterGain.connect(ctx.destination); // Existing line
         masterGain.connect(dest);
         
         // Setup MediaRecorder
+// Setup MediaRecorder with Smart Format Detection
         try {
-            mediaRecorder = new MediaRecorder(dest.stream);
+            // 1. Check what the browser supports
+            let options = {};
+            let extension = "webm"; // Default for Chrome/Desktop
+
+            if (MediaRecorder.isTypeSupported("audio/mp4")) {
+                options = { mimeType: "audio/mp4" };
+                extension = "m4a"; // Best for iOS
+            } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+                options = { mimeType: "audio/webm" };
+                extension = "webm";
+            }
+
+            mediaRecorder = new MediaRecorder(dest.stream, options);
             
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) audioChunks.push(e.data);
             };
 
             mediaRecorder.onstop = () => {
-                // --- NEW CHECK: Only save if we didn't cancel ---
                 if (shouldSaveTape) {
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    // Create blob with the detected type
+                    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
@@ -786,7 +799,9 @@ masterGain.connect(ctx.destination); // Existing line
                     
                     const now = new Date();
                     const time = `${now.getHours()}-${now.getMinutes()}`;
-                    a.download = `forest-jam-${time}.webm`; 
+                    
+                    // Use the correct extension (m4a for iOS, webm for Desktop)
+                    a.download = `forest-jam-${time}.${extension}`; 
                     
                     document.body.appendChild(a);
                     a.click();
