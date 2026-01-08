@@ -1911,6 +1911,23 @@ async function disableMic() {
 function onRecPress() {
     if(!isPowered) return;
     
+    // --- FIX: UNPAUSE IF PAUSED ---
+    if (isPaused) {
+        // Visually unpause
+        pauseBtn.classList.remove('paused');
+        isPaused = false;
+        
+        // If we have audio, start it up immediately so we can record over it
+        if (masterLoopLength > 0) {
+            TRACKS.forEach(t => trackCtx[t].mute = false);
+            updateBackingTrackVolume(); 
+            updateUI();
+            loopStartTime = ctx.currentTime; 
+            startPlayback(); 
+        }
+    }
+    // -----------------------------
+    
     // Check for "Clear All" combo (Undo + Rec)
     if (isUndoHeld) {
         els.recBtn.classList.add('state-finishing'); 
@@ -1919,31 +1936,27 @@ function onRecPress() {
         return;
     }
 
-    // --- VOICE LOGIC (UPDATED FOR MOMENTARY HOLD) ---
+    // --- VOICE LOGIC ---
     if (currentMode === 'voice') {
-        // Start the timer to detect a HOLD vs TAP
         recHoldTimer = setTimeout(() => {
-            // User HELD the button -> MOMENTARY RECORDING START
             recordingSource = 'mic';
             enableMic();
-            recHoldTimer = null; // Mark as handled
+            recHoldTimer = null; 
 
             if (currentState === STATE.IDLE) {
-                // Start NEW LOOP immediately
                 triggerOledPopup("VOICE", "RECORDING");
                 startFirstRecording(); 
             } else if (currentState === STATE.PLAYING) {
-                // Start OVERDUB immediately
                 triggerOledPopup("VOICE", "DUBBING");
                 startOverdubRecording();
             }
             
             updateRecBtnVisual();
-        }, 300); // Reduced to 300ms for snappier response
+        }, 300); 
         return;
     }
 
-    // --- STANDARD INSTRUMENT LOGIC (Drums/Synth) ---
+    // --- STANDARD INSTRUMENT LOGIC ---
     recordingSource = 'internal'; 
     handleStandardRecTrigger();
 }
