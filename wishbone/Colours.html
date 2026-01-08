@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wishbone Interactive Catalog Creator</title>
+    <title>Wishbone Interactive Catalog - V19 Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -11,134 +11,44 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            margin: 0;
-            overflow-x: hidden;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; margin: 0; overflow-x: hidden; }
 
         /* 3D Canvas Layers */
-        /* Main Canvas (Background Items) */
-        #c {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 40; 
-            pointer-events: none; 
-            display: block;
-            background: transparent;
-        }
-        /* Modal Canvas (Popup Items) */
-        #c-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 110; 
-            pointer-events: none; 
-            display: block;
-            background: transparent;
-        }
+        #c { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40; pointer-events: none; display: block; background: transparent; }
+        #c-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 110; pointer-events: none; display: block; background: transparent; }
 
         /* Modal Overlay */
-        #editor-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
+        #editor-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         #editor-modal.active { display: flex; }
 
-        /* Paper Sheet */
-        .page-sheet {
-            background: white;
-            width: 210mm;
-            min-height: 297mm;
-            margin: 40px auto;
-            padding: 15mm;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative; 
-        }
-
-        /* Interaction Target */
-        .scene-element {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            position: relative;
-            cursor: grab;
-            touch-action: none;
-            z-index: 20; 
-        }
+        /* Page Layout */
+        .page-sheet { background: white; width: 210mm; min-height: 297mm; margin: 40px auto; padding: 15mm; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; }
+        .scene-element { width: 100%; aspect-ratio: 1 / 1; position: relative; cursor: grab; touch-action: none; z-index: 20; }
         .scene-element:active { cursor: grabbing; }
+        .print-image { display: none; width: 100%; height: 100%; object-fit: contain; }
 
-        /* Print Image (Hidden by default) */
-        .print-image {
-            display: none;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+        /* UI Controls */
+        .item-controls { opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 50; }
+        .group:hover .item-controls { opacity: 1; }
+        .control-btn { pointer-events: auto; background: white; color: #4B5563; border-radius: 9999px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.2s; }
+        .control-btn:hover { background: #2563EB; color: white; transform: scale(1.1); }
+        .control-btn.btn-delete:hover { background: #EF4444; color: white; }
 
-        /* Hover Controls */
-        .item-controls {
-            opacity: 0;
-            transition: opacity 0.2s;
-            pointer-events: none; 
-            z-index: 50; /* Higher than Canvas (40) */
-        }
-        .group:hover .item-controls {
-            opacity: 1;
-        }
-        .control-btn {
-            pointer-events: auto;
-            background: white;
-            color: #4B5563;
-            border-radius: 9999px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.2s;
-        }
-        .control-btn:hover {
-            background: #2563EB;
-            color: white;
-            transform: scale(1.1);
-        }
-        .control-btn.btn-delete:hover {
-            background: #EF4444;
-            color: white;
-        }
+        /* Form Elements */
+        input[type=range] { width: 100%; accent-color: #4B5563; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; }
+        
+        .advanced-panel { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .advanced-panel.open { max-height: 500px; overflow-y: auto; }
 
-        /* --- PRINT STYLING --- */
+        /* Print Logic */
         @media print {
             body { background: white; }
-            .no-print { display: none !important; }
-            #c, #c-modal { display: none !important; }
-            
-            .page-sheet {
-                margin: 0; width: 100%; box-shadow: none;
-                padding: 10mm; break-after: always;
-            }
-            
+            .no-print, #c, #c-modal { display: none !important; }
+            .page-sheet { margin: 0; width: 100%; box-shadow: none; padding: 10mm; break-after: always; }
             .print-image { display: block !important; }
-            .scene-element { display: none; }
+            .scene-element, .add-card, .item-controls { display: none !important; }
             .page-break-avoid { break-inside: avoid; }
-            .add-card { display: none !important; }
-            .item-controls { display: none !important; }
-        }
-
-        input[type=range] { width: 100%; accent-color: #4B5563; }
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.5rem center;
-            background-size: 1em;
         }
     </style>
 </head>
@@ -161,36 +71,38 @@
     <div id="content-anchor"></div>
 
     <div id="editor-modal" class="no-print">
-        <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[80vh] flex overflow-hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] flex overflow-hidden">
             
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
                 <div class="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</div>
                 <div id="modal-scene-target" class="w-full aspect-square relative z-50 cursor-grab active:cursor-grabbing"></div>
-                <p class="text-xs text-gray-400 mt-4">Click & Drag to Rotate (Saves on Close)</p>
+                <div class="absolute bottom-4 text-xs text-gray-400 text-center w-full px-4">
+                    Left Click: Rotate Object <br> 
+                    Use Sliders on Right for Lights
+                </div>
             </div>
 
-            <div class="w-1/2 p-8 overflow-y-auto flex flex-col">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Edit Material</h2>
+            <div class="w-1/2 p-6 overflow-y-auto flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Edit Material</h2>
                     <button onclick="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition">
-                        <i class="fas fa-times fa-2x"></i>
+                        <i class="fas fa-times fa-lg"></i>
                     </button>
                 </div>
 
-                <div id="modal-controls" class="space-y-6 flex-1">
-                    <!-- Controls injected by JS -->
-                </div>
+                <div id="modal-controls" class="space-y-5 flex-1">
+                    </div>
 
-                <div class="border-t pt-6 mt-6 flex justify-between items-center">
+                <div class="border-t pt-4 mt-4 flex justify-between items-center">
                     <button onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-2">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                     <div class="flex gap-2">                        
-                        <button onclick="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded transition">
+                        <button onclick="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded transition">
                             Cancel
                         </button>
                         <button onclick="saveAndCloseModal()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-6 rounded transition">
-                            Save
+                            Done
                         </button>
                     </div>
                 </div>
@@ -203,10 +115,7 @@
         // ============================ CONFIGURATION ==============================
         // =========================================================================
         
-        // REPLACE THIS URL with your own Equirectangular HDRI image for global reflections
-        // For simplicity with standard TextureLoader, use a .jpg/.png equirectangular image:
         const GLOBAL_ENV_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/2294472375_24a3b8ef46_o.jpg'; 
-
         const currentYear = new Date().getFullYear(); 
 
         const COMPANY_INFO = {
@@ -216,35 +125,18 @@
             logoUrl: "https://wishboneltd.com/templates/yootheme/cache/c6/Wishbone-30-longer-c62913c2.webp"
         };
 
-        // You can add 'type: url' entries here for Normal and Roughness maps specifically
-        const TEXTURE_REGISTRY = {
-            'none': { type: 'none' },
+        const MATERIAL_LIBRARY = {
+            wood: ['wood01', 'wood02', 'wood03', 'wood04', 'wood05', 'wood06', 'wood07', 'wood08', 'wood09', 'wood10', 'wood11'],
+            plastic: ['plastic01', 'plastic02', 'plastic03', 'plastic04', 'plastic05'],
+            metal: ['metal01', 'metal02', 'metal03', 'metal04', 'metal05', 'metal06', 'metal07', 'metal08', 'metal09', 'metal10', 'metal11']
+        };
 
-            // --- WOODS & BAMBOO ---
-            'bamboo_dark':          { type: 'url', url: 'textures/bamboo-dark.jpg' },
-            'bamboo_light':         { type: 'url', url: 'textures/bamboo-light.jpg' },
-            'wood_accoya':          { type: 'url', url: 'textures/wood-accoya.jpg' },
-            'wood_redcedar':        { type: 'url', url: 'textures/wood-redCedar.jpg' },
-
-            // --- PLASTICS ---
-            'plastic_black':    { type: 'url', url: 'textures/Plastic-black.jpg' },
-            'plastic_grey':     { type: 'url', url: 'textures/plastic-grey.jpg' },
-            'plastic_redwood':  { type: 'url', url: 'textures/plastic-redwood.jpg' },
-            'plastic_sand':     { type: 'url', url: 'textures/plastic-sand.jpg' },
-            'plastic_walnut':   { type: 'url', url: 'textures/plastic-walnut.jpg' },
-
-            // --- METALS ---
-            'metal_blueash':       { type: 'url', url: 'textures/metal-blueAsh.jpg' },
-            'metal_carbonblack':   { type: 'url', url: 'textures/metal-carbonBlack.jpg' },
-            'metal_gun':           { type: 'url', url: 'textures/metal-gun.jpg' },
-            'metal_nightblue':     { type: 'url', url: 'textures/metal-nightBlue.jpg' },
-            'metal_oilbronze':     { type: 'url', url: 'textures/metal-oilBronze.jpg' },
-            'metal_pewter':        { type: 'url', url: 'textures/metal-pewter.jpg' },
-            'metal_rideaubrown':   { type: 'url', url: 'textures/metal-rideauBrown.jpg' },
-            'metal_silver':        { type: 'url', url: 'textures/metal-silver.jpg' },
-            'metal_texturedblack': { type: 'url', url: 'textures/metal-texturedBlack.jpg' },
-            'metal_texturedwhite': { type: 'url', url: 'textures/metal-texturedWhite.jpg' },
-            'metal_victorridge':   { type: 'url', url: 'textures/metal-VictorRidge.jpg' }
+        const SUFFIXES = {
+            map: '_Color.jpg',
+            bumpMap: '_Displacement.jpg',
+            metalnessMap: '_Metalness.jpg',
+            normalMap: '_NormalGL.jpg',
+            roughnessMap: '_Roughness.jpg'
         };
 
 // -- DATA_START --
@@ -254,16 +146,16 @@
         "title": "Gloss Powders",
         "description": "Smooth, shiny surfaces with bold and bright colours.",
         "items": [
-            { "id": 101, "name": "Ultramarine Blue", "color": "#003399", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 102, "name": "Hot Pink", "color": "#E55EA2", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 103, "name": "Yellow Green", "color": "#8DA342", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 104, "name": "Signal Violet", "color": "#8A5B8F", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 105, "name": "Traffic Yellow", "color": "#F2A900", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 106, "name": "Sky Blue", "color": "#6FA8DC", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 107, "name": "Pastel Orange", "color": "#E68B42", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 108, "name": "Water Blue", "color": "#0088AA", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 109, "name": "Flame Red", "color": "#CB3339", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 110, "name": "Moss Green", "color": "#4B5F48", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 }
+            { "id": 101, "name": "Ultramarine Blue", "color": "#003399", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 102, "name": "Hot Pink", "color": "#E55EA2", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 103, "name": "Yellow Green", "color": "#8DA342", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 104, "name": "Signal Violet", "color": "#8A5B8F", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 105, "name": "Traffic Yellow", "color": "#F2A900", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 106, "name": "Sky Blue", "color": "#6FA8DC", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 107, "name": "Pastel Orange", "color": "#E68B42", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 108, "name": "Water Blue", "color": "#0088AA", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 109, "name": "Flame Red", "color": "#CB3339", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 110, "name": "Moss Green", "color": "#4B5F48", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
         ]
     },
     {
@@ -271,18 +163,18 @@
         "title": "Low Lustre Powders",
         "description": "Smooth, easy to clean surfaces that resist fingerprints.",
         "items": [
-            { "id": 201, "name": "Carbon Black", "color": "#101010", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_carbonblack", "bumpId": "metal_carbonblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 202, "name": "Gun Metal", "color": "#555D50", "shape": "cube", "roughness": 0.5, "metalness": 0.4, "mapId": "metal_gun", "bumpId": "metal_gun", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 203, "name": "Night Blue", "color": "#2F3546", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_nightblue", "bumpId": "metal_nightblue", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 204, "name": "New York Green", "color": "#3D4B42", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 205, "name": "Nordic Lichen", "color": "#8da399", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 206, "name": "Rideau Brown", "color": "#443731", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_rideaubrown", "bumpId": "metal_rideaubrown", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 207, "name": "Grey Gold", "color": "#7e7668", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 208, "name": "Noble Bronze", "color": "#4b3e2f", "shape": "cube", "roughness": 0.5, "metalness": 0.5, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 209, "name": "Groovy Red", "color": "#7c2d30", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 210, "name": "Beige", "color": "#d4c5a9", "shape": "cube", "roughness": 0.6, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 211, "name": "Pewter", "color": "#6a6e72", "shape": "cube", "roughness": 0.5, "metalness": 0.6, "mapId": "metal_pewter", "bumpId": "metal_pewter", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 212, "name": "Blue Ash", "color": "#4a5a6b", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_blueash", "bumpId": "metal_blueash", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+            { "id": 201, "name": "Carbon Black", "color": "#101010", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal01", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 202, "name": "Gun Metal", "color": "#555D50", "shape": "cube", "roughness": 0.5, "metalness": 0.4, "materialSet": "metal/metal02", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 203, "name": "Night Blue", "color": "#2F3546", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 204, "name": "New York Green", "color": "#3D4B42", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 205, "name": "Nordic Lichen", "color": "#8da399", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 206, "name": "Rideau Brown", "color": "#443731", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal04", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 207, "name": "Grey Gold", "color": "#7e7668", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 208, "name": "Noble Bronze", "color": "#4b3e2f", "shape": "cube", "roughness": 0.5, "metalness": 0.5, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 209, "name": "Groovy Red", "color": "#7c2d30", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 210, "name": "Beige", "color": "#d4c5a9", "shape": "cube", "roughness": 0.6, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 211, "name": "Pewter", "color": "#6a6e72", "shape": "cube", "roughness": 0.5, "metalness": 0.6, "materialSet": "metal/metal05", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 212, "name": "Blue Ash", "color": "#4a5a6b", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal06", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
         ]
     },
     {
@@ -290,16 +182,16 @@
         "title": "Textured Powders",
         "description": "Fine or coarse textures that help hide blemishes and scratches.",
         "items": [
-            { "id": 301, "name": "Textured Black", "color": "#101010", "shape": "cube", "roughness": 0.7, "metalness": 0.2, "mapId": "metal_texturedblack", "bumpId": "metal_texturedblack", "bumpScale": 0.008, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 302, "name": "Victor Ridge", "color": "#3E3B36", "shape": "cube", "roughness": 0.7, "metalness": 0.3, "mapId": "metal_victorridge", "bumpId": "metal_victorridge", "bumpScale": 0.008, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 303, "name": "Brown Slate", "color": "#594D43", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 304, "name": "Modern Khaki", "color": "#756B5B", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 305, "name": "Textured Silver", "color": "#A8A9AD", "shape": "cube", "roughness": 0.6, "metalness": 0.6, "mapId": "metal_silver", "bumpId": "metal_silver", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 306, "name": "Oil Rubbed Bronze", "color": "#3b2f26", "shape": "cube", "roughness": 0.7, "metalness": 0.4, "mapId": "metal_oilbronze", "bumpId": "metal_oilbronze", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 307, "name": "Timeless Rust", "color": "#8A4E36", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 308, "name": "Earth Clay", "color": "#8C5B42", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 309, "name": "Precious Sand", "color": "#AFA088", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 310, "name": "Textured White", "color": "#F5F5F5", "shape": "cube", "roughness": 0.7, "metalness": 0.1, "mapId": "metal_texturedwhite", "bumpId": "metal_texturedwhite", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+            { "id": 301, "name": "Textured Black", "color": "#101010", "shape": "cube", "roughness": 0.7, "metalness": 0.2, "materialSet": "metal/metal07", "bumpScale": 0.008, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 302, "name": "Victor Ridge", "color": "#3E3B36", "shape": "cube", "roughness": 0.7, "metalness": 0.3, "materialSet": "metal/metal08", "bumpScale": 0.008, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 303, "name": "Brown Slate", "color": "#594D43", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 304, "name": "Modern Khaki", "color": "#756B5B", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 305, "name": "Textured Silver", "color": "#A8A9AD", "shape": "cube", "roughness": 0.6, "metalness": 0.6, "materialSet": "metal/metal09", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 306, "name": "Oil Rubbed Bronze", "color": "#3b2f26", "shape": "cube", "roughness": 0.7, "metalness": 0.4, "materialSet": "metal/metal10", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 307, "name": "Timeless Rust", "color": "#8A4E36", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 308, "name": "Earth Clay", "color": "#8C5B42", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 309, "name": "Precious Sand", "color": "#AFA088", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 310, "name": "Textured White", "color": "#F5F5F5", "shape": "cube", "roughness": 0.7, "metalness": 0.1, "materialSet": "metal/metal11", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
         ]
     },
     {
@@ -307,11 +199,11 @@
         "title": "Recycled Plastic Lumber",
         "description": "Non-toxic, ultra-durable, low maintenance. 100% recycled.",
         "items": [
-            { "id": 401, "name": "Black", "color": "#222222", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_black", "bumpId": "plastic_black", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
-            { "id": 402, "name": "Grey", "color": "#777777", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_grey", "bumpId": "plastic_grey", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
-            { "id": 403, "name": "Redwood", "color": "#8D5E52", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_redwood", "bumpId": "plastic_redwood", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
-            { "id": 404, "name": "Sand", "color": "#C2B280", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_sand", "bumpId": "plastic_sand", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
-            { "id": 405, "name": "Walnut", "color": "#5C4033", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_walnut", "bumpId": "plastic_walnut", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 }
+            { "id": 401, "name": "Black", "color": "#222222", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic01", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 402, "name": "Grey", "color": "#777777", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic02", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 403, "name": "Redwood", "color": "#8D5E52", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic03", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 404, "name": "Sand", "color": "#C2B280", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic04", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 405, "name": "Walnut", "color": "#5C4033", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic05", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
         ]
     },
     {
@@ -319,65 +211,80 @@
         "title": "Natural Wood Alternatives",
         "description": "Premium natural and modified wood options.",
         "items": [
-            { "id": 501, "name": "Accoya Natural", "color": "#E3CAA5", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "wood_accoya", "bumpId": "wood_accoya", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 502, "name": "Accoya Grey", "color": "#999999", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "none", "bumpId": "wood_accoya", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 503, "name": "Hardened Bamboo", "color": "#D29F64", "shape": "plank", "roughness": 0.7, "metalness": 0, "mapId": "bamboo_dark", "bumpId": "bamboo_dark", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
-            { "id": 504, "name": "Western Red Cedar", "color": "#C77A50", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "wood_redcedar", "bumpId": "wood_redcedar", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+            { "id": 501, "name": "Accoya Natural", "color": "#E3CAA5", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 502, "name": "Accoya Grey", "color": "#999999", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 503, "name": "Hardened Bamboo", "color": "#D29F64", "shape": "plank", "roughness": 0.7, "metalness": 0, "materialSet": "wood/wood01", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
+            { "id": 504, "name": "Western Red Cedar", "color": "#C77A50", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood04", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
         ]
     }
 ];
 
-// -- UPDATED: SHAPE DEFAULTS NOW INCLUDE SCALE AND LIGHT ROTATION --
 let SHAPE_DEFAULTS = {
-    cube:     { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, envRotation: 0 },
-    sphere:   { rotation: { x: 0, y: 0, z: 0 },      scale: 1.0, lightRotation: 0, envRotation: 0 },
-    plank:    { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, envRotation: 0 },
-    cylinder: { rotation: { x: 0.2, y: 0.2, z: 0.0 },scale: 1.0, lightRotation: 0, envRotation: 0 }
+    cube:     { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
+    sphere:   { rotation: { x: 0, y: 0, z: 0 },      scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
+    plank:    { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
+    cylinder: { rotation: { x: 0.2, y: 0.2, z: 0.0 },scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 }
 };
 // -- DATA_END --
 
         const SHAPE_TYPES = ['sphere', 'cube', 'plank', 'cylinder'];
         
         const textureLoader = new THREE.TextureLoader();
-        // OPTIMIZATION: Cache textures to prevent reloading same URL multiple times
         const textureCache = {};
-
-        // OPTIMIZATION: Reuse geometries
         let SHARED_GEOMETRIES = {}; 
 
         // =========================================================================
         // ======================== TEXTURE LOADER LOGIC ===========================
         // =========================================================================
 
-        function getTextureFromId(regId, colorHex, scale = 1, suffix = '') {
-            if (!regId || regId === 'none') return null;
-            const regItem = TEXTURE_REGISTRY[regId];
-            if (!regItem) return null;
+        function resolveTextureUrl(item, mapType) {
+            if (item.overrides && item.overrides[mapType]) {
+                const val = item.overrides[mapType];
+                if (val === 'BLANK') return null; 
+                
+                const parts = val.split('/');
+                if (parts.length === 2 && MATERIAL_LIBRARY[parts[0]]) {
+                    if (SUFFIXES[mapType]) return `textures/${parts[0]}/${parts[1]}${SUFFIXES[mapType]}`;
+                }
+                return val; 
+            }
 
-            let targetUrl = regItem.url;
-            if (suffix) targetUrl = targetUrl.replace(/(\.[\w\d_-]+)$/i, `${suffix}$1`);
-            
-            // Create a unique key for the cache based on URL
-            const cacheKey = targetUrl;
-            
-            let tex;
-            if (textureCache[cacheKey]) {
-                tex = textureCache[cacheKey].clone(); // Clone so we can change repeat per instance
-                tex.needsUpdate = true;
-            } else {
-                if (regItem.type === 'url') {
-                    tex = textureLoader.load(targetUrl);
-                    if (!suffix) tex.encoding = THREE.sRGBEncoding; // Base map needs sRGB
-                    textureCache[cacheKey] = tex; // Save original to cache
+            if (item.materialSet && item.materialSet !== 'none') {
+                const [folder, id] = item.materialSet.split('/');
+                if (folder && id && MATERIAL_LIBRARY[folder]) {
+                    if (SUFFIXES[mapType]) return `textures/${folder}/${id}${SUFFIXES[mapType]}`;
                 }
             }
+            return null;
+        }
+
+        function loadTexture(url, scale, rotation, offsetX, offsetY, isColorMap = false) {
+            if (!url) return null;
             
-            if (tex) {
+            // Helper to apply transforms to a texture instance
+            const applyTransforms = (tex) => {
                 tex.wrapS = THREE.RepeatWrapping;
                 tex.wrapT = THREE.RepeatWrapping;
-                tex.repeat.set(scale, scale); 
+                tex.repeat.set(scale, scale);
+                tex.center.set(0.5, 0.5); // Center rotation
+                tex.rotation = rotation * (Math.PI / 180); // Degrees to Radians
+                tex.offset.set(offsetX, offsetY);
+            };
+
+            if (textureCache[url]) {
+                const tex = textureCache[url].clone();
+                tex.needsUpdate = true;
+                applyTransforms(tex);
+                return tex;
             }
-            return tex;
+            const texture = new THREE.TextureLoader().load(url, (tex) => {
+                applyTransforms(tex);
+                tex.encoding = isColorMap ? THREE.sRGBEncoding : THREE.LinearEncoding;
+                textureCache[url] = tex;
+            });
+            applyTransforms(texture);
+            texture.encoding = isColorMap ? THREE.sRGBEncoding : THREE.LinearEncoding;
+            return texture;
         }
 
         // =========================================================================
@@ -391,35 +298,22 @@ let SHAPE_DEFAULTS = {
         let isAnimating = true;
 
         function initThree() {
-            // Main Canvas
             canvas = document.getElementById('c');
-            renderer = new THREE.WebGLRenderer({ 
-                canvas: canvas, 
-                alpha: true, 
-                antialias: true, 
-                preserveDrawingBuffer: true 
-            });
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.autoClear = false;
             renderer.setClearColor( 0x000000, 0 );
 
-            // Modal Canvas
             modalCanvas = document.getElementById('c-modal');
-            modalRenderer = new THREE.WebGLRenderer({ 
-                canvas: modalCanvas, 
-                alpha: true, 
-                antialias: true, 
-                preserveDrawingBuffer: true 
-            });
+            modalRenderer = new THREE.WebGLRenderer({ canvas: modalCanvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
             modalRenderer.setPixelRatio(window.devicePixelRatio);
             modalRenderer.toneMapping = THREE.ACESFilmicToneMapping;
             modalRenderer.outputEncoding = THREE.sRGBEncoding;
             modalRenderer.autoClear = false;
             modalRenderer.setClearColor( 0x000000, 0 );
 
-            // Initialize Shared Geometries (Optimization)
             SHARED_GEOMETRIES = {
                 cube: new THREE.BoxGeometry(1, 1, 1),
                 plank: new THREE.BoxGeometry(1.2, 1.2, 0.5),
@@ -427,7 +321,6 @@ let SHAPE_DEFAULTS = {
                 sphere: new THREE.SphereGeometry(0.7, 64, 64)
             };
 
-            // LOAD GLOBAL ENVIRONMENT MAP
             if(GLOBAL_ENV_URL) {
                 new THREE.TextureLoader().load(GLOBAL_ENV_URL, function(texture) {
                     texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -439,23 +332,18 @@ let SHAPE_DEFAULTS = {
 
         function createMaterial(item) {
             const scale = item.textureScale || 1.0; 
+            const rot = item.textureRotation || 0;
+            const offX = item.textureOffsetX || 0;
+            const offY = item.textureOffsetY || 0;
             
-            // Load Maps
-            // Base Map
-            const map = getTextureFromId(item.mapId, item.color, scale, '');
-            // Bump Map (Implicit _BUMP suffix)
-            const bumpMap = getTextureFromId(item.bumpId, item.color, scale, '_BUMP');
-            const normalMap = getTextureFromId(item.normalId, item.color, scale, '');
-            const roughnessMap = getTextureFromId(item.roughnessId, item.color, scale, '');
+            const map = loadTexture(resolveTextureUrl(item, 'map'), scale, rot, offX, offY, true);
+            const bumpMap = loadTexture(resolveTextureUrl(item, 'bumpMap'), scale, rot, offX, offY);
+            const normalMap = loadTexture(resolveTextureUrl(item, 'normalMap'), scale, rot, offX, offY);
+            const roughnessMap = loadTexture(resolveTextureUrl(item, 'roughnessMap'), scale, rot, offX, offY);
+            const metalnessMap = loadTexture(resolveTextureUrl(item, 'metalnessMap'), scale, rot, offX, offY);
 
-            // Get Values
-            const brightness = item.brightness !== undefined ? parseFloat(item.brightness) : 1.0;
-            const contrast = item.contrast !== undefined ? parseFloat(item.contrast) : 1.0;
-            const saturation = item.saturation !== undefined ? parseFloat(item.saturation) : 1.0; 
-
-            // Create Base Material
             const material = new THREE.MeshPhysicalMaterial({
-                color: item.color, // Always use the color as tint
+                color: 0xffffff,
                 map: map,
                 bumpMap: bumpMap,
                 bumpScale: item.bumpScale || 0.0,
@@ -463,6 +351,7 @@ let SHAPE_DEFAULTS = {
                 normalScale: new THREE.Vector2(1, 1), 
                 roughnessMap: roughnessMap,
                 roughness: item.roughness !== undefined ? parseFloat(item.roughness) : 0.5,
+                metalnessMap: metalnessMap,
                 metalness: item.metalness !== undefined ? parseFloat(item.metalness) : 0.0,
                 envMap: window.GLOBAL_ENV_MAP || null,
                 envMapIntensity: 1.0,
@@ -470,20 +359,22 @@ let SHAPE_DEFAULTS = {
                 clearcoatRoughness: 0.1
             });
 
-            // Inject Custom Shader Logic
             material.onBeforeCompile = function(shader) {
-                material.userData.shader = shader; // Save reference for updates
+                material.userData.shader = shader; 
+                
+                shader.uniforms.uBrightness = { value: item.brightness ?? 1.0 }; 
+                shader.uniforms.uContrast = { value: item.contrast ?? 1.0 };
+                shader.uniforms.uSaturation = { value: item.saturation ?? 1.0 };
+                shader.uniforms.uTintColor = { value: new THREE.Color(item.color) };
+                shader.uniforms.uTintLevel = { value: item.tintLevel ?? 1.0 };
 
-                shader.uniforms.uBrightness = { value: brightness }; 
-                shader.uniforms.uContrast = { value: contrast };
-                shader.uniforms.uSaturation = { value: saturation };
-
-                // Ensure we don't inject multiple times if this shader is reused
                 if (!shader.fragmentShader.includes('uniform float uBrightness')) {
                     shader.fragmentShader = `
                         uniform float uBrightness;
                         uniform float uContrast;
                         uniform float uSaturation;
+                        uniform vec3 uTintColor;
+                        uniform float uTintLevel;
                     ` + shader.fragmentShader;
 
                     shader.fragmentShader = shader.fragmentShader.replace(
@@ -491,167 +382,123 @@ let SHAPE_DEFAULTS = {
                         `
                         #include <map_fragment>
                         vec3 col = diffuseColor.rgb;
+                        
+                        vec3 tint = uTintColor;
+                        col = mix(col, col * tint, uTintLevel); 
+
                         float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
                         vec3 gray = vec3(luma);
                         col = mix(gray, col, uSaturation);
+                        
                         col = (col - 0.5) * uContrast + 0.5;
                         col = col * uBrightness;
-                        col = max(vec3(0.0), col);
-                        diffuseColor.rgb = col; 
+                        
+                        diffuseColor.rgb = max(vec3(0.0), col); 
                         `
                     );
                 }
             };
-
             return material;
         }
 
-        // 2. UPDATED SCENE CREATION LOGIC
         function createSceneForItem(element, item, isModal = false) {
             const scene = new THREE.Scene();
-            
-            // Apply Environment Map
-            if(window.GLOBAL_ENV_MAP) {
-                scene.environment = window.GLOBAL_ENV_MAP;
-            }
+            if(window.GLOBAL_ENV_MAP) scene.environment = window.GLOBAL_ENV_MAP;
 
             const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-            camera.position.z = 4.2; 
-            camera.position.y = 1.5;
+            camera.position.set(0, 1.5, 4.2);
             camera.lookAt(0, 0, 0);
 
-            // Lighting Group
+            // Lighting setup optimized for visibility
             const lightGroup = new THREE.Group();
             scene.add(lightGroup);
-
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambient);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-            dirLight.position.set(3, 2, 8);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); // Stronger directional
+            dirLight.position.set(3, 3, 5);
             lightGroup.add(dirLight);
+            
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            fillLight.position.set(-3, 0, 5);
+            lightGroup.add(fillLight);
+            
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            backLight.position.set(0, 2, -5);
+            lightGroup.add(backLight);
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4)); // Lower ambient for better shadows
 
-            const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            rimLight.position.set(-8, 2, -5);
-            lightGroup.add(rimLight);
-
-            // Geometry
             const shape = item.shape || 'sphere';
             const geometry = SHARED_GEOMETRIES[shape] || SHARED_GEOMETRIES['sphere'];
-            
-            // Material (Using the new helper)
             const material = createMaterial(item);
-            
             const mesh = new THREE.Mesh(geometry, material);
-            const shapeDef = SHAPE_DEFAULTS[shape];
             
-            // Apply Rotation, Scale, and Lighting Defaults
+            const shapeDef = SHAPE_DEFAULTS[shape];
             if (shapeDef) {
                 mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                const s = shapeDef.scale || 1.0;
+                mesh.scale.set(s,s,s);
                 
-                const sScale = shapeDef.scale !== undefined ? shapeDef.scale : 1.0;
-                mesh.scale.set(sScale, sScale, sScale);
+                // Apply Global Light Rotation & Tilt
+                lightGroup.rotation.y = shapeDef.lightRotation || 0;
+                lightGroup.rotation.x = shapeDef.lightTilt || 0; 
 
-                const lRot = shapeDef.lightRotation !== undefined ? shapeDef.lightRotation : 0;
-                lightGroup.rotation.y = lRot;
-
-                const eRot = shapeDef.envRotation !== undefined ? shapeDef.envRotation : 0;
-                if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = eRot;
+                if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
             }
-
             scene.add(mesh);
 
-            const sceneData = {
-                scene, camera, element, mesh, shape, lightGroup,
-                isDragging: false,
-                lastMouse: { x: 0, y: 0 }
-            };
+            const sceneData = { scene, camera, element, mesh, shape, lightGroup, isDragging: false, lastMouse: {x:0, y:0} };
 
-            // Drag Interaction - ONLY if modal
             if (isModal) {
+                camera.position.z = 3.5; 
+                camera.position.y = 1.3; 
+
                 element.addEventListener('mousedown', (e) => {
                     sceneData.isDragging = true;
                     sceneData.lastMouse.x = e.clientX;
                     sceneData.lastMouse.y = e.clientY;
                 });
-                
-                // Adjust camera for modal view
-                camera.position.z = 3.5; 
-                camera.position.y = 1.3; 
             }
-
             return sceneData;
         }
 
-        // --- RENDER LOOP ---
         function render() {
             if (!isAnimating) return;
-
-            // --- 1. RENDER MAIN CANVAS ---
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-            if (canvas.width !== width || canvas.height !== height) {
-                renderer.setSize(width, height, false);
+            
+            if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+                renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
             }
+            renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
 
-            renderer.setScissorTest(false);
-            renderer.clear();
-            renderer.setScissorTest(true);
-
-        scenes.forEach((item) => {
+            scenes.forEach((item) => {
                 const rect = item.element.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0 || rect.bottom < 0 || rect.top > window.innerHeight) return;
                 
-                if (rect.width === 0 || rect.height === 0) return;
-                if ( rect.bottom < 0 || rect.top > window.innerHeight || 
-                     rect.right < 0 || rect.left > window.innerWidth ) return;
-
-                // Standard Bounds
-                const left = rect.left;
-                const bottom = window.innerHeight - rect.bottom;
-                const w = rect.right - rect.left;
-                const h = rect.bottom - rect.top;
-
-                // FIX 3: EXPAND VIEWPORT (1.5x)
                 const expansion = 1.5; 
-                const wExp = w * expansion;
-                const hExp = h * expansion;
-                
-                const lExp = left - (wExp - w) / 2;
-                const bExp = bottom - (hExp - h) / 2;
+                const w = rect.width; const h = rect.height;
+                const wExp = w * expansion; const hExp = h * expansion;
+                const left = rect.left - (wExp - w)/2;
+                const bottom = window.innerHeight - rect.bottom - (hExp - h)/2;
 
-                renderer.setViewport(lExp, bExp, wExp, hExp);
-                renderer.setScissor(lExp, bExp, wExp, hExp);
+                renderer.setViewport(left, bottom, wExp, hExp);
+                renderer.setScissor(left, bottom, wExp, hExp);
                 renderer.render(item.scene, item.camera);
             });
             renderer.setScissorTest(false);
 
-            // --- 2. RENDER MODAL CANVAS (IF ACTIVE) ---
             if (modalSceneData) {
-                const mWidth = modalCanvas.clientWidth;
-                const mHeight = modalCanvas.clientHeight;
-                if (modalCanvas.width !== mWidth || modalCanvas.height !== mHeight) {
-                    modalRenderer.setSize(mWidth, mHeight, false);
+                if (modalCanvas.width !== modalCanvas.clientWidth || modalCanvas.height !== modalCanvas.clientHeight) {
+                    modalRenderer.setSize(modalCanvas.clientWidth, modalCanvas.clientHeight, false);
                 }
-
-                modalRenderer.setScissorTest(false);
-                modalRenderer.clear();
-                modalRenderer.setScissorTest(true);
-
-                const item = modalSceneData;
-                const rect = item.element.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0) {
-                      const left = rect.left;
-                      const bottom = window.innerHeight - rect.bottom;
-                      const w = rect.right - rect.left;
-                      const h = rect.bottom - rect.top;
-
-                      modalRenderer.setViewport(left, bottom, w, h);
-                      modalRenderer.setScissor(left, bottom, w, h);
-                      modalRenderer.render(item.scene, item.camera);
+                modalRenderer.setScissorTest(false); modalRenderer.clear(); modalRenderer.setScissorTest(true);
+                const rect = modalSceneData.element.getBoundingClientRect();
+                if (rect.width > 0) {
+                     const bottom = window.innerHeight - rect.bottom;
+                     modalRenderer.setViewport(rect.left, bottom, rect.width, rect.height);
+                     modalRenderer.setScissor(rect.left, bottom, rect.width, rect.height);
+                     modalRenderer.render(modalSceneData.scene, modalSceneData.camera);
                 }
                 modalRenderer.setScissorTest(false);
             } else {
-                modalRenderer.clear(); // Clear modal canvas if no scene
+                modalRenderer.clear(); 
             }
             
             requestAnimationFrame(render);
@@ -665,12 +512,13 @@ let SHAPE_DEFAULTS = {
         window.addEventListener('mousemove', (e) => {
             const handleDrag = (s) => {
                 if (s.isDragging) {
-                    const dx = e.clientX - s.lastMouse.x;
-                    const dy = e.clientY - s.lastMouse.y;
-                    s.mesh.rotation.y += dx * 0.01;
-                    s.mesh.rotation.x += dy * 0.01;
-                    s.lastMouse.x = e.clientX;
-                    s.lastMouse.y = e.clientY;
+                    s.mesh.rotation.y += (e.clientX - s.lastMouse.x) * 0.01;
+                    s.mesh.rotation.x += (e.clientY - s.lastMouse.y) * 0.01;
+                    
+                    if(s === modalSceneData && SHAPE_DEFAULTS[s.shape]) {
+                         SHAPE_DEFAULTS[s.shape].rotation = { x: s.mesh.rotation.x, y: s.mesh.rotation.y, z: s.mesh.rotation.z };
+                    }
+                    s.lastMouse.x = e.clientX; s.lastMouse.y = e.clientY;
                 }
             };
             scenes.forEach(handleDrag);
@@ -678,368 +526,215 @@ let SHAPE_DEFAULTS = {
         });
 
         // =========================================================================
-        // ======================== APP LOGIC & UI =================================
+        // ======================== APP LOGIC ======================================
         // =========================================================================
 
-        let currentEditCatId = null;
-        let currentEditItemId = null;
-        let originalItemState = null; // Backup for Cancel
+        let currentEditCatId = null, currentEditItemId = null, originalItemState = null;
 
         function rebuildApp() {
-            // Clean up MAIN scenes for memory optimization
             scenes = [];
-            
             document.getElementById('content-anchor').innerHTML = '';
             renderHTML();
             
-            // Main Catalog Scenes
-            CATEGORIES.forEach((cat) => {
-                cat.items.forEach((item) => {
+            CATEGORIES.forEach(cat => {
+                cat.items.forEach(item => {
                     const el = document.getElementById(`scene-${item.id}`);
                     if (el) scenes.push(createSceneForItem(el, item, false));
                 });
             });
 
-            // Modal Scene Logic
-            if(document.getElementById('editor-modal').classList.contains('active') && currentEditCatId) {
+            if(document.getElementById('editor-modal').classList.contains('active') && currentEditItemId) {
                 const cat = CATEGORIES.find(c => c.id === currentEditCatId);
                 const item = cat.items.find(i => i.id === currentEditItemId);
                 
                 if(item) {
-                    if (modalSceneData && modalSceneData.shape !== item.shape) {
-                        modalSceneData = null; 
-                    }
+                     if (modalSceneData && modalSceneData.shape === item.shape) {
+                         const newMat = createMaterial(item);
+                         if (modalSceneData.mesh.material) modalSceneData.mesh.material.dispose();
+                         modalSceneData.mesh.material = newMat;
+                         
+                         const defs = SHAPE_DEFAULTS[item.shape];
+                         if(defs) {
+                            modalSceneData.mesh.scale.setScalar(defs.scale || 1.0);
+                            modalSceneData.lightGroup.rotation.y = defs.lightRotation || 0;
+                            modalSceneData.lightGroup.rotation.x = defs.lightTilt || 0;
+                         }
 
-                    if (modalSceneData && modalSceneData.mesh) {
-                        const mesh = modalSceneData.mesh;
-                        const newMat = createMaterial(item);
-                        if (mesh.material) mesh.material.dispose();
-                        mesh.material = newMat;
-                    } else {
-                        const modalEl = document.getElementById('modal-scene-target');
-                        modalEl.innerHTML = ''; 
-                        modalSceneData = createSceneForItem(modalEl, item, true);
-                    }
+                     } else {
+                         const el = document.getElementById('modal-scene-target');
+                         el.innerHTML = ''; 
+                         modalSceneData = createSceneForItem(el, item, true);
+                     }
                 }
             }
         }
 
         function renderHTML() {
             const container = document.getElementById('content-anchor');
-            let html = `<div class="page-sheet">`;
-
-            html += `
+            let html = `<div class="page-sheet">
                 <div class="flex justify-between items-end border-b-2 border-gray-800 pb-4 mb-8">
-                    <div>
-                        <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-16 mb-2 object-contain">
-                    </div>
+                    <div><img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-16 mb-2 object-contain"></div>
                     <div class="text-right">
                         <h2 class="text-xl font-bold text-gray-800">${COMPANY_INFO.subtitle}</h2>
                         <p class="text-sm text-gray-500 mt-1">${COMPANY_INFO.contact}</p>
                     </div>
-                </div>
-            `;
+                </div>`;
 
             CATEGORIES.forEach((cat) => {
-                html += `
-                    <div class="mb-8 page-break-avoid">
+                html += `<div class="mb-8 page-break-avoid">
                         <h3 class="text-lg font-bold uppercase text-gray-800 border-l-4 border-gray-800 pl-3 mb-2">${cat.title}</h3>
                         ${cat.description ? `<p class="text-sm text-gray-600 mb-4 max-w-2xl">${cat.description}</p>` : ''}
-                        
                         <div class="grid grid-cols-4 gap-6 mb-4">
                             ${cat.items.map(item => `
                                 <div class="flex flex-col group page-break-avoid relative">
                                     <div class="relative w-full aspect-square mb-3 bg-transparent rounded transition">
                                         <div id="scene-${item.id}" class="scene-element"></div>
                                         <img id="print-${item.id}" class="print-image" src="" />
-                                        
                                         <div class="item-controls absolute inset-0 z-50 flex flex-col justify-between p-2">
                                             <div class="flex justify-end gap-2">
-                                                <button onclick="duplicateItem(${cat.id}, ${item.id})" class="control-btn" title="Duplicate Item">
-                                                    <i class="fas fa-copy text-xs"></i>
-                                                </button>
-                                                <button onclick="deleteItemDirectly(${cat.id}, ${item.id})" class="control-btn btn-delete text-red-500" title="Delete Item">
-                                                    <i class="fas fa-trash text-xs"></i>
-                                                </button>
-                                                <button onclick="openModal(${cat.id}, ${item.id})" class="control-btn" title="Edit Item">
-                                                    <i class="fas fa-pen text-xs"></i>
-                                                </button>
+                                                <button onclick="duplicateItem(${cat.id}, ${item.id})" class="control-btn"><i class="fas fa-copy text-xs"></i></button>
+                                                <button onclick="deleteItemDirectly(${cat.id}, ${item.id})" class="control-btn btn-delete text-red-500"><i class="fas fa-trash text-xs"></i></button>
+                                                <button onclick="openModal(${cat.id}, ${item.id})" class="control-btn"><i class="fas fa-pen text-xs"></i></button>
                                             </div>
-                                            
                                             <div class="flex justify-between items-center mt-auto">
-                                                <button onclick="moveItem(${cat.id}, ${item.id}, -1)" class="control-btn w-8 h-8 opacity-70 hover:opacity-100" title="Move Left">
-                                                    <i class="fas fa-chevron-left text-xs"></i>
-                                                </button>
-                                                <button onclick="moveItem(${cat.id}, ${item.id}, 1)" class="control-btn w-8 h-8 opacity-70 hover:opacity-100" title="Move Right">
-                                                    <i class="fas fa-chevron-right text-xs"></i>
-                                                </button>
+                                                <button onclick="moveItem(${cat.id}, ${item.id}, -1)" class="control-btn w-8 h-8 opacity-70 hover:opacity-100"><i class="fas fa-chevron-left text-xs"></i></button>
+                                                <button onclick="moveItem(${cat.id}, ${item.id}, 1)" class="control-btn w-8 h-8 opacity-70 hover:opacity-100"><i class="fas fa-chevron-right text-xs"></i></button>
                                             </div>
                                         </div>
-
                                     </div>
-                                    <div class="text-center">
-                                        <p class="text-xs font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p>
-                                    </div>
+                                    <div class="text-center"><p class="text-xs font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p></div>
                                 </div>
                             `).join('')}
-                            
                             <div class="add-card flex flex-col justify-center items-center aspect-square border-2 border-dashed border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition group" onclick="addItem(${cat.id})">
-                                <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 group-hover:text-blue-700 transition">
-                                    <i class="fas fa-plus text-gray-400 group-hover:text-blue-600"></i>
-                                </div>
+                                <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 group-hover:text-blue-700 transition"><i class="fas fa-plus text-gray-400 group-hover:text-blue-600"></i></div>
                                 <span class="text-xs font-bold text-gray-400 group-hover:text-blue-600 uppercase">Add Item</span>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
-
-            html += `
-                <div class="absolute bottom-8 left-0 right-0 text-center">
-                    <div class="w-16 h-1 bg-gray-500 mx-auto mb-2"></div>
-                    <p class="text-xs text-gray-400 uppercase tracking-widest">${COMPANY_INFO.title} &copy; ${currentYear}</p>
-                </div>
-            </div>`;
-
+            html += `<div class="absolute bottom-8 left-0 right-0 text-center"><div class="w-16 h-1 bg-gray-500 mx-auto mb-2"></div><p class="text-xs text-gray-400 uppercase tracking-widest">${COMPANY_INFO.title} &copy; ${currentYear}</p></div></div>`;
             container.innerHTML = html;
         }
 
-        // =========================================================================
-        // ======================== POPUP / MODAL LOGIC ============================
-        // =========================================================================
+        function toggleAdvanced() {
+            const panel = document.getElementById('advanced-overrides');
+            panel.classList.toggle('open');
+            const icon = document.getElementById('adv-icon');
+            icon.classList.toggle('fa-chevron-down'); icon.classList.toggle('fa-chevron-up');
+        }
 
         function openModal(catId, itemId) {
-            currentEditCatId = catId;
-            currentEditItemId = itemId;
-            
+            currentEditCatId = catId; currentEditItemId = itemId;
             const cat = CATEGORIES.find(c => c.id === catId);
             const item = cat.items.find(i => i.id === itemId);
-
-            // Create Backup for Cancel
             originalItemState = JSON.parse(JSON.stringify(item));
 
-            const controlsContainer = document.getElementById('modal-controls');
-            
-            // Get defaults for slider initial values
-            const shapeDef = SHAPE_DEFAULTS[item.shape] || { scale: 1, lightRotation: 0, envRotation: 0 };
-            const currentScale = shapeDef.scale !== undefined ? shapeDef.scale : 1.0;
-            const currentLightRot = shapeDef.lightRotation !== undefined ? shapeDef.lightRotation : 0;
-            const currentEnvRot = shapeDef.envRotation !== undefined ? shapeDef.envRotation : 0;
+            const generateOptions = (val) => {
+                let opts = `<option value="" ${!val ? 'selected' : ''}>Default (From Set)</option>
+                            <option value="BLANK" ${val === 'BLANK' ? 'selected' : ''}>-- NONE / BLANK --</option>`;
+                for (const [folder, mats] of Object.entries(MATERIAL_LIBRARY)) {
+                    opts += `<optgroup label="${folder.toUpperCase()}">`;
+                    mats.forEach(id => opts += `<option value="${folder}/${id}" ${val === `${folder}/${id}` ? 'selected' : ''}>${id}</option>`);
+                    opts += `</optgroup>`;
+                }
+                return opts;
+            };
 
-            controlsContainer.innerHTML = `
+            const shapeDef = SHAPE_DEFAULTS[item.shape] || { scale: 1, lightRotation: 0, lightTilt: 0, envRotation: 0 };
+            
+            document.getElementById('modal-controls').innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Item Name</label>
-                        <input type="text" value="${item.name}" 
-                            onchange="updateCurrentItem('name', this.value)"
-                            class="w-full border rounded p-2 font-bold text-gray-800 focus:ring-2 ring-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Shape</label>
-                        <select onchange="updateCurrentItem('shape', this.value)" class="w-full border rounded p-2 bg-white cursor-pointer">
-                            ${SHAPE_TYPES.map(t => `<option value="${t}" ${item.shape === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}
-                        </select>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Name</label><input type="text" value="${item.name}" onchange="updateCurrentItem('name', this.value)" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Shape</label>
+                        <select onchange="updateCurrentItem('shape', this.value)" class="w-full border rounded p-2 bg-white">${SHAPE_TYPES.map(t => `<option value="${t}" ${item.shape === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}</select>
                     </div>
                 </div>
 
-                 <!-- GLOBAL SETTINGS -->
-                <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mt-4">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                        <i class="fas fa-globe"></i> Global Shape Settings
-                    </h4>
+                 <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mt-4">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2"><i class="fas fa-globe"></i> Global Shape Settings</h4>
                     <div class="space-y-3">
-                         <div class="flex items-center gap-4">
-                            <label class="w-24 text-xs font-bold text-gray-700">Shape Scale</label>
-                            <input type="range" min="0.5" max="1.5" step="0.05" value="${currentScale}" 
-                                oninput="updateGlobalPreview('scale', this.value)">
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <label class="w-24 text-xs font-bold text-gray-700">Light Angle</label>
-                            <input type="range" min="0" max="6.28" step="0.1" value="${currentLightRot}" 
-                                oninput="updateGlobalPreview('lightRotation', this.value)">
-                        </div>
-                         <div class="flex items-center gap-4">
-                            <label class="w-24 text-xs font-bold text-gray-700">Reflection Rot</label>
-                            <input type="range" min="0" max="1" step="0.01" value="${currentEnvRot}" 
-                                oninput="updateGlobalPreview('envRotation', this.value)">
-                        </div>
-                         <p class="text-[10px] text-gray-400 italic">These settings apply to ALL objects of this shape.</p>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Shape Scale</label><input type="range" min="0.5" max="1.5" step="0.05" value="${shapeDef.scale||1}" oninput="updateGlobalPreview('scale', this.value)"></div>
+                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Rotate</label><input type="range" min="0" max="6.28" step="0.1" value="${shapeDef.lightRotation||0}" oninput="updateGlobalPreview('lightRotation', this.value)"></div>
+                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Tilt</label><input type="range" min="-1.5" max="1.5" step="0.1" value="${shapeDef.lightTilt||0}" oninput="updateGlobalPreview('lightTilt', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Env Rotation</label><input type="range" min="0" max="1" step="0.01" value="${shapeDef.envRotation||0}" oninput="updateGlobalPreview('envRotation', this.value)"></div>
                     </div>
                 </div>
 
                 <hr class="border-gray-200 my-4">
 
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Base Color / Tint</label>
-                    <div class="flex gap-2 items-center">
-                        <input type="color" value="${item.color}" 
-                            onchange="updateCurrentItem('color', this.value)"
-                            class="w-full h-10 rounded border-0 cursor-pointer p-0">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Material Set</label>
+                    <select onchange="updateCurrentItem('materialSet', this.value)" class="w-full border-2 border-blue-100 rounded p-2 font-bold text-gray-700">
+                        <option value="none" ${item.materialSet === 'none' ? 'selected' : ''}>None (Color Only)</option>
+                        ${Object.entries(MATERIAL_LIBRARY).map(([f, ms]) => `<optgroup label="${f.toUpperCase()}">${ms.map(m => `<option value="${f}/${m}" ${item.materialSet === `${f}/${m}` ? 'selected' : ''}>${m}</option>`).join('')}</optgroup>`).join('')}
+                    </select>
+                </div>
+
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <button onclick="toggleAdvanced()" class="w-full bg-gray-50 p-2 text-left flex justify-between items-center hover:bg-gray-100">
+                        <span class="text-xs font-bold text-gray-600">Advanced / Manual Overrides</span><i id="adv-icon" class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </button>
+                    <div id="advanced-overrides" class="advanced-panel bg-white p-3 space-y-3">
+                        ${['map', 'bumpMap', 'normalMap', 'roughnessMap', 'metalnessMap'].map(key => `
+                            <div><label class="block text-[10px] font-bold text-gray-500 capitalize">${key} Override</label>
+                            <select onchange="updateOverride('${key}', this.value)" class="w-full border rounded p-1 text-xs text-gray-600">${generateOptions(item.overrides?.[key])}</select></div>
+                        `).join('')}
                     </div>
                 </div>
 
-                <!-- TEXTURE MAPS -->
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                         <label class="block text-xs font-bold text-gray-500 mb-1">Base Texture</label>
-                         <select onchange="updateCurrentItem('mapId', this.value)" class="w-full border rounded p-1 text-xs">
-                            <option value="none">None</option>
-                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.mapId === k ? 'selected' : ''}>${k}</option>`).join('')}
-                         </select>
-                    </div>
-                    <div>
-                         <label class="block text-xs font-bold text-gray-500 mb-1">Bump Map</label>
-                         <select onchange="updateCurrentItem('bumpId', this.value)" class="w-full border rounded p-1 text-xs">
-                            <option value="none">None</option>
-                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.bumpId === k ? 'selected' : ''}>${k}</option>`).join('')}
-                         </select>
-                    </div>
-                    <div>
-                         <label class="block text-xs font-bold text-gray-500 mb-1">Normal Map</label>
-                         <select onchange="updateCurrentItem('normalId', this.value)" class="w-full border rounded p-1 text-xs">
-                            <option value="none">None</option>
-                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.normalId === k ? 'selected' : ''}>${k}</option>`).join('')}
-                         </select>
-                    </div>
-                     <div>
-                         <label class="block text-xs font-bold text-gray-500 mb-1">Roughness Map</label>
-                         <select onchange="updateCurrentItem('roughnessId', this.value)" class="w-full border rounded p-1 text-xs">
-                            <option value="none">None</option>
-                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.roughnessId === k ? 'selected' : ''}>${k}</option>`).join('')}
-                         </select>
-                    </div>
-                </div>
-
-                <div class="space-y-4 pt-2 bg-gray-50 p-2 rounded">
-                    <h5 class="text-xs font-bold uppercase text-gray-400">Material Settings</h5>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Gloss/Rough</label>
-                        <input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateCurrentItem('roughness', this.value)">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Plastic/Metal</label>
-                        <input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateCurrentItem('metalness', this.value)">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Bump Depth</label>
-                        <input type="range" min="0" max="0.1" step="0.001" value="${item.bumpScale}" oninput="updateCurrentItem('bumpScale', this.value)">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Tex Scale</label>
-                        <input type="range" min="0.1" max="2.0" step="0.1" value="${item.textureScale}" oninput="updateCurrentItem('textureScale', this.value)">
-                    </div>
+                <div class="space-y-4 pt-2 mt-4 bg-gray-50 p-2 rounded">
+                    <h5 class="text-xs font-bold uppercase text-gray-400">Material Physics</h5>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Gloss/Rough</label><input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateCurrentItem('roughness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Metalness</label><input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateCurrentItem('metalness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Bump Depth</label><input type="range" min="0" max="0.1" step="0.001" value="${item.bumpScale}" oninput="updateCurrentItem('bumpScale', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Scale</label><input type="range" min="0.1" max="5.0" step="0.1" value="${item.textureScale}" oninput="updateCurrentItem('textureScale', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Rotate</label><input type="range" min="0" max="360" step="1" value="${item.textureRotation||0}" oninput="updateCurrentItem('textureRotation', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset X</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetX||0}" oninput="updateCurrentItem('textureOffsetX', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset Y</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetY||0}" oninput="updateCurrentItem('textureOffsetY', this.value)"></div>
                 </div>
 
                 <div class="space-y-4 pt-2 mt-2 bg-gray-50 p-2 rounded">
-                    <h5 class="text-xs font-bold uppercase text-gray-400">Image Filters</h5>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Brightness</label>
-                        <input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness !== undefined ? item.brightness : 1.0}" oninput="updateCurrentItem('brightness', this.value)">
+                    <h5 class="text-xs font-bold uppercase text-gray-400">Image Filters & Tint</h5>
+                    <div class="flex items-center gap-4 border-b border-gray-200 pb-4 mb-2">
+                        <label class="w-24 text-xs font-bold text-gray-600">Tint Color</label>
+                        <input type="color" value="${item.color}" onchange="updateCurrentItem('color', this.value)" class="w-10 h-8 rounded border border-gray-300 cursor-pointer p-0">
+                        <div class="flex-1 flex items-center gap-2">
+                             <label class="text-[10px] font-bold text-gray-400">Str</label>
+                             <input type="range" min="0" max="1" step="0.05" value="${item.tintLevel !== undefined ? item.tintLevel : 1.0}" oninput="updateCurrentItem('tintLevel', this.value)">
+                        </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Contrast</label>
-                        <input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast !== undefined ? item.contrast : 1.0}" oninput="updateCurrentItem('contrast', this.value)">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Saturation</label>
-                        <input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation !== undefined ? item.saturation : 1.0}" oninput="updateCurrentItem('saturation', this.value)">
-                    </div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Brightness</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness ?? 1}" oninput="updateCurrentItem('brightness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Contrast</label><input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast ?? 1}" oninput="updateCurrentItem('contrast', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Saturation</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation ?? 1}" oninput="updateCurrentItem('saturation', this.value)"></div>
                 </div>
             `;
-
             document.getElementById('editor-modal').classList.add('active');
             rebuildApp();
         }
 
         function updateGlobalPreview(type, value) {
-            if (!modalSceneData) return;
-            const val = parseFloat(value);
-            
-            if (type === 'scale') {
-                modalSceneData.mesh.scale.set(val, val, val);
-            } else if (type === 'lightRotation') {
-                modalSceneData.lightGroup.rotation.y = val;
-            } else if (type === 'envRotation') {
-                 if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = val;
-            }
-        }
-
-        // NEW FUNCTION TO COPY SETTINGS
-        function copyAsPreset() {
-            const cat = CATEGORIES.find(c => c.id === currentEditCatId);
-            const item = cat.items.find(i => i.id === currentEditItemId);
-
-            // Create safe key from name
-            const keyName = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-            
-            // Format string
-            const presetString = `'${keyName}': { label: '${item.name}', roughness: ${item.roughness}, metalness: ${item.metalness}, bumpScale: ${item.bumpScale}, mapId: '${item.mapId||'none'}', bumpId: '${item.bumpId||'none'}', normalId: '${item.normalId||'none'}', roughnessId: '${item.roughnessId||'none'}' },`;
-
-            navigator.clipboard.writeText(presetString).then(() => {
-                // ...existing UI feedback code...
-            });
-        }
-
-        function cancelEdit() {
-            if (originalItemState && currentEditCatId && currentEditItemId) {
-                // Restore state
-                const cat = CATEGORIES.find(c => c.id === currentEditCatId);
-                const item = cat.items.find(i => i.id === currentEditItemId);
-                if (cat && item) {
-                    Object.assign(item, originalItemState);
-                }
-            }
-            closeModal();
-        }
-
-        // --- NEW SAVE FUNCTION FOR ROTATION, SCALE & LIGHTING ---
-        function saveAndCloseModal() {
-            if (modalSceneData && modalSceneData.mesh) {
-                // 1. Get the current rotation from the live preview mesh
-                const currentRotation = {
-                    x: modalSceneData.mesh.rotation.x,
-                    y: modalSceneData.mesh.rotation.y,
-                    z: modalSceneData.mesh.rotation.z
-                };
-
-                // 2. Get Scale
-                const currentScale = modalSceneData.mesh.scale.x;
-
-                // 3. Get Light Rotation
-                const currentLightRot = modalSceneData.lightGroup.rotation.y;
+            if (modalSceneData) {
+                const val = parseFloat(value);
+                if (type === 'scale') modalSceneData.mesh.scale.setScalar(val);
+                else if (type === 'lightRotation') modalSceneData.lightGroup.rotation.y = val;
+                else if (type === 'lightTilt') modalSceneData.lightGroup.rotation.x = val;
+                else if (type === 'envRotation') if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = val;
                 
-                // 4. Get Env Rotation (stored in texture offset)
-                const currentEnvRot = window.GLOBAL_ENV_MAP ? window.GLOBAL_ENV_MAP.offset.x : 0;
-
-                // 5. Identify the shape (e.g., 'cube', 'plank')
-                const shape = modalSceneData.shape;
-
-                // 6. Update the global defaults so all items of this shape use these new settings
-                if (SHAPE_DEFAULTS[shape]) {
-                    SHAPE_DEFAULTS[shape].rotation = currentRotation;
-                    SHAPE_DEFAULTS[shape].scale = currentScale;
-                    SHAPE_DEFAULTS[shape].lightRotation = currentLightRot;
-                    SHAPE_DEFAULTS[shape].envRotation = currentEnvRot;
+                if(SHAPE_DEFAULTS[modalSceneData.shape]) {
+                    SHAPE_DEFAULTS[modalSceneData.shape][type] = val;
                 }
             }
-
-            // 7. Close the modal, which triggers rebuildApp()
-            // rebuildApp() will re-create all scenes using the updated SHAPE_DEFAULTS
-            closeModal();
         }
+
+        function saveAndCloseModal() { closeModal(); }
 
         function closeModal() {
             document.getElementById('editor-modal').classList.remove('active');
-            currentEditCatId = null;
-            currentEditItemId = null;
-            originalItemState = null;
-            
-            // Force destroy modal scene data so next open starts fresh
+            currentEditCatId = null; currentEditItemId = null; originalItemState = null;
             if (modalSceneData) {
                 if (modalSceneData.mesh && modalSceneData.mesh.material) modalSceneData.mesh.material.dispose();
-                modalSceneData = null; 
+                modalSceneData = null;
             }
-            
             rebuildApp(); 
         }
 
@@ -1047,162 +742,91 @@ let SHAPE_DEFAULTS = {
             const cat = CATEGORIES.find(c => c.id === currentEditCatId);
             const item = cat.items.find(i => i.id === currentEditItemId);
             
-            if (['roughness', 'metalness', 'bumpScale', 'textureScale', 'brightness', 'contrast', 'saturation'].includes(field)) {
+            if (['roughness', 'metalness', 'bumpScale', 'textureScale', 'textureRotation', 'textureOffsetX', 'textureOffsetY', 'brightness', 'contrast', 'saturation', 'tintLevel'].includes(field)) {
                 item[field] = parseFloat(value);
             } else {
                 item[field] = value;
             }
-
-            // Just rebuild
+            if (field === 'materialSet') item.overrides = {}; 
             rebuildApp();
         }
 
-        function deleteCurrentItem() {
-            if(!confirm("Delete this material?")) return;
+        function updateOverride(type, value) {
             const cat = CATEGORIES.find(c => c.id === currentEditCatId);
-            cat.items = cat.items.filter(i => i.id !== currentEditItemId);
-            closeModal();
-        }
-
-        function deleteItemDirectly(catId, itemId) {
-            if(!confirm("Delete this material?")) return;
-            const cat = CATEGORIES.find(c => c.id === catId);
-            cat.items = cat.items.filter(i => i.id !== itemId);
+            const item = cat.items.find(i => i.id === currentEditItemId);
+            if (!item.overrides) item.overrides = {};
+            if (value.trim() === '') delete item.overrides[type];
+            else item.overrides[type] = value;
             rebuildApp();
         }
 
-        function moveItem(catId, itemId, direction) {
-            const cat = CATEGORIES.find(c => c.id === catId);
-            const index = cat.items.findIndex(i => i.id === itemId);
-            
-            if (direction === -1 && index > 0) {
-                [cat.items[index], cat.items[index - 1]] = [cat.items[index - 1], cat.items[index]];
-            } else if (direction === 1 && index < cat.items.length - 1) {
-                [cat.items[index], cat.items[index + 1]] = [cat.items[index + 1], cat.items[index]];
+        function deleteCurrentItem() { if(confirm("Delete?")) { const cat = CATEGORIES.find(c => c.id === currentEditCatId); cat.items = cat.items.filter(i => i.id !== currentEditItemId); closeModal(); } }
+        function deleteItemDirectly(catId, itemId) { if(confirm("Delete?")) { const cat = CATEGORIES.find(c => c.id === catId); cat.items = cat.items.filter(i => i.id !== itemId); rebuildApp(); } }
+        function cancelEdit() { 
+            if (originalItemState) {
+                const cat = CATEGORIES.find(c => c.id === currentEditCatId);
+                const item = cat.items.find(i => i.id === currentEditItemId);
+                Object.assign(item, originalItemState);
             }
-            rebuildApp(); 
+            closeModal(); 
         }
 
         function duplicateItem(catId, itemId) {
             const cat = CATEGORIES.find(c => c.id === catId);
             const index = cat.items.findIndex(i => i.id === itemId);
-            if(index === -1) return;
-
-            const itemToClone = cat.items[index];
-            const newItem = JSON.parse(JSON.stringify(itemToClone));
-            newItem.id = Date.now();
-            newItem.name = newItem.name + " (Copy)";
-
-            // Insert after original
+            const newItem = JSON.parse(JSON.stringify(cat.items[index]));
+            newItem.id = Date.now(); newItem.name += " (Copy)";
             cat.items.splice(index + 1, 0, newItem);
+            rebuildApp();
+        }
+
+        function moveItem(catId, itemId, dir) {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            const idx = cat.items.findIndex(i => i.id === itemId);
+            if (dir === -1 && idx > 0) [cat.items[idx], cat.items[idx-1]] = [cat.items[idx-1], cat.items[idx]];
+            else if (dir === 1 && idx < cat.items.length - 1) [cat.items[idx], cat.items[idx+1]] = [cat.items[idx+1], cat.items[idx]];
             rebuildApp();
         }
 
         function addItem(catId) {
             const cat = CATEGORIES.find(c => c.id === catId);
-            const newId = Date.now(); 
-            const newItem = {
-                id: newId,
-                name: "New Material",
-                color: "#cccccc",
-                shape: "cube",
-                mapId: "none",
-                bumpId: "none",
-                normalId: "none", 
-                roughnessId: "none",
-                roughness: 0.5,
-                metalness: 0,
-                bumpScale: 0.005,
-                textureScale: 1.0,
-                brightness: 1.0,
-                contrast: 1.0,
-                saturation: 1.0
-            };
+            const newItem = { id: Date.now(), name: "New Material", color: "#cccccc", shape: "cube", materialSet: "none", roughness: 0.5, metalness: 0, bumpScale: 0.005, textureScale: 1, textureRotation: 0, textureOffsetX: 0, textureOffsetY: 0, brightness: 1, contrast: 1, saturation: 1, tintLevel: 1 };
             cat.items.push(newItem);
             rebuildApp();
-            openModal(catId, newId);
+            openModal(catId, newItem.id);
         }
 
         function downloadHTML() {
-            let htmlContent = document.documentElement.outerHTML;
-            const dataStartMarker = '// -- DATA_START --';
-            const dataEndMarker = '// -- DATA_END --';
-            
-            // --- UPDATED SAVE LOGIC ---
-            // Now saves both CATEGORIES and SHAPE_DEFAULTS (including your new rotations)
-            const newScriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};
-let SHAPE_DEFAULTS = ${JSON.stringify(SHAPE_DEFAULTS, null, 4)};`;
-            
-            const regex = new RegExp(`${dataStartMarker}[\\s\\S]*?${dataEndMarker}`);
-            
-            if (regex.test(htmlContent)) {
-                htmlContent = htmlContent.replace(regex, `${dataStartMarker}\n        ${newScriptData}\n        ${dataEndMarker}`);
-            } else {
-                alert("Error saving data structure. Please copy manually.");
-                return;
-            }
-
-            const blob = new Blob([htmlContent], { type: 'text/html' });
+            let html = document.documentElement.outerHTML;
+            const scriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};\nlet SHAPE_DEFAULTS = ${JSON.stringify(SHAPE_DEFAULTS, null, 4)};`;
+            html = html.replace(/\/\/ -- DATA_START --[\s\S]*?\/\/ -- DATA_END --/, `// -- DATA_START --\n${scriptData}\n// -- DATA_END --`);
+            const blob = new Blob([html], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'wishbone-catalog-saved.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = 'wishbone-catalog-saved.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         async function prepareAndPrint() {
             isAnimating = false;
-            if(document.getElementById('editor-modal').classList.contains('active')) {
-                closeModal();
-            }
-            
-            const size = 1024;
-            renderer.setSize(size, size);
-            renderer.setScissorTest(false);
-
+            if(document.getElementById('editor-modal').classList.contains('active')) closeModal();
+            renderer.setSize(1024, 1024);
             for (const item of scenes) {
-                if(item.element.id === 'modal-scene-target') continue; 
-
                 const shapeDef = SHAPE_DEFAULTS[item.shape];
                 if(shapeDef) {
                     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
-                    // Apply scale if exists
-                    const s = shapeDef.scale || 1.0;
-                    item.mesh.scale.set(s,s,s);
-                    // Apply light rotation if exists and lightGroup exists
-                    if(item.lightGroup && shapeDef.lightRotation !== undefined) {
-                        item.lightGroup.rotation.y = shapeDef.lightRotation;
-                    }
-                    if(window.GLOBAL_ENV_MAP && shapeDef.envRotation !== undefined) {
-                        window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation;
-                    }
-                } else {
-                    item.mesh.rotation.set(0,0,0);
+                    item.mesh.scale.setScalar(shapeDef.scale || 1.0);
+                    item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
+                    item.lightGroup.rotation.x = shapeDef.lightTilt || 0;
+                    if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
                 }
-                
                 renderer.clear();
                 renderer.render(item.scene, item.camera);
-                const dataURL = renderer.domElement.toDataURL('image/png');
                 const img = document.getElementById(`print-${item.element.id.split('-')[1]}`);
-                if (img) img.src = dataURL;
+                if (img) img.src = renderer.domElement.toDataURL('image/png');
             }
-
-            setTimeout(() => {
-                window.print();
-                isAnimating = true;
-                requestAnimationFrame(render);
-            }, 500);
+            setTimeout(() => { window.print(); isAnimating = true; requestAnimationFrame(render); }, 500);
         }
 
-        window.onload = function() {
-            initThree();
-            rebuildApp();
-            render();
-        };
-
+        window.onload = function() { initThree(); rebuildApp(); render(); };
     </script>
 </body>
 </html>
