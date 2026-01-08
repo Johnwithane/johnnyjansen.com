@@ -166,7 +166,7 @@
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
                 <div class="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</div>
                 <div id="modal-scene-target" class="w-full aspect-square relative z-50 cursor-grab active:cursor-grabbing"></div>
-                <p class="text-xs text-gray-400 mt-4">Click & Drag to Rotate</p>
+                <p class="text-xs text-gray-400 mt-4">Click & Drag to Rotate (Saves on Close)</p>
             </div>
 
             <div class="w-1/2 p-8 overflow-y-auto flex flex-col">
@@ -178,20 +178,18 @@
                 </div>
 
                 <div id="modal-controls" class="space-y-6 flex-1">
-                    </div>
+                    <!-- Controls injected by JS -->
+                </div>
 
                 <div class="border-t pt-6 mt-6 flex justify-between items-center">
                     <button onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-2">
                         <i class="fas fa-trash"></i> Delete
                     </button>
-                    <div class="flex gap-2">                               
-                        <button id="btn-copy-preset" onclick="copyAsPreset()" class="text-xs text-blue-600 hover:text-blue-800 font-bold underline decoration-dotted">
-                            <i class="fas fa-code"></i> Copy
-                        </button>
+                    <div class="flex gap-2">                        
                         <button onclick="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded transition">
                             Cancel
                         </button>
-                        <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-6 rounded transition">
+                        <button onclick="saveAndCloseModal()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-6 rounded transition">
                             Save
                         </button>
                     </div>
@@ -202,18 +200,23 @@
 
     <script>
         // =========================================================================
-        // ============================ DATA STATE =================================
+        // ============================ CONFIGURATION ==============================
         // =========================================================================
+        
+        // REPLACE THIS URL with your own Equirectangular HDRI image for global reflections
+        // For simplicity with standard TextureLoader, use a .jpg/.png equirectangular image:
+        const GLOBAL_ENV_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/2294472375_24a3b8ef46_o.jpg'; 
 
-        const currentYear = new Date().getFullYear(); // <--- Get current year
+        const currentYear = new Date().getFullYear(); 
 
         const COMPANY_INFO = {
             title: "Wishbone Site Furnishings",
-            subtitle: `${currentYear} COLOUR & MATERIAL GUIDE`, // <--- Use variable
+            subtitle: `${currentYear} COLOUR & MATERIAL GUIDE`, 
             contact: "WishboneLtd.com | (866) 626-0476",
             logoUrl: "https://wishboneltd.com/templates/yootheme/cache/c6/Wishbone-30-longer-c62913c2.webp"
         };
 
+        // You can add 'type: url' entries here for Normal and Roughness maps specifically
         const TEXTURE_REGISTRY = {
             'none': { type: 'none' },
 
@@ -244,85 +247,97 @@
             'metal_victorridge':   { type: 'url', url: 'textures/metal-VictorRidge.jpg' }
         };
 
-        const TEXTURE_STYLES = {
-            'none':      { label: 'Smooth / None', mapId: 'none', bumpId: 'none' },
-            'accoya':    { label: 'Accoya Natural',      mapId: 'none',     bumpId: 'wood_accoya' },
-            'cedar':     { label: 'Western Red Cedar',   mapId: 'none',   bumpId: 'wood_redcedar' },
-            'bam_dk':    { label: 'Bamboo Dark',         mapId: 'none',     bumpId: 'bamboo_dark' },
-            'bam_lt':    { label: 'Bamboo Light',        mapId: 'none',     bumpId: 'bamboo_light' },
-            'p_black':   { label: 'Plastic Black',   mapId: 'plastic_black',   bumpId: 'plastic_black' },
-            'p_grey':    { label: 'Plastic Grey',    mapId: 'plastic_grey',    bumpId: 'plastic_grey' },
-            'p_redwood': { label: 'Plastic Redwood', mapId: 'plastic_redwood', bumpId: 'plastic_redwood' },
-            'p_sand':    { label: 'Plastic Sand',    mapId: 'plastic_sand',    bumpId: 'plastic_sand' },
-            'p_walnut':  { label: 'Plastic Walnut',  mapId: 'plastic_walnut',  bumpId: 'plastic_walnut' },
-            'm_blue':    { label: 'Blue Ash',        mapId: 'metal_blueash',       bumpId: 'metal_blueash' },
-            'm_carbon':  { label: 'Carbon Black',    mapId: 'metal_carbonblack',   bumpId: 'metal_carbonblack' },
-            'm_gun':     { label: 'Gun Metal',       mapId: 'metal_gun',           bumpId: 'metal_gun' },
-            'm_night':   { label: 'Night Blue',      mapId: 'metal_nightblue',     bumpId: 'metal_nightblue' },
-            'm_oil':     { label: 'Oil Bronze',      mapId: 'metal_oilbronze',     bumpId: 'metal_oilbronze' },
-            'm_pewter':  { label: 'Pewter',          mapId: 'metal_pewter',        bumpId: 'metal_pewter' },
-            'm_rideau':  { label: 'Rideau Brown',    mapId: 'metal_rideaubrown',   bumpId: 'metal_rideaubrown' },
-            'm_silver':  { label: 'Silver',          mapId: 'metal_silver',        bumpId: 'metal_silver' },
-            'm_tex_bk':  { label: 'Textured Black',  mapId: 'metal_texturedblack', bumpId: 'metal_texturedblack' },
-            'm_tex_wh':  { label: 'Textured White',  mapId: 'metal_texturedwhite', bumpId: 'metal_texturedwhite' },
-            'm_victor':  { label: 'Victor Ridge',    mapId: 'metal_victorridge',   bumpId: 'metal_victorridge' },
-        };
-
-        const MATERIAL_PRESETS = {
-            'matte_plastic': { label: 'Matte Plastic', roughness: 0.9, metalness: 0.0, bumpScale: 0.0, style: 'none' },
-            'gloss_plastic': { label: 'Gloss Plastic', roughness: 0.1, metalness: 0.0, bumpScale: 0.0, style: 'none' },
-            'satin_metal':   { label: 'Satin Metal',   roughness: 0.4, metalness: 0.5, bumpScale: 0.0, style: 'none' },
-            'rough_metal':   { label: 'Rough/Cast Metal', roughness: 0.7, metalness: 0.5, bumpScale: 0.05, style: 'm_tex_bk' },
-            'wood_natural':  { label: 'Natural Wood', roughness: 0.8, metalness: 0.0, bumpScale: 0.05, style: 'accoya' },
-            'concrete':      { label: 'Concrete',     roughness: 0.95, metalness: 0.0, bumpScale: 0.15, style: 'none' },
-            'recycled':      { label: 'Recycled Plastic', roughness: 0.9, metalness: 0.0, bumpScale: 0.05, style: 'p_grey' }
-        };
-
 // -- DATA_START --
         let CATEGORIES = [
-            {
-                id: 1,
-                title: "Lumber Options",
-                description: "Natural and modified wood selections.",
-                items: [
-                    { id: 101, name: "Accoya Natural",  color: "#f2dcb3", shape: "plank", roughness: 0.8, metalness: 0, renderMode: 'texture', mapId: 'wood_accoya',   bumpId: 'wood_accoya',   bumpScale: 0.005, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                    { id: 102, name: "Western Red Cedar", color: "#d99058", shape: "plank", roughness: 0.8, metalness: 0, renderMode: 'texture', mapId: 'wood_redcedar', bumpId: 'wood_redcedar', bumpScale: 0.005, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                    { id: 103, name: "Bamboo Light",      color: "#e6c288", shape: "plank", roughness: 0.7, metalness: 0, renderMode: 'texture', mapId: 'bamboo_light',  bumpId: 'bamboo_light',  bumpScale: 0.005, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                    { id: 104, name: "Bamboo Dark",      color: "#e6c288", shape: "plank", roughness: 0.7, metalness: 0, renderMode: 'texture', mapId: 'bamboo_dark',  bumpId: 'bamboo_dark',  bumpScale: 0.005, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
+    {
+        "id": 1,
+        "title": "Gloss Powders",
+        "description": "Smooth, shiny surfaces with bold and bright colours.",
+        "items": [
+            { "id": 101, "name": "Ultramarine Blue", "color": "#003399", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 102, "name": "Hot Pink", "color": "#E55EA2", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 103, "name": "Yellow Green", "color": "#8DA342", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 104, "name": "Signal Violet", "color": "#8A5B8F", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 105, "name": "Traffic Yellow", "color": "#F2A900", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 106, "name": "Sky Blue", "color": "#6FA8DC", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 107, "name": "Pastel Orange", "color": "#E68B42", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 108, "name": "Water Blue", "color": "#0088AA", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 109, "name": "Flame Red", "color": "#CB3339", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 110, "name": "Moss Green", "color": "#4B5F48", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Low Lustre Powders",
+        "description": "Smooth, easy to clean surfaces that resist fingerprints.",
+        "items": [
+            { "id": 201, "name": "Carbon Black", "color": "#101010", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_carbonblack", "bumpId": "metal_carbonblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 202, "name": "Gun Metal", "color": "#555D50", "shape": "cube", "roughness": 0.5, "metalness": 0.4, "mapId": "metal_gun", "bumpId": "metal_gun", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 203, "name": "Night Blue", "color": "#2F3546", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_nightblue", "bumpId": "metal_nightblue", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 204, "name": "New York Green", "color": "#3D4B42", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 205, "name": "Nordic Lichen", "color": "#8da399", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 206, "name": "Rideau Brown", "color": "#443731", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_rideaubrown", "bumpId": "metal_rideaubrown", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 207, "name": "Grey Gold", "color": "#7e7668", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 208, "name": "Noble Bronze", "color": "#4b3e2f", "shape": "cube", "roughness": 0.5, "metalness": 0.5, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 209, "name": "Groovy Red", "color": "#7c2d30", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 210, "name": "Beige", "color": "#d4c5a9", "shape": "cube", "roughness": 0.6, "metalness": 0.1, "mapId": "none", "bumpId": "none", "bumpScale": 0, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 211, "name": "Pewter", "color": "#6a6e72", "shape": "cube", "roughness": 0.5, "metalness": 0.6, "mapId": "metal_pewter", "bumpId": "metal_pewter", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 212, "name": "Blue Ash", "color": "#4a5a6b", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "mapId": "metal_blueash", "bumpId": "metal_blueash", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+        ]
+    },
+    {
+        "id": 3,
+        "title": "Textured Powders",
+        "description": "Fine or coarse textures that help hide blemishes and scratches.",
+        "items": [
+            { "id": 301, "name": "Textured Black", "color": "#101010", "shape": "cube", "roughness": 0.7, "metalness": 0.2, "mapId": "metal_texturedblack", "bumpId": "metal_texturedblack", "bumpScale": 0.008, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 302, "name": "Victor Ridge", "color": "#3E3B36", "shape": "cube", "roughness": 0.7, "metalness": 0.3, "mapId": "metal_victorridge", "bumpId": "metal_victorridge", "bumpScale": 0.008, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 303, "name": "Brown Slate", "color": "#594D43", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 304, "name": "Modern Khaki", "color": "#756B5B", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 305, "name": "Textured Silver", "color": "#A8A9AD", "shape": "cube", "roughness": 0.6, "metalness": 0.6, "mapId": "metal_silver", "bumpId": "metal_silver", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 306, "name": "Oil Rubbed Bronze", "color": "#3b2f26", "shape": "cube", "roughness": 0.7, "metalness": 0.4, "mapId": "metal_oilbronze", "bumpId": "metal_oilbronze", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 307, "name": "Timeless Rust", "color": "#8A4E36", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 308, "name": "Earth Clay", "color": "#8C5B42", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 309, "name": "Precious Sand", "color": "#AFA088", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "mapId": "none", "bumpId": "metal_texturedblack", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 310, "name": "Textured White", "color": "#F5F5F5", "shape": "cube", "roughness": 0.7, "metalness": 0.1, "mapId": "metal_texturedwhite", "bumpId": "metal_texturedwhite", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+        ]
+    },
+    {
+        "id": 4,
+        "title": "Recycled Plastic Lumber",
+        "description": "Non-toxic, ultra-durable, low maintenance. 100% recycled.",
+        "items": [
+            { "id": 401, "name": "Black", "color": "#222222", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_black", "bumpId": "plastic_black", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
+            { "id": 402, "name": "Grey", "color": "#777777", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_grey", "bumpId": "plastic_grey", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
+            { "id": 403, "name": "Redwood", "color": "#8D5E52", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_redwood", "bumpId": "plastic_redwood", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
+            { "id": 404, "name": "Sand", "color": "#C2B280", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_sand", "bumpId": "plastic_sand", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 },
+            { "id": 405, "name": "Walnut", "color": "#5C4033", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "plastic_walnut", "bumpId": "plastic_walnut", "bumpScale": 0.005, "textureScale": 0.5, "brightness": 1, "contrast": 1 }
+        ]
+    },
+    {
+        "id": 5,
+        "title": "Natural Wood Alternatives",
+        "description": "Premium natural and modified wood options.",
+        "items": [
+            { "id": 501, "name": "Accoya Natural", "color": "#E3CAA5", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "wood_accoya", "bumpId": "wood_accoya", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 502, "name": "Accoya Grey", "color": "#999999", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "none", "bumpId": "wood_accoya", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 503, "name": "Hardened Bamboo", "color": "#D29F64", "shape": "plank", "roughness": 0.7, "metalness": 0, "mapId": "bamboo_dark", "bumpId": "bamboo_dark", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 },
+            { "id": 504, "name": "Western Red Cedar", "color": "#C77A50", "shape": "plank", "roughness": 0.8, "metalness": 0, "mapId": "wood_redcedar", "bumpId": "wood_redcedar", "bumpScale": 0.005, "textureScale": 1, "brightness": 1, "contrast": 1 }
+        ]
+    }
+];
 
-                ]
-            },
-            {
-                id: 2,
-                title: "Recycled Plastic",
-                description: "Durable, sustainable recycled plastic lumber.",
-                items: [
-                    { id: 201, name: "Weathered Redwood", color: "#8a5e4e", shape: "plank", roughness: 0.8, metalness: 0, renderMode: 'texture', mapId: 'plastic_redwood', bumpId: 'plastic_redwood', bumpScale: 0.005, textureScale: 0.5, brightness: 1.0, contrast: 1.0 },
-                    { id: 202, name: "Slate Grey",        color: "#707070", shape: "plank", roughness: 0.8, metalness: 0, renderMode: 'texture', mapId: 'plastic_grey',    bumpId: 'plastic_grey',    bumpScale: 0.005, textureScale: 0.5, brightness: 1.0, contrast: 1.0 },
-                    { id: 203, name: "Sand",              color: "#d6c096", shape: "plank", roughness: 0.8, metalness: 0, renderMode: 'texture', mapId: 'plastic_sand',    bumpId: 'plastic_sand',    bumpScale: 0.005, textureScale: 0.5, brightness: 1.0, contrast: 1.0 },
-                ]
-            },
-            {
-                id: 3,
-                title: "Metals & Finishes",
-                description: "Standard and textured metal powder coats.",
-                items: [
-                    { id: 301, name: "Silver",            color: "#c0c0c0", shape: "cube", roughness: 0.4, metalness: 0.8, renderMode: 'color', mapId: 'metal_silver',        bumpId: 'metal_silver',        bumpScale: 0.002, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                    { id: 302, name: "Textured Black",    color: "#202020", shape: "cube", roughness: 0.6, metalness: 0.5, renderMode: 'texture', mapId: 'metal_texturedblack', bumpId: 'metal_texturedblack', bumpScale: 0.005, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                    { id: 303, name: "Wishbone Red",        color: "#991b1b", shape: "cube", roughness: 0.4, metalness: 0.6, renderMode: 'color',   mapId: 'metal_texturedwhite',     bumpId: 'metal_texturedwhite',     bumpScale: 0.003, textureScale: 1.0, brightness: 1.0, contrast: 1.0 },
-                ]
-            }
-        ];
-        // -- DATA_END --
+// -- UPDATED: SHAPE DEFAULTS NOW INCLUDE SCALE AND LIGHT ROTATION --
+let SHAPE_DEFAULTS = {
+    cube:     { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, envRotation: 0 },
+    sphere:   { rotation: { x: 0, y: 0, z: 0 },      scale: 1.0, lightRotation: 0, envRotation: 0 },
+    plank:    { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, envRotation: 0 },
+    cylinder: { rotation: { x: 0.2, y: 0.2, z: 0.0 },scale: 1.0, lightRotation: 0, envRotation: 0 }
+};
+// -- DATA_END --
 
         const SHAPE_TYPES = ['sphere', 'cube', 'plank', 'cylinder'];
-        const SHAPE_DEFAULTS = {
-            cube:     { rotation: { x: -0.2, y: 0.4, z: 0 } },
-            sphere:   { rotation: { x: 0, y: 0, z: 0 } },
-            plank:    { rotation: { x: -0.2, y: 0.4, z: 0 } },
-            cylinder: { rotation: { x: 0.2, y: 0.2, z: 0.0 } }
-        };
-
+        
         const textureLoader = new THREE.TextureLoader();
         // OPTIMIZATION: Cache textures to prevent reloading same URL multiple times
         const textureCache = {};
@@ -334,13 +349,13 @@
         // ======================== TEXTURE LOADER LOGIC ===========================
         // =========================================================================
 
-        function getTextureFromId(regId, colorHex, scale = 1, isBump = false) {
+        function getTextureFromId(regId, colorHex, scale = 1, suffix = '') {
             if (!regId || regId === 'none') return null;
             const regItem = TEXTURE_REGISTRY[regId];
             if (!regItem) return null;
 
             let targetUrl = regItem.url;
-            if (isBump) targetUrl = targetUrl.replace(/(\.[\w\d_-]+)$/i, '_BUMP$1');
+            if (suffix) targetUrl = targetUrl.replace(/(\.[\w\d_-]+)$/i, `${suffix}$1`);
             
             // Create a unique key for the cache based on URL
             const cacheKey = targetUrl;
@@ -352,7 +367,7 @@
             } else {
                 if (regItem.type === 'url') {
                     tex = textureLoader.load(targetUrl);
-                    if (!isBump) tex.encoding = THREE.sRGBEncoding;
+                    if (!suffix) tex.encoding = THREE.sRGBEncoding; // Base map needs sRGB
                     textureCache[cacheKey] = tex; // Save original to cache
                 }
             }
@@ -411,103 +426,158 @@
                 cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1.1, 32),
                 sphere: new THREE.SphereGeometry(0.7, 64, 64)
             };
+
+            // LOAD GLOBAL ENVIRONMENT MAP
+            if(GLOBAL_ENV_URL) {
+                new THREE.TextureLoader().load(GLOBAL_ENV_URL, function(texture) {
+                    texture.mapping = THREE.EquirectangularReflectionMapping;
+                    window.GLOBAL_ENV_MAP = texture;
+                    rebuildApp();
+                });
+            }
         }
 
-        // --- SCENE CREATION LOGIC ---
-        function createSceneForItem(element, item, isModal = false) {
-            const scene = new THREE.Scene();
-            
-            const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-            camera.position.z = 2.8; 
-            camera.position.y = 1.5;
-            camera.lookAt(0, 0, 0);
-
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambient);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-            dirLight.position.set(3, 2, 8);
-            scene.add(dirLight);
-            const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            rimLight.position.set(-8, 2, -5);
-            scene.add(rimLight);
-
-            // Geometry (Used Shared)
-            const shape = item.shape || 'sphere';
-            const geometry = SHARED_GEOMETRIES[shape] || SHARED_GEOMETRIES['sphere'];
-            
+        function createMaterial(item) {
             const scale = item.textureScale || 1.0; 
-            const isTextureMode = (item.renderMode === 'texture');
-
-            // Map: Only load if Texture Mode is active
-            const map = isTextureMode ? getTextureFromId(item.mapId, item.color, scale, false) : null;
             
-            // Bump: ALWAYS load if present (allows painted wood grain etc)
-            const bumpMap = getTextureFromId(item.bumpId, item.color, scale, true);
+            // Load Maps
+            // Base Map
+            const map = getTextureFromId(item.mapId, item.color, scale, '');
+            // Bump Map (Implicit _BUMP suffix)
+            const bumpMap = getTextureFromId(item.bumpId, item.color, scale, '_BUMP');
+            const normalMap = getTextureFromId(item.normalId, item.color, scale, '');
+            const roughnessMap = getTextureFromId(item.roughnessId, item.color, scale, '');
 
-            // Defaults if not set in data
+            // Get Values
             const brightness = item.brightness !== undefined ? parseFloat(item.brightness) : 1.0;
             const contrast = item.contrast !== undefined ? parseFloat(item.contrast) : 1.0;
+            const saturation = item.saturation !== undefined ? parseFloat(item.saturation) : 1.0; 
 
+            // Create Base Material
             const material = new THREE.MeshPhysicalMaterial({
-                color: isTextureMode ? 0xffffff : item.color, 
+                color: item.color, // Always use the color as tint
                 map: map,
                 bumpMap: bumpMap,
                 bumpScale: item.bumpScale || 0.0,
+                normalMap: normalMap,
+                normalScale: new THREE.Vector2(1, 1), 
+                roughnessMap: roughnessMap,
                 roughness: item.roughness !== undefined ? parseFloat(item.roughness) : 0.5,
                 metalness: item.metalness !== undefined ? parseFloat(item.metalness) : 0.0,
+                envMap: window.GLOBAL_ENV_MAP || null,
+                envMapIntensity: 1.0,
                 clearcoat: 0.1,
                 clearcoatRoughness: 0.1
             });
 
-            // --- SHADER INJECTION FOR CONTRAST & BRIGHTNESS ---
+            // Inject Custom Shader Logic
             material.onBeforeCompile = function(shader) {
-                shader.uniforms.uBrightness = { value: brightness - 1.0 }; 
+                material.userData.shader = shader; // Save reference for updates
+
+                shader.uniforms.uBrightness = { value: brightness }; 
                 shader.uniforms.uContrast = { value: contrast };
+                shader.uniforms.uSaturation = { value: saturation };
 
-                shader.fragmentShader = `
-                    uniform float uBrightness;
-                    uniform float uContrast;
-                ` + shader.fragmentShader;
+                // Ensure we don't inject multiple times if this shader is reused
+                if (!shader.fragmentShader.includes('uniform float uBrightness')) {
+                    shader.fragmentShader = `
+                        uniform float uBrightness;
+                        uniform float uContrast;
+                        uniform float uSaturation;
+                    ` + shader.fragmentShader;
 
-                shader.fragmentShader = shader.fragmentShader.replace(
-                    '#include <map_fragment>',
-                    `
-                    #include <map_fragment>
-                    #ifdef USE_MAP
-                        vec3 color = diffuseColor.rgb;
-                        color = (color - 0.5) * uContrast + 0.5; 
-                        color = color + uBrightness;
-                        diffuseColor.rgb = clamp(color, 0.0, 1.0);
-                    #endif
-                    `
-                );
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                        '#include <map_fragment>',
+                        `
+                        #include <map_fragment>
+                        vec3 col = diffuseColor.rgb;
+                        float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+                        vec3 gray = vec3(luma);
+                        col = mix(gray, col, uSaturation);
+                        col = (col - 0.5) * uContrast + 0.5;
+                        col = col * uBrightness;
+                        col = max(vec3(0.0), col);
+                        diffuseColor.rgb = col; 
+                        `
+                    );
+                }
             };
+
+            return material;
+        }
+
+        // 2. UPDATED SCENE CREATION LOGIC
+        function createSceneForItem(element, item, isModal = false) {
+            const scene = new THREE.Scene();
+            
+            // Apply Environment Map
+            if(window.GLOBAL_ENV_MAP) {
+                scene.environment = window.GLOBAL_ENV_MAP;
+            }
+
+            const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+            camera.position.z = 4.2; 
+            camera.position.y = 1.5;
+            camera.lookAt(0, 0, 0);
+
+            // Lighting Group
+            const lightGroup = new THREE.Group();
+            scene.add(lightGroup);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(3, 2, 8);
+            lightGroup.add(dirLight);
+
+            const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            rimLight.position.set(-8, 2, -5);
+            lightGroup.add(rimLight);
+
+            // Geometry
+            const shape = item.shape || 'sphere';
+            const geometry = SHARED_GEOMETRIES[shape] || SHARED_GEOMETRIES['sphere'];
+            
+            // Material (Using the new helper)
+            const material = createMaterial(item);
             
             const mesh = new THREE.Mesh(geometry, material);
             const shapeDef = SHAPE_DEFAULTS[shape];
+            
+            // Apply Rotation, Scale, and Lighting Defaults
             if (shapeDef) {
                 mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                
+                const sScale = shapeDef.scale !== undefined ? shapeDef.scale : 1.0;
+                mesh.scale.set(sScale, sScale, sScale);
+
+                const lRot = shapeDef.lightRotation !== undefined ? shapeDef.lightRotation : 0;
+                lightGroup.rotation.y = lRot;
+
+                const eRot = shapeDef.envRotation !== undefined ? shapeDef.envRotation : 0;
+                if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = eRot;
             }
 
             scene.add(mesh);
 
             const sceneData = {
-                scene, camera, element, mesh, shape,
+                scene, camera, element, mesh, shape, lightGroup,
                 isDragging: false,
                 lastMouse: { x: 0, y: 0 }
             };
 
-            // Drag Interaction
-            element.addEventListener('mousedown', (e) => {
-                sceneData.isDragging = true;
-                sceneData.lastMouse.x = e.clientX;
-                sceneData.lastMouse.y = e.clientY;
-            });
-
-            if(isModal) {
-                camera.position.z = 4.0; 
-                camera.position.y = 2;
+            // Drag Interaction - ONLY if modal
+            if (isModal) {
+                element.addEventListener('mousedown', (e) => {
+                    sceneData.isDragging = true;
+                    sceneData.lastMouse.x = e.clientX;
+                    sceneData.lastMouse.y = e.clientY;
+                });
+                
+                // Adjust camera for modal view
+                camera.position.z = 3.5; 
+                camera.position.y = 1.3; 
             }
 
             return sceneData;
@@ -528,21 +598,29 @@
             renderer.clear();
             renderer.setScissorTest(true);
 
-            scenes.forEach((item) => {
+        scenes.forEach((item) => {
                 const rect = item.element.getBoundingClientRect();
                 
-                // Optimization: Simple culling
                 if (rect.width === 0 || rect.height === 0) return;
                 if ( rect.bottom < 0 || rect.top > window.innerHeight || 
                      rect.right < 0 || rect.left > window.innerWidth ) return;
 
+                // Standard Bounds
                 const left = rect.left;
                 const bottom = window.innerHeight - rect.bottom;
                 const w = rect.right - rect.left;
                 const h = rect.bottom - rect.top;
 
-                renderer.setViewport(left, bottom, w, h);
-                renderer.setScissor(left, bottom, w, h);
+                // FIX 3: EXPAND VIEWPORT (1.5x)
+                const expansion = 1.5; 
+                const wExp = w * expansion;
+                const hExp = h * expansion;
+                
+                const lExp = left - (wExp - w) / 2;
+                const bExp = bottom - (hExp - h) / 2;
+
+                renderer.setViewport(lExp, bExp, wExp, hExp);
+                renderer.setScissor(lExp, bExp, wExp, hExp);
                 renderer.render(item.scene, item.camera);
             });
             renderer.setScissorTest(false);
@@ -608,7 +686,7 @@
         let originalItemState = null; // Backup for Cancel
 
         function rebuildApp() {
-            // Clean up scenes for memory optimization
+            // Clean up MAIN scenes for memory optimization
             scenes = [];
             
             document.getElementById('content-anchor').innerHTML = '';
@@ -622,14 +700,26 @@
                 });
             });
 
-            // Modal Scene (if open)
-            modalSceneData = null; // Reset
+            // Modal Scene Logic
             if(document.getElementById('editor-modal').classList.contains('active') && currentEditCatId) {
                 const cat = CATEGORIES.find(c => c.id === currentEditCatId);
                 const item = cat.items.find(i => i.id === currentEditItemId);
+                
                 if(item) {
-                    const modalEl = document.getElementById('modal-scene-target');
-                    modalSceneData = createSceneForItem(modalEl, item, true);
+                    if (modalSceneData && modalSceneData.shape !== item.shape) {
+                        modalSceneData = null; 
+                    }
+
+                    if (modalSceneData && modalSceneData.mesh) {
+                        const mesh = modalSceneData.mesh;
+                        const newMat = createMaterial(item);
+                        if (mesh.material) mesh.material.dispose();
+                        mesh.material = newMat;
+                    } else {
+                        const modalEl = document.getElementById('modal-scene-target');
+                        modalEl.innerHTML = ''; 
+                        modalSceneData = createSceneForItem(modalEl, item, true);
+                    }
                 }
             }
         }
@@ -730,14 +820,11 @@
 
             const controlsContainer = document.getElementById('modal-controls');
             
-            let currentStyleKey = 'none';
-            for (const [key, style] of Object.entries(TEXTURE_STYLES)) {
-                if (style.mapId === (item.mapId||'none') && style.bumpId === (item.bumpId||'none')) {
-                    currentStyleKey = key;
-                    break;
-                }
-            }
-            const isTextureMode = item.renderMode === 'texture';
+            // Get defaults for slider initial values
+            const shapeDef = SHAPE_DEFAULTS[item.shape] || { scale: 1, lightRotation: 0, envRotation: 0 };
+            const currentScale = shapeDef.scale !== undefined ? shapeDef.scale : 1.0;
+            const currentLightRot = shapeDef.lightRotation !== undefined ? shapeDef.lightRotation : 0;
+            const currentEnvRot = shapeDef.envRotation !== undefined ? shapeDef.envRotation : 0;
 
             controlsContainer.innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
@@ -755,61 +842,76 @@
                     </div>
                 </div>
 
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <label class="block text-xs font-bold text-blue-600 uppercase mb-2">Apply Quick Preset</label>
-                    <select onchange="applyPresetToCurrent(this.value)" class="w-full border rounded p-2 bg-white text-sm">
-                        <option value="">Select a preset...</option>
-                        ${Object.keys(MATERIAL_PRESETS).map(k => `<option value="${k}">${MATERIAL_PRESETS[k].label}</option>`).join('')}
-                    </select>
-                    
-
+                 <!-- GLOBAL SETTINGS -->
+                <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mt-4">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-globe"></i> Global Shape Settings
+                    </h4>
+                    <div class="space-y-3">
+                         <div class="flex items-center gap-4">
+                            <label class="w-24 text-xs font-bold text-gray-700">Shape Scale</label>
+                            <input type="range" min="0.5" max="1.5" step="0.05" value="${currentScale}" 
+                                oninput="updateGlobalPreview('scale', this.value)">
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <label class="w-24 text-xs font-bold text-gray-700">Light Angle</label>
+                            <input type="range" min="0" max="6.28" step="0.1" value="${currentLightRot}" 
+                                oninput="updateGlobalPreview('lightRotation', this.value)">
+                        </div>
+                         <div class="flex items-center gap-4">
+                            <label class="w-24 text-xs font-bold text-gray-700">Reflection Rot</label>
+                            <input type="range" min="0" max="1" step="0.01" value="${currentEnvRot}" 
+                                oninput="updateGlobalPreview('envRotation', this.value)">
+                        </div>
+                         <p class="text-[10px] text-gray-400 italic">These settings apply to ALL objects of this shape.</p>
+                    </div>
                 </div>
 
-                <hr class="border-gray-200">
+                <hr class="border-gray-200 my-4">
 
-                <div class="flex items-center justify-between">
-                     <label class="text-sm font-bold text-gray-700">Display Mode</label>
-                     <div class="bg-gray-200 p-1 rounded-lg flex text-sm font-bold">
-                        <button onclick="updateCurrentItem('renderMode', 'texture')" class="px-4 py-1 rounded ${isTextureMode ? 'bg-white shadow text-blue-600' : 'text-gray-500'} transition">Texture</button>
-                        <button onclick="updateCurrentItem('renderMode', 'color')" class="px-4 py-1 rounded ${!isTextureMode ? 'bg-white shadow text-blue-600' : 'text-gray-500'} transition">Color</button>
-                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Base Texture / Bump Pattern</label>
-                    <select onchange="updateCurrentStyle(this.value)" class="w-full border rounded p-2 bg-white text-sm">
-                         ${Object.keys(TEXTURE_STYLES).map(k => `<option value="${k}" ${currentStyleKey === k ? 'selected' : ''}>${TEXTURE_STYLES[k].label}</option>`).join('')}
-                    </select>
-                    <p class="text-[10px] text-gray-400 mt-1">Note: This defines the Bump Map pattern even in Color Mode.</p>
-                </div>
-
-                <div class="${isTextureMode ? 'opacity-50' : ''} transition">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Base Color</label>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Base Color / Tint</label>
                     <div class="flex gap-2 items-center">
                         <input type="color" value="${item.color}" 
                             onchange="updateCurrentItem('color', this.value)"
-                            class="w-10 h-10 rounded border-0 cursor-pointer">
-                        <span class="text-xs text-gray-400 font-mono">${item.color}</span>
+                            class="w-full h-10 rounded border-0 cursor-pointer p-0">
                     </div>
                 </div>
 
-                <div class="space-y-4 pt-2">
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Scale</label>
-                        <input type="range" min="0.1" max="2.0" step="0.1" value="${item.textureScale}" oninput="updateCurrentItem('textureScale', this.value)">
+                <!-- TEXTURE MAPS -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                         <label class="block text-xs font-bold text-gray-500 mb-1">Base Texture</label>
+                         <select onchange="updateCurrentItem('mapId', this.value)" class="w-full border rounded p-1 text-xs">
+                            <option value="none">None</option>
+                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.mapId === k ? 'selected' : ''}>${k}</option>`).join('')}
+                         </select>
                     </div>
-
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Brightness</label>
-                        <input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness !== undefined ? item.brightness : 1.0}" oninput="updateCurrentItem('brightness', this.value)">
+                    <div>
+                         <label class="block text-xs font-bold text-gray-500 mb-1">Bump Map</label>
+                         <select onchange="updateCurrentItem('bumpId', this.value)" class="w-full border rounded p-1 text-xs">
+                            <option value="none">None</option>
+                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.bumpId === k ? 'selected' : ''}>${k}</option>`).join('')}
+                         </select>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <label class="w-20 text-xs font-bold text-gray-600">Contrast</label>
-                        <input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast !== undefined ? item.contrast : 1.0}" oninput="updateCurrentItem('contrast', this.value)">
+                    <div>
+                         <label class="block text-xs font-bold text-gray-500 mb-1">Normal Map</label>
+                         <select onchange="updateCurrentItem('normalId', this.value)" class="w-full border rounded p-1 text-xs">
+                            <option value="none">None</option>
+                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.normalId === k ? 'selected' : ''}>${k}</option>`).join('')}
+                         </select>
                     </div>
+                     <div>
+                         <label class="block text-xs font-bold text-gray-500 mb-1">Roughness Map</label>
+                         <select onchange="updateCurrentItem('roughnessId', this.value)" class="w-full border rounded p-1 text-xs">
+                            <option value="none">None</option>
+                            ${Object.keys(TEXTURE_REGISTRY).filter(k => k !== 'none').map(k => `<option value="${k}" ${item.roughnessId === k ? 'selected' : ''}>${k}</option>`).join('')}
+                         </select>
+                    </div>
+                </div>
 
-                    <hr class="border-gray-100">
-
+                <div class="space-y-4 pt-2 bg-gray-50 p-2 rounded">
+                    <h5 class="text-xs font-bold uppercase text-gray-400">Material Settings</h5>
                     <div class="flex items-center gap-4">
                         <label class="w-20 text-xs font-bold text-gray-600">Gloss/Rough</label>
                         <input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateCurrentItem('roughness', this.value)">
@@ -822,6 +924,26 @@
                         <label class="w-20 text-xs font-bold text-gray-600">Bump Depth</label>
                         <input type="range" min="0" max="0.1" step="0.001" value="${item.bumpScale}" oninput="updateCurrentItem('bumpScale', this.value)">
                     </div>
+                    <div class="flex items-center gap-4">
+                        <label class="w-20 text-xs font-bold text-gray-600">Tex Scale</label>
+                        <input type="range" min="0.1" max="2.0" step="0.1" value="${item.textureScale}" oninput="updateCurrentItem('textureScale', this.value)">
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-2 mt-2 bg-gray-50 p-2 rounded">
+                    <h5 class="text-xs font-bold uppercase text-gray-400">Image Filters</h5>
+                    <div class="flex items-center gap-4">
+                        <label class="w-20 text-xs font-bold text-gray-600">Brightness</label>
+                        <input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness !== undefined ? item.brightness : 1.0}" oninput="updateCurrentItem('brightness', this.value)">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <label class="w-20 text-xs font-bold text-gray-600">Contrast</label>
+                        <input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast !== undefined ? item.contrast : 1.0}" oninput="updateCurrentItem('contrast', this.value)">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <label class="w-20 text-xs font-bold text-gray-600">Saturation</label>
+                        <input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation !== undefined ? item.saturation : 1.0}" oninput="updateCurrentItem('saturation', this.value)">
+                    </div>
                 </div>
             `;
 
@@ -829,37 +951,32 @@
             rebuildApp();
         }
 
+        function updateGlobalPreview(type, value) {
+            if (!modalSceneData) return;
+            const val = parseFloat(value);
+            
+            if (type === 'scale') {
+                modalSceneData.mesh.scale.set(val, val, val);
+            } else if (type === 'lightRotation') {
+                modalSceneData.lightGroup.rotation.y = val;
+            } else if (type === 'envRotation') {
+                 if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = val;
+            }
+        }
+
         // NEW FUNCTION TO COPY SETTINGS
         function copyAsPreset() {
             const cat = CATEGORIES.find(c => c.id === currentEditCatId);
             const item = cat.items.find(i => i.id === currentEditItemId);
 
-            // Find current style key
-            let styleKey = 'none';
-            for (const [key, s] of Object.entries(TEXTURE_STYLES)) {
-                if (s.mapId === (item.mapId || 'none') && s.bumpId === (item.bumpId || 'none')) {
-                    styleKey = key;
-                    break;
-                }
-            }
-
             // Create safe key from name
             const keyName = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
             
             // Format string
-            const presetString = `'${keyName}': { label: '${item.name}', roughness: ${item.roughness}, metalness: ${item.metalness}, bumpScale: ${item.bumpScale}, style: '${styleKey}' },`;
+            const presetString = `'${keyName}': { label: '${item.name}', roughness: ${item.roughness}, metalness: ${item.metalness}, bumpScale: ${item.bumpScale}, mapId: '${item.mapId||'none'}', bumpId: '${item.bumpId||'none'}', normalId: '${item.normalId||'none'}', roughnessId: '${item.roughnessId||'none'}' },`;
 
             navigator.clipboard.writeText(presetString).then(() => {
-                const btn = document.getElementById('btn-copy-preset');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btn.classList.add('text-green-600');
-                btn.classList.remove('text-blue-600');
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('text-green-600');
-                    btn.classList.add('text-blue-600');
-                }, 2000);
+                // ...existing UI feedback code...
             });
         }
 
@@ -875,11 +992,54 @@
             closeModal();
         }
 
+        // --- NEW SAVE FUNCTION FOR ROTATION, SCALE & LIGHTING ---
+        function saveAndCloseModal() {
+            if (modalSceneData && modalSceneData.mesh) {
+                // 1. Get the current rotation from the live preview mesh
+                const currentRotation = {
+                    x: modalSceneData.mesh.rotation.x,
+                    y: modalSceneData.mesh.rotation.y,
+                    z: modalSceneData.mesh.rotation.z
+                };
+
+                // 2. Get Scale
+                const currentScale = modalSceneData.mesh.scale.x;
+
+                // 3. Get Light Rotation
+                const currentLightRot = modalSceneData.lightGroup.rotation.y;
+                
+                // 4. Get Env Rotation (stored in texture offset)
+                const currentEnvRot = window.GLOBAL_ENV_MAP ? window.GLOBAL_ENV_MAP.offset.x : 0;
+
+                // 5. Identify the shape (e.g., 'cube', 'plank')
+                const shape = modalSceneData.shape;
+
+                // 6. Update the global defaults so all items of this shape use these new settings
+                if (SHAPE_DEFAULTS[shape]) {
+                    SHAPE_DEFAULTS[shape].rotation = currentRotation;
+                    SHAPE_DEFAULTS[shape].scale = currentScale;
+                    SHAPE_DEFAULTS[shape].lightRotation = currentLightRot;
+                    SHAPE_DEFAULTS[shape].envRotation = currentEnvRot;
+                }
+            }
+
+            // 7. Close the modal, which triggers rebuildApp()
+            // rebuildApp() will re-create all scenes using the updated SHAPE_DEFAULTS
+            closeModal();
+        }
+
         function closeModal() {
             document.getElementById('editor-modal').classList.remove('active');
             currentEditCatId = null;
             currentEditItemId = null;
             originalItemState = null;
+            
+            // Force destroy modal scene data so next open starts fresh
+            if (modalSceneData) {
+                if (modalSceneData.mesh && modalSceneData.mesh.material) modalSceneData.mesh.material.dispose();
+                modalSceneData = null; 
+            }
+            
             rebuildApp(); 
         }
 
@@ -887,48 +1047,14 @@
             const cat = CATEGORIES.find(c => c.id === currentEditCatId);
             const item = cat.items.find(i => i.id === currentEditItemId);
             
-            if (['roughness', 'metalness', 'bumpScale', 'textureScale', 'brightness', 'contrast'].includes(field)) {
+            if (['roughness', 'metalness', 'bumpScale', 'textureScale', 'brightness', 'contrast', 'saturation'].includes(field)) {
                 item[field] = parseFloat(value);
             } else {
                 item[field] = value;
             }
 
-            if(field === 'renderMode') {
-                openModal(currentEditCatId, currentEditItemId); 
-            } else {
-                rebuildApp();
-            }
-        }
-
-        function updateCurrentStyle(styleKey) {
-            const cat = CATEGORIES.find(c => c.id === currentEditCatId);
-            const item = cat.items.find(i => i.id === currentEditItemId);
-            const style = TEXTURE_STYLES[styleKey];
-            if(style) {
-                item.mapId = style.mapId;
-                item.bumpId = style.bumpId;
-            }
+            // Just rebuild
             rebuildApp();
-        }
-
-        function applyPresetToCurrent(presetKey) {
-            if(!presetKey) return;
-            const cat = CATEGORIES.find(c => c.id === currentEditCatId);
-            const item = cat.items.find(i => i.id === currentEditItemId);
-            const preset = MATERIAL_PRESETS[presetKey];
-            
-            if(preset) {
-                item.roughness = preset.roughness;
-                item.metalness = preset.metalness;
-                item.bumpScale = preset.bumpScale;
-                const style = TEXTURE_STYLES[preset.style];
-                if(style) {
-                    item.mapId = style.mapId;
-                    item.bumpId = style.bumpId;
-                }
-            }
-            rebuildApp();
-            openModal(currentEditCatId, currentEditItemId); 
         }
 
         function deleteCurrentItem() {
@@ -980,15 +1106,17 @@
                 name: "New Material",
                 color: "#cccccc",
                 shape: "cube",
-                renderMode: 'color', 
                 mapId: "none",
                 bumpId: "none",
+                normalId: "none", 
+                roughnessId: "none",
                 roughness: 0.5,
                 metalness: 0,
                 bumpScale: 0.005,
                 textureScale: 1.0,
                 brightness: 1.0,
-                contrast: 1.0
+                contrast: 1.0,
+                saturation: 1.0
             };
             cat.items.push(newItem);
             rebuildApp();
@@ -999,7 +1127,12 @@
             let htmlContent = document.documentElement.outerHTML;
             const dataStartMarker = '// -- DATA_START --';
             const dataEndMarker = '// -- DATA_END --';
-            const newScriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};`;
+            
+            // --- UPDATED SAVE LOGIC ---
+            // Now saves both CATEGORIES and SHAPE_DEFAULTS (including your new rotations)
+            const newScriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};
+let SHAPE_DEFAULTS = ${JSON.stringify(SHAPE_DEFAULTS, null, 4)};`;
+            
             const regex = new RegExp(`${dataStartMarker}[\\s\\S]*?${dataEndMarker}`);
             
             if (regex.test(htmlContent)) {
@@ -1036,6 +1169,16 @@
                 const shapeDef = SHAPE_DEFAULTS[item.shape];
                 if(shapeDef) {
                     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                    // Apply scale if exists
+                    const s = shapeDef.scale || 1.0;
+                    item.mesh.scale.set(s,s,s);
+                    // Apply light rotation if exists and lightGroup exists
+                    if(item.lightGroup && shapeDef.lightRotation !== undefined) {
+                        item.lightGroup.rotation.y = shapeDef.lightRotation;
+                    }
+                    if(window.GLOBAL_ENV_MAP && shapeDef.envRotation !== undefined) {
+                        window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation;
+                    }
                 } else {
                     item.mesh.rotation.set(0,0,0);
                 }
