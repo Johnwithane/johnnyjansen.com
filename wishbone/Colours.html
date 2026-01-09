@@ -1,11 +1,11 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wishbone Interactive Catalog - V19 Stable</title>
+    <title>Wishbone Interactive Catalog - V24 Sync Categories</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -35,18 +35,40 @@
         .control-btn.btn-delete:hover { background: #EF4444; color: white; }
 
         /* Form Elements */
-        input[type=range] { width: 100%; accent-color: #4B5563; }
+        input[type=range] { width: 100%; accent-color: #4B5563; cursor: pointer; }
         select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; }
         
         .advanced-panel { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .advanced-panel.open { max-height: 500px; overflow-y: auto; }
 
+        .collapsible-content { 
+            max-height: 1000px; /* Large enough to fit content */
+            overflow: hidden; 
+            transition: max-height 0.3s ease-in-out; 
+        }
+        .collapsible-content.collapsed { 
+            max-height: 0; 
+        }
         /* Print Logic */
         @media print {
             body { background: white; }
             .no-print, #c, #c-modal { display: none !important; }
             .page-sheet { margin: 0; width: 100%; box-shadow: none; padding: 10mm; break-after: always; }
-            .print-image { display: block !important; }
+            
+            /* UPDATED: Allow overlapping and remove clipping */
+            .print-image { 
+                display: block !important; 
+                position: absolute;       /* Break out of the box flow */
+                top: 50%;                 /* Center vertically */
+                left: 50%;                /* Center horizontally */
+                transform: translate(-50%, -50%); /* Perfect centering */
+                width: 140%;              /* 140% size allows overlapping! */
+                height: 140%;             /* Match width */
+                max-width: none;          /* Allow it to exceed container */
+                object-fit: contain;      
+                z-index: 50;              /* Ensure it sits ON TOP of text */
+            }
+
             .scene-element, .add-card, .item-controls { display: none !important; }
             .page-break-avoid { break-inside: avoid; }
         }
@@ -54,8 +76,8 @@
 </head>
 <body>
 
-    <canvas id="c"></canvas>
-    <canvas id="c-modal"></canvas>
+    <canvas id="c" width="3817" height="1957"></canvas>
+    <canvas id="c-modal" width="3817" height="1957"></canvas>
 
     <div class="no-print fixed top-4 right-4 z-50 flex gap-2 flex-col items-end">
         <div class="flex gap-2">
@@ -64,21 +86,34 @@
             </button>
         </div>
         <button onclick="downloadHTML()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
-            <i class="fas fa-download"></i> Save & Download HTML
+            <i class="fas fa-download"></i> Download HTML
+        </button>
+
+        <button onclick="copyHTMLCode()" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
+            <i class="fas fa-code"></i> Copy Code
         </button>
     </div>
 
+    <!-- Main Container: Empty because JS fills it -->
     <div id="content-anchor"></div>
 
+    <!-- Modal -->
     <div id="editor-modal" class="no-print">
         <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] flex overflow-hidden">
             
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
                 <div class="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</div>
+                
+                <!-- SYNC ANGLE TOGGLE -->
+                <div class="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2">
+                    <input type="checkbox" id="save-angle-check" class="cursor-pointer accent-blue-600 w-4 h-4">
+                    <label for="save-angle-check" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Sync Angle</label>
+                </div>
+
                 <div id="modal-scene-target" class="w-full aspect-square relative z-50 cursor-grab active:cursor-grabbing"></div>
                 <div class="absolute bottom-4 text-xs text-gray-400 text-center w-full px-4">
                     Left Click: Rotate Object <br> 
-                    Use Sliders on Right for Lights
+                    (Toggle 'Sync Angle' to save changes to all items)
                 </div>
             </div>
 
@@ -91,7 +126,8 @@
                 </div>
 
                 <div id="modal-controls" class="space-y-5 flex-1">
-                    </div>
+                    <!-- Controls injected by JS -->
+                </div>
 
                 <div class="border-t pt-4 mt-4 flex justify-between items-center">
                     <button onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-2">
@@ -115,7 +151,7 @@
         // ============================ CONFIGURATION ==============================
         // =========================================================================
         
-        const GLOBAL_ENV_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/2294472375_24a3b8ef46_o.jpg'; 
+        const GLOBAL_ENV_URL = 'https://cdn.polyhaven.com/asset_img/primary/citrus_orchard_puresky.png'; 
         const currentYear = new Date().getFullYear(); 
 
         const COMPANY_INFO = {
@@ -139,91 +175,748 @@
             roughnessMap: '_Roughness.jpg'
         };
 
+        // NEW: Persistence for sync toggles
+        const SYNC_STATE = {
+            material: false,
+            physics: false,
+            filters: false
+        };
+
 // -- DATA_START --
-        let CATEGORIES = [
+let CATEGORIES = [
     {
         "id": 1,
         "title": "Gloss Powders",
+        "type": "metal",
         "description": "Smooth, shiny surfaces with bold and bright colours.",
         "items": [
-            { "id": 101, "name": "Ultramarine Blue", "color": "#003399", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 102, "name": "Hot Pink", "color": "#E55EA2", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 103, "name": "Yellow Green", "color": "#8DA342", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 104, "name": "Signal Violet", "color": "#8A5B8F", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 105, "name": "Traffic Yellow", "color": "#F2A900", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 106, "name": "Sky Blue", "color": "#6FA8DC", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 107, "name": "Pastel Orange", "color": "#E68B42", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 108, "name": "Water Blue", "color": "#0088AA", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 109, "name": "Flame Red", "color": "#CB3339", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 110, "name": "Moss Green", "color": "#4B5F48", "shape": "cube", "roughness": 0.2, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
+            {
+                "id": 101,
+                "name": "Ultramarine Blue",
+                "color": "#1b3780",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 0.7
+            },
+            {
+                "id": 102,
+                "name": "Hot Pink",
+                "color": "#db3279",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 0.7
+            },
+            {
+                "id": 103,
+                "name": "Yellow Green",
+                "color": "#58b04c",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 1.3
+            },
+            {
+                "id": 104,
+                "name": "Signal Violet",
+                "color": "#a24a90",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 0.7
+            },
+            {
+                "id": 105,
+                "name": "Traffic Yellow",
+                "color": "#fcc401",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 1.4
+            },
+            {
+                "id": 106,
+                "name": "Sky Blue",
+                "color": "#007ec2",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.7,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 1
+            },
+            {
+                "id": 107,
+                "name": "Pastel Orange",
+                "color": "#fe714d",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.9,
+                "contrast": 1.4,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 1.2
+            },
+            {
+                "id": 108,
+                "name": "Water Blue",
+                "color": "#00828d",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 0.7
+            },
+            {
+                "id": 109,
+                "name": "Flame Red",
+                "color": "#cd353e",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 1.1
+            },
+            {
+                "id": 110,
+                "name": "Moss Green",
+                "color": "#304b44",
+                "shape": "cube",
+                "roughness": 0.45,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "textureScale": 0.1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 0.8,
+                "contrast": 1.3,
+                "overrides": {},
+                "bumpScale": 3,
+                "saturation": 0.7
+            }
         ]
     },
     {
         "id": 2,
         "title": "Low Lustre Powders",
+        "type": "metal",
         "description": "Smooth, easy to clean surfaces that resist fingerprints.",
         "items": [
-            { "id": 201, "name": "Carbon Black", "color": "#101010", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal01", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 202, "name": "Gun Metal", "color": "#555D50", "shape": "cube", "roughness": 0.5, "metalness": 0.4, "materialSet": "metal/metal02", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 203, "name": "Night Blue", "color": "#2F3546", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 204, "name": "New York Green", "color": "#3D4B42", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 205, "name": "Nordic Lichen", "color": "#8da399", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 206, "name": "Rideau Brown", "color": "#443731", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal04", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 207, "name": "Grey Gold", "color": "#7e7668", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 208, "name": "Noble Bronze", "color": "#4b3e2f", "shape": "cube", "roughness": 0.5, "metalness": 0.5, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 209, "name": "Groovy Red", "color": "#7c2d30", "shape": "cube", "roughness": 0.5, "metalness": 0.2, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 210, "name": "Beige", "color": "#d4c5a9", "shape": "cube", "roughness": 0.6, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 211, "name": "Pewter", "color": "#6a6e72", "shape": "cube", "roughness": 0.5, "metalness": 0.6, "materialSet": "metal/metal05", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 212, "name": "Blue Ash", "color": "#4a5a6b", "shape": "cube", "roughness": 0.5, "metalness": 0.3, "materialSet": "metal/metal06", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
+            {
+                "id": 201,
+                "name": "Carbon Black",
+                "color": "#101010",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.3,
+                "materialSet": "metal/metal01",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 202,
+                "name": "Gun Metal",
+                "color": "#555D50",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.4,
+                "materialSet": "metal/metal02",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 203,
+                "name": "Night Blue",
+                "color": "#2F3546",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.3,
+                "materialSet": "metal/metal03",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 204,
+                "name": "New York Green",
+                "color": "#3D4B42",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.2,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 205,
+                "name": "Nordic Lichen",
+                "color": "#8da399",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.2,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 206,
+                "name": "Rideau Brown",
+                "color": "#443731",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.3,
+                "materialSet": "metal/metal04",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 207,
+                "name": "Grey Gold",
+                "color": "#7e7668",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.3,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 208,
+                "name": "Noble Bronze",
+                "color": "#4b3e2f",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.5,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 209,
+                "name": "Groovy Red",
+                "color": "#7c2d30",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.2,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 210,
+                "name": "Beige",
+                "color": "#d4c5a9",
+                "shape": "cube",
+                "roughness": 0.6,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 211,
+                "name": "Pewter",
+                "color": "#6a6e72",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.6,
+                "materialSet": "metal/metal05",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 212,
+                "name": "Blue Ash",
+                "color": "#4a5a6b",
+                "shape": "cube",
+                "roughness": 0.5,
+                "metalness": 0.3,
+                "materialSet": "metal/metal06",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            }
         ]
     },
     {
         "id": 3,
         "title": "Textured Powders",
+        "type": "metal",
         "description": "Fine or coarse textures that help hide blemishes and scratches.",
         "items": [
-            { "id": 301, "name": "Textured Black", "color": "#101010", "shape": "cube", "roughness": 0.7, "metalness": 0.2, "materialSet": "metal/metal07", "bumpScale": 0.008, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 302, "name": "Victor Ridge", "color": "#3E3B36", "shape": "cube", "roughness": 0.7, "metalness": 0.3, "materialSet": "metal/metal08", "bumpScale": 0.008, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 303, "name": "Brown Slate", "color": "#594D43", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 304, "name": "Modern Khaki", "color": "#756B5B", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 305, "name": "Textured Silver", "color": "#A8A9AD", "shape": "cube", "roughness": 0.6, "metalness": 0.6, "materialSet": "metal/metal09", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 306, "name": "Oil Rubbed Bronze", "color": "#3b2f26", "shape": "cube", "roughness": 0.7, "metalness": 0.4, "materialSet": "metal/metal10", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 307, "name": "Timeless Rust", "color": "#8A4E36", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 308, "name": "Earth Clay", "color": "#8C5B42", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 309, "name": "Precious Sand", "color": "#AFA088", "shape": "cube", "roughness": 0.8, "metalness": 0.1, "materialSet": "none", "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 310, "name": "Textured White", "color": "#F5F5F5", "shape": "cube", "roughness": 0.7, "metalness": 0.1, "materialSet": "metal/metal11", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
+            {
+                "id": 301,
+                "name": "Textured Black",
+                "color": "#101010",
+                "shape": "cube",
+                "roughness": 0.7,
+                "metalness": 0.2,
+                "materialSet": "metal/metal07",
+                "bumpScale": 1.5,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 302,
+                "name": "Victor Ridge",
+                "color": "#3E3B36",
+                "shape": "cube",
+                "roughness": 0.7,
+                "metalness": 0.3,
+                "materialSet": "metal/metal08",
+                "bumpScale": 1.5,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 303,
+                "name": "Brown Slate",
+                "color": "#594D43",
+                "shape": "cube",
+                "roughness": 0.8,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 304,
+                "name": "Modern Khaki",
+                "color": "#756B5B",
+                "shape": "cube",
+                "roughness": 0.8,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 305,
+                "name": "Textured Silver",
+                "color": "#A8A9AD",
+                "shape": "cube",
+                "roughness": 0.6,
+                "metalness": 0.6,
+                "materialSet": "metal/metal09",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 306,
+                "name": "Oil Rubbed Bronze",
+                "color": "#3b2f26",
+                "shape": "cube",
+                "roughness": 0.7,
+                "metalness": 0.4,
+                "materialSet": "metal/metal10",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 307,
+                "name": "Timeless Rust",
+                "color": "#8A4E36",
+                "shape": "cube",
+                "roughness": 0.8,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 308,
+                "name": "Earth Clay",
+                "color": "#8C5B42",
+                "shape": "cube",
+                "roughness": 0.8,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 309,
+                "name": "Precious Sand",
+                "color": "#AFA088",
+                "shape": "cube",
+                "roughness": 0.8,
+                "metalness": 0.1,
+                "materialSet": "none",
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 310,
+                "name": "Textured White",
+                "color": "#F5F5F5",
+                "shape": "cube",
+                "roughness": 0.7,
+                "metalness": 0.1,
+                "materialSet": "metal/metal11",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            }
         ]
     },
     {
         "id": 4,
         "title": "Recycled Plastic Lumber",
+        "type": "plastic",
         "description": "Non-toxic, ultra-durable, low maintenance. 100% recycled.",
         "items": [
-            { "id": 401, "name": "Black", "color": "#222222", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic01", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 402, "name": "Grey", "color": "#777777", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic02", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 403, "name": "Redwood", "color": "#8D5E52", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic03", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 404, "name": "Sand", "color": "#C2B280", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic04", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 405, "name": "Walnut", "color": "#5C4033", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "plastic/plastic05", "bumpScale": 0.005, "textureScale": 0.5, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
+            {
+                "id": 401,
+                "name": "Black",
+                "color": "#222222",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "plastic/plastic01",
+                "bumpScale": 1,
+                "textureScale": 0.5,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 402,
+                "name": "Grey",
+                "color": "#777777",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "plastic/plastic02",
+                "bumpScale": 1,
+                "textureScale": 0.5,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 403,
+                "name": "Redwood",
+                "color": "#8D5E52",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "plastic/plastic03",
+                "bumpScale": 1,
+                "textureScale": 0.5,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 404,
+                "name": "Sand",
+                "color": "#C2B280",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "plastic/plastic04",
+                "bumpScale": 1,
+                "textureScale": 0.5,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 405,
+                "name": "Walnut",
+                "color": "#5C4033",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "plastic/plastic05",
+                "bumpScale": 1,
+                "textureScale": 0.5,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            }
         ]
     },
     {
         "id": 5,
         "title": "Natural Wood Alternatives",
+        "type": "wood",
         "description": "Premium natural and modified wood options.",
         "items": [
-            { "id": 501, "name": "Accoya Natural", "color": "#E3CAA5", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 502, "name": "Accoya Grey", "color": "#999999", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood03", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 503, "name": "Hardened Bamboo", "color": "#D29F64", "shape": "plank", "roughness": 0.7, "metalness": 0, "materialSet": "wood/wood01", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 },
-            { "id": 504, "name": "Western Red Cedar", "color": "#C77A50", "shape": "plank", "roughness": 0.8, "metalness": 0, "materialSet": "wood/wood04", "bumpScale": 0.005, "textureScale": 1, "textureRotation": 0, "textureOffsetX": 0, "textureOffsetY": 0, "brightness": 1, "contrast": 1 }
+            {
+                "id": 501,
+                "name": "Accoya Natural",
+                "color": "#E3CAA5",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "wood/wood03",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 502,
+                "name": "Accoya Grey",
+                "color": "#999999",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "wood/wood03",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 503,
+                "name": "Hardened Bamboo",
+                "color": "#D29F64",
+                "shape": "plank",
+                "roughness": 0.7,
+                "metalness": 0,
+                "materialSet": "wood/wood01",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            },
+            {
+                "id": 504,
+                "name": "Western Red Cedar",
+                "color": "#C77A50",
+                "shape": "plank",
+                "roughness": 0.8,
+                "metalness": 0,
+                "materialSet": "wood/wood04",
+                "bumpScale": 1,
+                "textureScale": 1,
+                "textureRotation": 0,
+                "textureOffsetX": 0,
+                "textureOffsetY": 0,
+                "brightness": 1,
+                "contrast": 1
+            }
         ]
     }
 ];
-
-let SHAPE_DEFAULTS = {
-    cube:     { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
-    sphere:   { rotation: { x: 0, y: 0, z: 0 },      scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
-    plank:    { rotation: { x: -0.2, y: 0.4, z: 0 }, scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 },
-    cylinder: { rotation: { x: 0.2, y: 0.2, z: 0.0 },scale: 1.0, lightRotation: 0, lightTilt: 0, envRotation: 0 }
+let GLOBAL_SETTINGS = {
+    "metal": {
+        "shape": "cube",
+        "rotation": {
+            "x": -0.10999999999999927,
+            "y": 0.6399999999999988,
+            "z": 0
+        },
+        "scale": 1.2,
+        "lightRotation": 0.3,
+        "lightTilt": 0,
+        "envRotation": 0.56,
+        "ambientIntensity": 0.1,
+        "lightIntensity": 0.3
+    },
+    "composite": {
+        "shape": "plank",
+        "rotation": {
+            "x": -0.2,
+            "y": 0.4,
+            "z": 0
+        },
+        "scale": 1,
+        "lightRotation": 0,
+        "lightTilt": 0,
+        "envRotation": 0
+    }
 };
 // -- DATA_END --
 
@@ -237,6 +930,21 @@ let SHAPE_DEFAULTS = {
         // ======================== TEXTURE LOADER LOGIC ===========================
         // =========================================================================
 
+        function toggleGlobal() {
+            const el = document.getElementById('global-settings-content');
+            el.classList.toggle('collapsed');
+            
+            // Toggle Icon
+            const icon = document.getElementById('global-chevron');
+            if (el.classList.contains('collapsed')) {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+        
         function resolveTextureUrl(item, mapType) {
             if (item.overrides && item.overrides[mapType]) {
                 const val = item.overrides[mapType];
@@ -258,30 +966,74 @@ let SHAPE_DEFAULTS = {
             return null;
         }
 
+        // --- NEW: FALLBACK GENERATOR for 404 Textures ---
+        // Generates a 1x1 data URI to prevent black-texture-lockout on sliders
+        function getFallbackDataURI(hexColor) {
+             const cvs = document.createElement('canvas');
+             cvs.width = 1; cvs.height = 1;
+             const ctx = cvs.getContext('2d');
+             ctx.fillStyle = hexColor;
+             ctx.fillRect(0,0,1,1);
+             return cvs.toDataURL();
+        }
+
+        const FALLBACKS = {
+            white: getFallbackDataURI('#FFFFFF'), // For Roughness/Metalness (Multiply by 1 = Slider active)
+            black: getFallbackDataURI('#000000'), // For Bump/Displacement (No displacement)
+            normal: getFallbackDataURI('#8080FF') // Flat Normal
+        };
+
         function loadTexture(url, scale, rotation, offsetX, offsetY, isColorMap = false) {
-            if (!url) return null;
-            
-            // Helper to apply transforms to a texture instance
+            // Helper to apply transforms
             const applyTransforms = (tex) => {
                 tex.wrapS = THREE.RepeatWrapping;
                 tex.wrapT = THREE.RepeatWrapping;
                 tex.repeat.set(scale, scale);
-                tex.center.set(0.5, 0.5); // Center rotation
-                tex.rotation = rotation * (Math.PI / 180); // Degrees to Radians
+                tex.center.set(0.5, 0.5); 
+                tex.rotation = rotation * (Math.PI / 180); 
                 tex.offset.set(offsetX, offsetY);
             };
 
+            // Determine proper fallback based on usage context (hacky but effective)
+            let fallbackURI = FALLBACKS.white;
+            if(url && url.includes('Displacement')) fallbackURI = FALLBACKS.black;
+            if(url && url.includes('Normal')) fallbackURI = FALLBACKS.normal;
+
+            if (!url) {
+                // Return a valid (but empty) texture so material doesn't complain, but uses fallback logic
+                // Actually, if URL is null, usually we return null to let ThreeJS standard material handle "no map" state.
+                // But for 404s, we need this.
+                return null; 
+            }
+            
             if (textureCache[url]) {
                 const tex = textureCache[url].clone();
                 tex.needsUpdate = true;
                 applyTransforms(tex);
                 return tex;
             }
-            const texture = new THREE.TextureLoader().load(url, (tex) => {
-                applyTransforms(tex);
-                tex.encoding = isColorMap ? THREE.sRGBEncoding : THREE.LinearEncoding;
-                textureCache[url] = tex;
-            });
+
+            const texture = new THREE.TextureLoader().load(
+                url, 
+                (tex) => {
+                    applyTransforms(tex);
+                    tex.encoding = isColorMap ? THREE.sRGBEncoding : THREE.LinearEncoding;
+                    textureCache[url] = tex;
+                },
+                undefined, // Progress
+                (err) => {
+                    // ERROR HANDLER: 404 Not Found
+                    // Replace the failed image with a 1x1 pixel fallback
+                    // This allows the Scalar sliders (Roughness, Metalness) to work
+                    const img = new Image();
+                    img.src = fallbackURI;
+                    img.onload = () => {
+                        texture.image = img;
+                        texture.needsUpdate = true;
+                    };
+                }
+            );
+            
             applyTransforms(texture);
             texture.encoding = isColorMap ? THREE.sRGBEncoding : THREE.LinearEncoding;
             return texture;
@@ -296,6 +1048,7 @@ let SHAPE_DEFAULTS = {
         let scenes = []; 
         let modalSceneData = null;
         let isAnimating = true;
+        let originalGlobalRotation = null; // New global to track start state
 
         function initThree() {
             canvas = document.getElementById('c');
@@ -315,8 +1068,9 @@ let SHAPE_DEFAULTS = {
             modalRenderer.setClearColor( 0x000000, 0 );
 
             SHARED_GEOMETRIES = {
-                cube: new THREE.BoxGeometry(1, 1, 1),
-                plank: new THREE.BoxGeometry(1.2, 1.2, 0.5),
+                // Arguments: width, height, depth, segments (smoothness), radius (bevel size)
+                cube: new THREE.RoundedBoxGeometry(1, 1, 1, 8, 0.05), 
+                plank: new THREE.RoundedBoxGeometry(1.2, 1.2, 0.5, 2, 0.02),
                 cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1.1, 32),
                 sphere: new THREE.SphereGeometry(0.7, 64, 64)
             };
@@ -324,6 +1078,9 @@ let SHAPE_DEFAULTS = {
             if(GLOBAL_ENV_URL) {
                 new THREE.TextureLoader().load(GLOBAL_ENV_URL, function(texture) {
                     texture.mapping = THREE.EquirectangularReflectionMapping;
+                    // FIX: Enable wrapping so Offset works for Env Rotation
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.RepeatWrapping;
                     window.GLOBAL_ENV_MAP = texture;
                     rebuildApp();
                 });
@@ -342,19 +1099,22 @@ let SHAPE_DEFAULTS = {
             const roughnessMap = loadTexture(resolveTextureUrl(item, 'roughnessMap'), scale, rot, offX, offY);
             const metalnessMap = loadTexture(resolveTextureUrl(item, 'metalnessMap'), scale, rot, offX, offY);
 
+            // BUMP DEPTH FIX: Ensure normalScale and bumpScale are derived from item.bumpScale
+            const bumpStrength = item.bumpScale !== undefined ? parseFloat(item.bumpScale) : 1.0;
+
             const material = new THREE.MeshPhysicalMaterial({
                 color: 0xffffff,
                 map: map,
                 bumpMap: bumpMap,
-                bumpScale: item.bumpScale || 0.0,
+                bumpScale: bumpStrength * 0.05, // Scaled down for actual displacement
                 normalMap: normalMap,
-                normalScale: new THREE.Vector2(1, 1), 
+                normalScale: new THREE.Vector2(bumpStrength, bumpStrength), // Direct scaling for normals
                 roughnessMap: roughnessMap,
                 roughness: item.roughness !== undefined ? parseFloat(item.roughness) : 0.5,
                 metalnessMap: metalnessMap,
                 metalness: item.metalness !== undefined ? parseFloat(item.metalness) : 0.0,
                 envMap: window.GLOBAL_ENV_MAP || null,
-                envMapIntensity: 1.0,
+                envMapIntensity: 1.2,
                 clearcoat: 0.1,
                 clearcoatRoughness: 0.1
             });
@@ -401,52 +1161,108 @@ let SHAPE_DEFAULTS = {
             return material;
         }
 
+        // Helper to find the type of a category
+        function getCategoryType(catId) {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            return cat ? (cat.type || 'metal') : 'metal';
+        }
+
+        // NEW: Helper to group Wood and Plastic together
+        function getSettingsGroup(catId) {
+            const type = getCategoryType(catId);
+            if (type === 'wood' || type === 'plastic') return 'composite';
+            return 'metal';
+        }
+
         function createSceneForItem(element, item, isModal = false) {
             const scene = new THREE.Scene();
-            if(window.GLOBAL_ENV_MAP) scene.environment = window.GLOBAL_ENV_MAP;
+            // REMOVED: if(window.GLOBAL_ENV_MAP) scene.environment = window.GLOBAL_ENV_MAP; 
+            // We rely on material.envMap instead to allow rotation via offset.
 
             const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
             camera.position.set(0, 1.5, 4.2);
             camera.lookAt(0, 0, 0);
 
-            // Lighting setup optimized for visibility
+            // --- LIGHTING SETUP ---
             const lightGroup = new THREE.Group();
             scene.add(lightGroup);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); // Stronger directional
+
+            // 1. Directional Light (Main Key Light)
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2); 
             dirLight.position.set(3, 3, 5);
             lightGroup.add(dirLight);
             
+            // 2. Fill Light (Secondary)
             const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
             fillLight.position.set(-3, 0, 5);
             lightGroup.add(fillLight);
             
+            // 3. Back Light (Rim)
             const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
             backLight.position.set(0, 2, -5);
             lightGroup.add(backLight);
             
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4)); // Lower ambient for better shadows
+            // 4. Ambient Light (Shadow Softness)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
+            scene.add(ambientLight); 
 
-            const shape = item.shape || 'sphere';
-            const geometry = SHARED_GEOMETRIES[shape] || SHARED_GEOMETRIES['sphere'];
+            // --- GEOMETRY & MATERIAL SETUP ---
+            let settingsGroup = 'metal'; 
+            let groupId = null;
+
+            for(let c of CATEGORIES) {
+                if(c.items.find(i => i.id === item.id)) {
+                    groupId = c.id;
+                    break;
+                }
+            }
+            if(groupId) settingsGroup = getSettingsGroup(groupId);
+            
+            if(isModal && currentEditCatId) {
+                settingsGroup = getSettingsGroup(currentEditCatId);
+            }
+
+            const shapeDef = GLOBAL_SETTINGS[settingsGroup];
+            const shapeToUse = shapeDef && shapeDef.shape ? shapeDef.shape : (item.shape || 'sphere');
+
+            const geometry = SHARED_GEOMETRIES[shapeToUse] || SHARED_GEOMETRIES['sphere'];
             const material = createMaterial(item);
             const mesh = new THREE.Mesh(geometry, material);
             
-            const shapeDef = SHAPE_DEFAULTS[shape];
+            // --- APPLY TRANSFORMS ---
             if (shapeDef) {
                 mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
                 const s = shapeDef.scale || 1.0;
                 mesh.scale.set(s,s,s);
                 
-                // Apply Global Light Rotation & Tilt
                 lightGroup.rotation.y = shapeDef.lightRotation || 0;
                 lightGroup.rotation.x = shapeDef.lightTilt || 0; 
 
+                // Apply initial Env Rotation to the global map
                 if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
+
+                if (shapeDef.lightIntensity !== undefined) dirLight.intensity = shapeDef.lightIntensity;
+                if (shapeDef.ambientIntensity !== undefined) ambientLight.intensity = shapeDef.ambientIntensity;
             }
             scene.add(mesh);
 
-            const sceneData = { scene, camera, element, mesh, shape, lightGroup, isDragging: false, lastMouse: {x:0, y:0} };
+            // --- DATA PACKET ---
+            const sceneData = { 
+                scene, 
+                camera, 
+                element, 
+                mesh, 
+                shape: shapeToUse, 
+                lightGroup, 
+                dirLight,       
+                ambientLight,  
+                settingsGroup,
+                itemId: item.id,
+                isDragging: false, 
+                lastMouse: {x:0, y:0} 
+            };
 
+            // --- INTERACTION ---
             if (isModal) {
                 camera.position.z = 3.5; 
                 camera.position.y = 1.3; 
@@ -460,6 +1276,7 @@ let SHAPE_DEFAULTS = {
             return sceneData;
         }
 
+        
         function render() {
             if (!isAnimating) return;
             
@@ -512,12 +1329,27 @@ let SHAPE_DEFAULTS = {
         window.addEventListener('mousemove', (e) => {
             const handleDrag = (s) => {
                 if (s.isDragging) {
-                    s.mesh.rotation.y += (e.clientX - s.lastMouse.x) * 0.01;
-                    s.mesh.rotation.x += (e.clientY - s.lastMouse.y) * 0.01;
+                    // Calculate rotation delta
+                    const deltaX = (e.clientX - s.lastMouse.x) * 0.01;
+                    const deltaY = (e.clientY - s.lastMouse.y) * 0.01;
+
+                    // 1. Rotate the specific object being dragged
+                    s.mesh.rotation.y += deltaX;
+                    s.mesh.rotation.x += deltaY;
                     
-                    if(s === modalSceneData && SHAPE_DEFAULTS[s.shape]) {
-                         SHAPE_DEFAULTS[s.shape].rotation = { x: s.mesh.rotation.x, y: s.mesh.rotation.y, z: s.mesh.rotation.z };
+                    // 2. CHECK SYNC TOGGLE
+                    const isSyncEnabled = document.getElementById('save-angle-check') && document.getElementById('save-angle-check').checked;
+
+                    // 3. VISUAL SYNC ONLY (Do not save to Data yet)
+                    // If this is the Modal, and Sync is Checked, rotate all background items of same group
+                    if (s === modalSceneData && isSyncEnabled && s.settingsGroup) {
+                        scenes.forEach(other => {
+                            if(other.settingsGroup === s.settingsGroup) {
+                                other.mesh.rotation.copy(s.mesh.rotation);
+                            }
+                        });
                     }
+                    
                     s.lastMouse.x = e.clientX; s.lastMouse.y = e.clientY;
                 }
             };
@@ -548,12 +1380,17 @@ let SHAPE_DEFAULTS = {
                 const item = cat.items.find(i => i.id === currentEditItemId);
                 
                 if(item) {
-                     if (modalSceneData && modalSceneData.shape === item.shape) {
+                     // Check if Modal Scene needs a full rebuild (changed geometry)
+                     const group = getSettingsGroup(currentEditCatId);
+                     const globalShape = GLOBAL_SETTINGS[group].shape;
+
+                     if (modalSceneData && modalSceneData.shape === globalShape) {
+                         // Only update Material if shape matches
                          const newMat = createMaterial(item);
                          if (modalSceneData.mesh.material) modalSceneData.mesh.material.dispose();
                          modalSceneData.mesh.material = newMat;
                          
-                         const defs = SHAPE_DEFAULTS[item.shape];
+                         const defs = GLOBAL_SETTINGS[group];
                          if(defs) {
                             modalSceneData.mesh.scale.setScalar(defs.scale || 1.0);
                             modalSceneData.lightGroup.rotation.y = defs.lightRotation || 0;
@@ -561,6 +1398,7 @@ let SHAPE_DEFAULTS = {
                          }
 
                      } else {
+                         // Full Rebuild needed
                          const el = document.getElementById('modal-scene-target');
                          el.innerHTML = ''; 
                          modalSceneData = createSceneForItem(el, item, true);
@@ -605,7 +1443,7 @@ let SHAPE_DEFAULTS = {
                                     <div class="text-center"><p class="text-xs font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p></div>
                                 </div>
                             `).join('')}
-                            <div class="add-card flex flex-col justify-center items-center aspect-square border-2 border-dashed border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition group" onclick="addItem(${cat.id})">
+                            <div class="add-card opacity-0 hover:opacity-100 flex flex-col justify-center items-center aspect-square border-2 border-dashed border-gray-300 rounded hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition group" onclick="addItem(${cat.id})">
                                 <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 group-hover:text-blue-700 transition"><i class="fas fa-plus text-gray-400 group-hover:text-blue-600"></i></div>
                                 <span class="text-xs font-bold text-gray-400 group-hover:text-blue-600 uppercase">Add Item</span>
                             </div>
@@ -623,50 +1461,109 @@ let SHAPE_DEFAULTS = {
             icon.classList.toggle('fa-chevron-down'); icon.classList.toggle('fa-chevron-up');
         }
 
+        // Helper to update sync state from UI
+        function updateSyncState(key, checked) {
+            SYNC_STATE[key] = checked;
+        }
+
+        function toggleAngleSync(isChecked) {
+            if(!modalSceneData) return;
+            
+            // If Unchecked: Snap back to original state (either specific item rotation OR global rotation)
+            // But user said: "When I UNTOGGLE... angle should go back to default"
+            // We assume "default" means the Global Group rotation (reverting any dragging done)
+            
+            if (!isChecked) {
+                // Snap visual preview back to the GLOBAL default settings instantly
+                const group = getSettingsGroup(currentEditCatId);
+                const defs = GLOBAL_SETTINGS[group];
+                if(defs && defs.rotation) {
+                    modalSceneData.mesh.rotation.set(defs.rotation.x, defs.rotation.y, defs.rotation.z);
+                }
+            } else {
+                // If Checked: Also snap back to Global (visual sync)
+                 const group = getSettingsGroup(currentEditCatId);
+                 const defs = GLOBAL_SETTINGS[group];
+                 if(defs && defs.rotation) {
+                    modalSceneData.mesh.rotation.set(defs.rotation.x, defs.rotation.y, defs.rotation.z);
+                    // Also sync background items visually
+                    scenes.forEach(s => {
+                        if(s.settingsGroup === group) {
+                             s.mesh.rotation.set(defs.rotation.x, defs.rotation.y, defs.rotation.z);
+                        }
+                    });
+                 }
+            }
+        }
+
         function openModal(catId, itemId) {
             currentEditCatId = catId; currentEditItemId = itemId;
             const cat = CATEGORIES.find(c => c.id === catId);
             const item = cat.items.find(i => i.id === itemId);
+            const catType = cat.type || 'metal'; 
+            const settingsGroup = getSettingsGroup(catId); 
+            const catTitle = cat.title; 
+
+            // 1. Capture Original Item State (for Cancel)
             originalItemState = JSON.parse(JSON.stringify(item));
 
-            const generateOptions = (val) => {
+            // 2. Capture Original Global Rotation (for Cancel)
+            if(GLOBAL_SETTINGS[settingsGroup]) {
+                originalGlobalRotation = { ...GLOBAL_SETTINGS[settingsGroup].rotation };
+            }
+
+            const generateOptions = (val, showAll = false) => {
                 let opts = `<option value="" ${!val ? 'selected' : ''}>Default (From Set)</option>
                             <option value="BLANK" ${val === 'BLANK' ? 'selected' : ''}>-- NONE / BLANK --</option>`;
+                
                 for (const [folder, mats] of Object.entries(MATERIAL_LIBRARY)) {
-                    opts += `<optgroup label="${folder.toUpperCase()}">`;
-                    mats.forEach(id => opts += `<option value="${folder}/${id}" ${val === `${folder}/${id}` ? 'selected' : ''}>${id}</option>`);
-                    opts += `</optgroup>`;
+                    if (showAll || folder === catType) {
+                        opts += `<optgroup label="${folder.toUpperCase()}">`;
+                        mats.forEach(id => opts += `<option value="${folder}/${id}" ${val === `${folder}/${id}` ? 'selected' : ''}>${id}</option>`);
+                        opts += `</optgroup>`;
+                    }
                 }
                 return opts;
             };
 
-            const shapeDef = SHAPE_DEFAULTS[item.shape] || { scale: 1, lightRotation: 0, lightTilt: 0, envRotation: 0 };
+            const shapeDef = GLOBAL_SETTINGS[settingsGroup] || { scale: 1, lightRotation: 0, lightTilt: 0, envRotation: 0 };
             
+            // Note: Added onchange="toggleAngleSync(this.checked)" to the checkbox below
             document.getElementById('modal-controls').innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
                     <div><label class="block text-xs font-bold text-gray-500 mb-1">Name</label><input type="text" value="${item.name}" onchange="updateCurrentItem('name', this.value)" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold text-gray-500 mb-1">Shape</label>
-                        <select onchange="updateCurrentItem('shape', this.value)" class="w-full border rounded p-2 bg-white">${SHAPE_TYPES.map(t => `<option value="${t}" ${item.shape === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}</select>
+                        <select onchange="updateGlobalShape(this.value)" class="w-full border rounded p-2 bg-white">${SHAPE_TYPES.map(t => `<option value="${t}" ${GLOBAL_SETTINGS[settingsGroup].shape === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}</select>
                     </div>
                 </div>
 
                  <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mt-4">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2"><i class="fas fa-globe"></i> Global Shape Settings</h4>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2"><i class="fas fa-globe"></i> Global ${settingsGroup.toUpperCase()} Settings</h4>
                     <div class="space-y-3">
                          <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Shape Scale</label><input type="range" min="0.5" max="1.5" step="0.05" value="${shapeDef.scale||1}" oninput="updateGlobalPreview('scale', this.value)"></div>
                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Rotate</label><input type="range" min="0" max="6.28" step="0.1" value="${shapeDef.lightRotation||0}" oninput="updateGlobalPreview('lightRotation', this.value)"></div>
                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Tilt</label><input type="range" min="-1.5" max="1.5" step="0.1" value="${shapeDef.lightTilt||0}" oninput="updateGlobalPreview('lightTilt', this.value)"></div>
                          <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Env Rotation</label><input type="range" min="0" max="1" step="0.01" value="${shapeDef.envRotation||0}" oninput="updateGlobalPreview('envRotation', this.value)"></div>
+                         
+                         <hr class="border-gray-300">
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Intensity</label><input type="range" min="0" max="3" step="0.1" value="${shapeDef.lightIntensity!==undefined ? shapeDef.lightIntensity : 1.2}" oninput="updateGlobalPreview('lightIntensity', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Shadow Soft</label><input type="range" min="0" max="2" step="0.1" value="${shapeDef.ambientIntensity!==undefined ? shapeDef.ambientIntensity : 0.4}" oninput="updateGlobalPreview('ambientIntensity', this.value)"></div>
                     </div>
                 </div>
 
                 <hr class="border-gray-200 my-4">
 
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Material Set</label>
+                    <div class="flex justify-between items-end mb-1">
+                        <label class="block text-xs font-bold text-gray-500">Material Set (${catType.toUpperCase()})</label>
+                        <div class="flex items-center gap-1">
+                            <input type="checkbox" id="sync-material" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.material ? 'checked' : ''} onchange="updateSyncState('material', this.checked)">
+                            <label for="sync-material" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
+                        </div>
+                    </div>
                     <select onchange="updateCurrentItem('materialSet', this.value)" class="w-full border-2 border-blue-100 rounded p-2 font-bold text-gray-700">
                         <option value="none" ${item.materialSet === 'none' ? 'selected' : ''}>None (Color Only)</option>
-                        ${Object.entries(MATERIAL_LIBRARY).map(([f, ms]) => `<optgroup label="${f.toUpperCase()}">${ms.map(m => `<option value="${f}/${m}" ${item.materialSet === `${f}/${m}` ? 'selected' : ''}>${m}</option>`).join('')}</optgroup>`).join('')}
+                        ${generateOptions(item.materialSet, false).replace('Default (From Set)', '').replace('BLANK', '')} 
                     </select>
                 </div>
 
@@ -675,58 +1572,159 @@ let SHAPE_DEFAULTS = {
                         <span class="text-xs font-bold text-gray-600">Advanced / Manual Overrides</span><i id="adv-icon" class="fas fa-chevron-down text-gray-400 text-xs"></i>
                     </button>
                     <div id="advanced-overrides" class="advanced-panel bg-white p-3 space-y-3">
+                        <p class="text-[10px] text-gray-400 italic">Overrides allow you to select ANY texture from ANY category.</p>
                         ${['map', 'bumpMap', 'normalMap', 'roughnessMap', 'metalnessMap'].map(key => `
                             <div><label class="block text-[10px] font-bold text-gray-500 capitalize">${key} Override</label>
-                            <select onchange="updateOverride('${key}', this.value)" class="w-full border rounded p-1 text-xs text-gray-600">${generateOptions(item.overrides?.[key])}</select></div>
+                            <select onchange="updateOverride('${key}', this.value)" class="w-full border rounded p-1 text-xs text-gray-600">${generateOptions(item.overrides?.[key], true)}</select></div>
                         `).join('')}
                     </div>
                 </div>
 
                 <div class="space-y-4 pt-2 mt-4 bg-gray-50 p-2 rounded">
-                    <h5 class="text-xs font-bold uppercase text-gray-400">Material Physics</h5>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Gloss/Rough</label><input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateCurrentItem('roughness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Metalness</label><input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateCurrentItem('metalness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Bump Depth</label><input type="range" min="0" max="0.1" step="0.001" value="${item.bumpScale}" oninput="updateCurrentItem('bumpScale', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Scale</label><input type="range" min="0.1" max="5.0" step="0.1" value="${item.textureScale}" oninput="updateCurrentItem('textureScale', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Rotate</label><input type="range" min="0" max="360" step="1" value="${item.textureRotation||0}" oninput="updateCurrentItem('textureRotation', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset X</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetX||0}" oninput="updateCurrentItem('textureOffsetX', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset Y</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetY||0}" oninput="updateCurrentItem('textureOffsetY', this.value)"></div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h5 class="text-xs font-bold uppercase text-gray-400">Material Physics</h5>
+                        <div class="flex items-center gap-1">
+                            <input type="checkbox" id="sync-physics" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.physics ? 'checked' : ''} onchange="updateSyncState('physics', this.checked)">
+                            <label for="sync-physics" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Gloss/Rough</label><input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateMaterialProp('roughness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Metalness</label><input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateMaterialProp('metalness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Depth</label><input type="range" min="0" max="3" step="0.1" value="${item.bumpScale !== undefined ? item.bumpScale : 1.0}" oninput="updateMaterialProp('bumpScale', this.value)"></div>
+                    
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Scale</label><input type="range" min="0.1" max="5.0" step="0.1" value="${item.textureScale}" oninput="updateMaterialProp('textureScale', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Rotate</label><input type="range" min="0" max="360" step="1" value="${item.textureRotation||0}" oninput="updateMaterialProp('textureRotation', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset X</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetX||0}" oninput="updateMaterialProp('textureOffsetX', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset Y</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetY||0}" oninput="updateMaterialProp('textureOffsetY', this.value)"></div>
                 </div>
 
                 <div class="space-y-4 pt-2 mt-2 bg-gray-50 p-2 rounded">
-                    <h5 class="text-xs font-bold uppercase text-gray-400">Image Filters & Tint</h5>
-                    <div class="flex items-center gap-4 border-b border-gray-200 pb-4 mb-2">
-                        <label class="w-24 text-xs font-bold text-gray-600">Tint Color</label>
-                        <input type="color" value="${item.color}" onchange="updateCurrentItem('color', this.value)" class="w-10 h-8 rounded border border-gray-300 cursor-pointer p-0">
-                        <div class="flex-1 flex items-center gap-2">
-                             <label class="text-[10px] font-bold text-gray-400">Str</label>
-                             <input type="range" min="0" max="1" step="0.05" value="${item.tintLevel !== undefined ? item.tintLevel : 1.0}" oninput="updateCurrentItem('tintLevel', this.value)">
+                    <div class="flex justify-between items-center mb-2">
+                        <h5 class="text-xs font-bold uppercase text-gray-400">Filters (No Tint)</h5>
+                        <div class="flex items-center gap-1">
+                            <input type="checkbox" id="sync-filters" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.filters ? 'checked' : ''} onchange="updateSyncState('filters', this.checked)">
+                            <label for="sync-filters" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Brightness</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness ?? 1}" oninput="updateCurrentItem('brightness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Contrast</label><input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast ?? 1}" oninput="updateCurrentItem('contrast', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Saturation</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation ?? 1}" oninput="updateCurrentItem('saturation', this.value)"></div>
+                    <div class="flex items-center gap-4 border-b border-gray-200 pb-4 mb-2">
+                        <label class="w-24 text-xs font-bold text-gray-600">Tint Color</label>
+                        <input type="color" value="${item.color}" oninput="updateMaterialProp('color', this.value)" class="w-10 h-8 rounded border border-gray-300 cursor-pointer p-0">
+                        <div class="flex-1 flex items-center gap-2">
+                             <label class="text-[10px] font-bold text-gray-400">Str</label>
+                             <input type="range" min="0" max="1" step="0.05" value="${item.tintLevel !== undefined ? item.tintLevel : 1.0}" oninput="updateMaterialProp('tintLevel', this.value)">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Brightness</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness ?? 1}" oninput="updateMaterialProp('brightness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Contrast</label><input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast ?? 1}" oninput="updateMaterialProp('contrast', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Saturation</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation ?? 1}" oninput="updateMaterialProp('saturation', this.value)"></div>
                 </div>
             `;
+            
+            // Checkbox initialization
+            // If item has a rotation property, it is NOT synced. 
+            const angleCheck = document.getElementById('save-angle-check');
+            if(angleCheck) {
+                // If checking the box means "Sync", then we are synced if item.rotation is undefined
+                angleCheck.checked = (item.rotation === undefined);
+                
+                // Add event listener here manually to ensure it fires correctly
+                angleCheck.onchange = (e) => toggleAngleSync(e.target.checked);
+            }
+
             document.getElementById('editor-modal').classList.add('active');
             rebuildApp();
         }
+        // NEW: Handles Global Shape Change across all items of a category type
+        function updateGlobalShape(newShape) {
+            const group = getSettingsGroup(currentEditCatId);
+            if(GLOBAL_SETTINGS[group]) {
+                GLOBAL_SETTINGS[group].shape = newShape;
 
-        function updateGlobalPreview(type, value) {
-            if (modalSceneData) {
-                const val = parseFloat(value);
-                if (type === 'scale') modalSceneData.mesh.scale.setScalar(val);
-                else if (type === 'lightRotation') modalSceneData.lightGroup.rotation.y = val;
-                else if (type === 'lightTilt') modalSceneData.lightGroup.rotation.x = val;
-                else if (type === 'envRotation') if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = val;
-                
-                if(SHAPE_DEFAULTS[modalSceneData.shape]) {
-                    SHAPE_DEFAULTS[modalSceneData.shape][type] = val;
+                // Sync all background scenes
+                scenes.forEach(s => {
+                    if(s.settingsGroup === group) {
+                        s.shape = newShape;
+                        s.mesh.geometry = SHARED_GEOMETRIES[newShape];
+                    }
+                });
+
+                // Sync modal scene
+                if(modalSceneData) {
+                    modalSceneData.shape = newShape;
+                    modalSceneData.mesh.geometry = SHARED_GEOMETRIES[newShape];
                 }
             }
         }
 
-        function saveAndCloseModal() { closeModal(); }
+        function updateGlobalPreview(type, value) {
+            const group = getSettingsGroup(currentEditCatId);
+            
+            if (GLOBAL_SETTINGS[group]) {
+                const val = parseFloat(value);
+                
+                // Update Data
+                if (type === 'scale') GLOBAL_SETTINGS[group].scale = val;
+                else if (type === 'lightRotation') GLOBAL_SETTINGS[group].lightRotation = val;
+                else if (type === 'lightTilt') GLOBAL_SETTINGS[group].lightTilt = val;
+                else if (type === 'envRotation') GLOBAL_SETTINGS[group].envRotation = val;
+                else if (type === 'lightIntensity') GLOBAL_SETTINGS[group].lightIntensity = val;
+                else if (type === 'ambientIntensity') GLOBAL_SETTINGS[group].ambientIntensity = val;
+
+                // Handle Environment Rotation (Apply ONCE to global texture)
+                if (type === 'envRotation' && window.GLOBAL_ENV_MAP) {
+                    window.GLOBAL_ENV_MAP.offset.x = val;
+                }
+
+                // Apply Function to scenes
+                const applyToScene = (s) => {
+                    if (type === 'scale') s.mesh.scale.setScalar(val);
+                    else if (type === 'lightRotation') s.lightGroup.rotation.y = val;
+                    else if (type === 'lightTilt') s.lightGroup.rotation.x = val;
+                    else if (type === 'lightIntensity' && s.dirLight) s.dirLight.intensity = val;
+                    else if (type === 'ambientIntensity' && s.ambientLight) s.ambientLight.intensity = val;
+                };
+
+                // Update Modal
+                if (modalSceneData) applyToScene(modalSceneData);
+
+                // Sync all background scenes of this type
+                scenes.forEach(s => {
+                    if(s.settingsGroup === group) applyToScene(s);
+                });
+            }
+        }
+
+        function saveAndCloseModal() { 
+            const isSyncAngle = document.getElementById('save-angle-check')?.checked;
+
+            if (modalSceneData && modalSceneData.settingsGroup) {
+                // 1. Find the actual data object for the item
+                const cat = CATEGORIES.find(c => c.id === currentEditCatId);
+                const item = cat.items.find(i => i.id === currentEditItemId);
+
+                if (isSyncAngle) {
+                    // --- SYNC IS ON ---
+                    // Save whatever current visual rotation is to the GLOBAL settings
+                    const currentRot = {
+                        x: modalSceneData.mesh.rotation.x,
+                        y: modalSceneData.mesh.rotation.y,
+                        z: modalSceneData.mesh.rotation.z
+                    };
+                    
+                    if (GLOBAL_SETTINGS[modalSceneData.settingsGroup]) {
+                        GLOBAL_SETTINGS[modalSceneData.settingsGroup].rotation = currentRot;
+                    }
+                    // Remove local override so it follows global
+                    if (item.rotation) delete item.rotation; 
+                } else {
+                    // --- SYNC IS OFF ---
+                    // User said: "it shouldn't save the single item"
+                    // So we do NOTHING to item.rotation. We discard the drag changes.
+                    // We simply close the modal.
+                }
+            }
+            closeModal(); 
+        }
 
         function closeModal() {
             document.getElementById('editor-modal').classList.remove('active');
@@ -738,16 +1736,95 @@ let SHAPE_DEFAULTS = {
             rebuildApp(); 
         }
 
+        // OPTIMIZED UPDATE with CATEGORY SYNC
+        function updateMaterialProp(field, value) {
+            const cat = CATEGORIES.find(c => c.id === currentEditCatId);
+            const currentItem = cat.items.find(i => i.id === currentEditItemId);
+            
+            // Determine if we need to sync based on field type and checkbox state
+            const isPhysics = ['roughness', 'metalness', 'bumpScale', 'textureScale', 'textureRotation', 'textureOffsetX', 'textureOffsetY'].includes(field);
+            const isFilter = ['brightness', 'contrast', 'saturation'].includes(field); // Does NOT include 'color' or 'tintLevel'
+            
+            let itemsToUpdate = [currentItem];
+
+            // Only sync if check box is checked AND it's a syncable field
+            // Note: Tint Color and Level are never synced in this logic
+            if (isPhysics && SYNC_STATE.physics) {
+                itemsToUpdate = cat.items;
+            } else if (isFilter && SYNC_STATE.filters) {
+                itemsToUpdate = cat.items;
+            }
+
+            // Apply to all selected items (could be 1, could be all in category)
+            itemsToUpdate.forEach(item => {
+                // 1. Update Data Model
+                if (['color', 'name'].includes(field)) item[field] = value;
+                else item[field] = parseFloat(value);
+
+                // 2. Update LIVE ThreeJS Objects (No Rebuild)
+                const updateTarget = (sceneData) => {
+                    if(!sceneData || !sceneData.mesh || !sceneData.mesh.material) return;
+                    const mat = sceneData.mesh.material;
+                    const shader = mat.userData.shader;
+
+                    // Physics
+                    if(field === 'roughness') mat.roughness = item.roughness;
+                    if(field === 'metalness') mat.metalness = item.metalness;
+                    
+                    if(field === 'bumpScale') {
+                        mat.bumpScale = item.bumpScale * 0.05; 
+                        mat.normalScale.set(item.bumpScale, item.bumpScale);
+                    }
+
+                    // Texture Transforms
+                    if(['textureScale', 'textureRotation', 'textureOffsetX', 'textureOffsetY'].includes(field)) {
+                        ['map', 'bumpMap', 'normalMap', 'roughnessMap', 'metalnessMap'].forEach(mapType => {
+                            if(mat[mapType]) {
+                                mat[mapType].repeat.set(item.textureScale, item.textureScale);
+                                mat[mapType].rotation = (item.textureRotation || 0) * (Math.PI/180);
+                                mat[mapType].offset.set(item.textureOffsetX || 0, item.textureOffsetY || 0);
+                            }
+                        });
+                    }
+
+                    // Shader Uniforms
+                    if (shader) {
+                        if(field === 'brightness') shader.uniforms.uBrightness.value = item.brightness;
+                        if(field === 'contrast') shader.uniforms.uContrast.value = item.contrast;
+                        if(field === 'saturation') shader.uniforms.uSaturation.value = item.saturation;
+                        if(field === 'tintLevel') shader.uniforms.uTintLevel.value = item.tintLevel;
+                        if(field === 'color') shader.uniforms.uTintColor.value.set(item.color);
+                    }
+                };
+
+                // Apply to Modal if matches
+                if(modalSceneData && modalSceneData.itemId === item.id) updateTarget(modalSceneData);
+
+                // Apply to Background grid scene matching this ID
+                const gridScene = scenes.find(s => s.itemId === item.id);
+                updateTarget(gridScene);
+            });
+        }
+
+        // Heavy Update (Rebuilds Scene) with SYNC
         function updateCurrentItem(field, value) {
             const cat = CATEGORIES.find(c => c.id === currentEditCatId);
             const item = cat.items.find(i => i.id === currentEditItemId);
             
-            if (['roughness', 'metalness', 'bumpScale', 'textureScale', 'textureRotation', 'textureOffsetX', 'textureOffsetY', 'brightness', 'contrast', 'saturation', 'tintLevel'].includes(field)) {
-                item[field] = parseFloat(value);
+            if (field === 'materialSet') {
+                if (SYNC_STATE.material) {
+                    // Sync to all items in category
+                    cat.items.forEach(i => {
+                        i.materialSet = value;
+                        i.overrides = {};
+                    });
+                } else {
+                    item[field] = value;
+                    item.overrides = {}; 
+                }
             } else {
                 item[field] = value;
             }
-            if (field === 'materialSet') item.overrides = {}; 
             rebuildApp();
         }
 
@@ -763,11 +1840,29 @@ let SHAPE_DEFAULTS = {
         function deleteCurrentItem() { if(confirm("Delete?")) { const cat = CATEGORIES.find(c => c.id === currentEditCatId); cat.items = cat.items.filter(i => i.id !== currentEditItemId); closeModal(); } }
         function deleteItemDirectly(catId, itemId) { if(confirm("Delete?")) { const cat = CATEGORIES.find(c => c.id === catId); cat.items = cat.items.filter(i => i.id !== itemId); rebuildApp(); } }
         function cancelEdit() { 
+            const group = getSettingsGroup(currentEditCatId);
+
+            // 1. Revert Item Data
             if (originalItemState) {
                 const cat = CATEGORIES.find(c => c.id === currentEditCatId);
                 const item = cat.items.find(i => i.id === currentEditItemId);
                 Object.assign(item, originalItemState);
             }
+
+            // 2. Revert Global Settings Data (InMemory) if we dirtied it
+            if (originalGlobalRotation && GLOBAL_SETTINGS[group]) {
+                GLOBAL_SETTINGS[group].rotation = { ...originalGlobalRotation };
+            }
+
+            // 3. Revert Background Scenes Visually immediately (before rebuild)
+            if (originalGlobalRotation) {
+                 scenes.forEach(s => {
+                    if(s.settingsGroup === group) {
+                         s.mesh.rotation.set(originalGlobalRotation.x, originalGlobalRotation.y, originalGlobalRotation.z);
+                    }
+                });
+            }
+
             closeModal(); 
         }
 
@@ -798,32 +1893,101 @@ let SHAPE_DEFAULTS = {
 
         function downloadHTML() {
             let html = document.documentElement.outerHTML;
-            const scriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};\nlet SHAPE_DEFAULTS = ${JSON.stringify(SHAPE_DEFAULTS, null, 4)};`;
+            const scriptData = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};\nlet GLOBAL_SETTINGS = ${JSON.stringify(GLOBAL_SETTINGS, null, 4)};`;
             html = html.replace(/\/\/ -- DATA_START --[\s\S]*?\/\/ -- DATA_END --/, `// -- DATA_START --\n${scriptData}\n// -- DATA_END --`);
             const blob = new Blob([html], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'wishbone-catalog-saved.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
+function copyHTMLCode() {
+            // 1. Get the current HTML of the entire page
+            let html = document.documentElement.outerHTML;
+
+            // 2. Prepare the updated data from your edits
+            // We purposely include the markers so the next time you copy, the regex still works
+            const scriptData = `// -- DATA_START --
+            let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};
+            let GLOBAL_SETTINGS = ${JSON.stringify(GLOBAL_SETTINGS, null, 4)};
+            // -- DATA_END --`;
+
+            // 3. Replace the old data block with the new, updated one
+            const dataRegex = /\/\/ -- DATA_START --[\s\S]*?\/\/ -- DATA_END --/;
+            html = html.replace(dataRegex, scriptData);
+
+            // 4. Remove ONLY the Live Server injection (The part that breaks things when you save)
+            // This Regex looks for the specific comment and the script tag following it
+            html = html.replace(/[\s\S]*?<\/script>/, "");
+
+            // 5. Copy to clipboard
+            navigator.clipboard.writeText(html).then(() => {
+                alert("Full HTML Code copied successfully!");
+            }).catch(err => {
+                // Fallback method if the browser blocks the first method
+                const textarea = document.createElement('textarea');
+                textarea.value = html;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert("Full HTML Code copied successfully!");
+            });
+        }
+
         async function prepareAndPrint() {
             isAnimating = false;
+            
+            // Close modal if open so we print the main list
             if(document.getElementById('editor-modal').classList.contains('active')) closeModal();
+            
+            // High resolution for print
             renderer.setSize(1024, 1024);
+            
             for (const item of scenes) {
-                const shapeDef = SHAPE_DEFAULTS[item.shape];
+                const group = item.settingsGroup;
+                const shapeDef = GLOBAL_SETTINGS[group];
+                
+                // 1. Apply Global Orientation Settings
                 if(shapeDef) {
                     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
                     item.mesh.scale.setScalar(shapeDef.scale || 1.0);
                     item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
                     item.lightGroup.rotation.x = shapeDef.lightTilt || 0;
                     if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
+
+                    // Ensure lighting matches global settings (if lights exist in item)
+                    if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
+                    if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
                 }
+
+                // 2. [FIXED] ZOOM SETTINGS
+                // We reduce zoom here to ensure the object isn't "clipped" (cut off) 
+                // inside the texture generation. The CSS will handle making it look big.
+                const originalZoom = item.camera.zoom;
+                item.camera.zoom = 1.1; // Reduced from 1.7 to prevent clipping
+                item.camera.updateProjectionMatrix();
+
                 renderer.clear();
                 renderer.render(item.scene, item.camera);
+
+                // 3. RESET ZOOM
+                item.camera.zoom = originalZoom;
+                item.camera.updateProjectionMatrix();
+
+                // 4. Save to image tag
                 const img = document.getElementById(`print-${item.element.id.split('-')[1]}`);
                 if (img) img.src = renderer.domElement.toDataURL('image/png');
             }
-            setTimeout(() => { window.print(); isAnimating = true; requestAnimationFrame(render); }, 500);
+            
+            setTimeout(() => { 
+                window.print(); 
+                isAnimating = true; 
+                
+                // Reset renderer size back to window size so browser view doesn't look stretched
+                if(canvas) renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+                
+                requestAnimationFrame(render); 
+            }, 500);
         }
 
         window.onload = function() { initThree(); rebuildApp(); render(); };
