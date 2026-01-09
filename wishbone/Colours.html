@@ -2,13 +2,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wishbone Interactive Catalog - Organized</title>
+    <title>Wishbone Interactive Catalog - Condensed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <style>
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; margin: 0; overflow-x: hidden; }
@@ -21,8 +21,10 @@
         #editor-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         #editor-modal.active { display: flex; }
 
-        /* Page Layout - Reduced Padding for Condensed View */
-        .page-sheet { background: white; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 10mm; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; }
+        /* Page Layout */
+        /* Updated: Reduced top padding to 10mm for 'very top' placement */
+        .page-sheet { background: white; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 10mm 15mm; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; }
+        
         .scene-element { width: 100%; aspect-ratio: 1 / 1; position: relative; cursor: grab; touch-action: none; z-index: 20; }
         .scene-element:active { cursor: grabbing; }
         .print-image { display: none; width: 100%; height: 100%; object-fit: contain; }
@@ -44,26 +46,33 @@
 
         /* Print Logic */
         @media print {
-            body { background: white; }
+            /* Updated: Remove printer margins so content hits the very edge */
+            @page { margin: 0mm; size: auto; }
+            body { background: white; margin: 0; }
+            
             .no-print, #c, #c-modal { display: none !important; }
-            .page-sheet { margin: 0; width: 100%; box-shadow: none; padding: 10mm; break-after: always; }
+            
+            /* Updated: Ensure page-sheet fills the paper with consistent padding */
+            .page-sheet { margin: 0; width: 100%; box-shadow: none; padding: 10mm 15mm; break-after: always; }
             
             .print-image { 
                 display: block !important; 
-                position: absolute;       
-                top: 50%;                 
-                left: 50%;                
+                position: absolute;         
+                top: 50%;                   
+                left: 50%;                  
                 transform: translate(-50%, -50%); 
                 width: 140%;              
                 height: 140%;             
-                max-width: none;          
-                object-fit: contain;      
-                z-index: 50;              
+                max-width: none;            
+                object-fit: contain;        
+                z-index: 50;               
             }
 
             .scene-element, .add-card, .item-controls { display: none !important; }
             .page-break-avoid { break-inside: avoid; }
-            h1 { margin-top: 0 !important; }
+            
+            /* This ensures the new page starts cleanly */
+            .break-before-page { break-before: page; }
         }
     </style>
 </head>
@@ -87,17 +96,14 @@
         </button>
     </div>
 
-    <!-- Main Container: Empty because JS fills it -->
     <div id="content-anchor"></div>
 
-    <!-- Modal -->
     <div id="editor-modal" class="no-print">
         <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] flex overflow-hidden">
             
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
                 <div class="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</div>
                 
-                <!-- SYNC ANGLE TOGGLE -->
                 <div class="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2">
                     <input type="checkbox" id="save-angle-check" class="cursor-pointer accent-blue-600 w-4 h-4">
                     <label for="save-angle-check" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Sync Angle</label>
@@ -119,8 +125,7 @@
                 </div>
 
                 <div id="modal-controls" class="space-y-5 flex-1">
-                    <!-- Controls injected by JS -->
-                </div>
+                    </div>
 
                 <div class="border-t pt-4 mt-4 flex justify-between items-center">
                     <button onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-2">
@@ -181,6 +186,10 @@
         "id": 1,
         "title": "Gloss Powders",
         "section": "POWDER COLORS",
+        "subheadingDescriptions": {
+                "Standard": "",
+                "Premium": ""
+            },
         "type": "metal",
         "description": "Smooth, shiny surfaces with bold and bright colours.",
         "items": [
@@ -380,6 +389,10 @@
         "id": 2,
         "title": "Low Lustre Powders",
         "section": "POWDER COLORS",
+        "subheadingDescriptions": {
+                "Standard": "",
+                "Premium": ""
+            },
         "type": "metal",
         "description": "Smooth, easy to clean surfaces that resist fingerprints.",
         "items": [
@@ -555,6 +568,10 @@
         "id": 3,
         "title": "Textured Powders",
         "section": "POWDER COLORS",
+        "subheadingDescriptions": {
+                "Standard": "",
+                "Premium": ""
+            },
         "type": "metal",
         "description": "Fine or coarse textures that help hide blemishes and scratches.",
         "items": [
@@ -863,6 +880,11 @@
         "id": 5,
         "title": "Natural Wood Alternative",
         "section": "LUMBER COLORS",
+        "subheadingDescriptions": {
+                "Accoya": "",
+                "Hardened Bamboo": "",
+                "Red Cedar": ""
+            },
         "type": "wood",
         "description": "Premium natural and modified wood options.",
         "items": [
@@ -1314,7 +1336,7 @@
                 shape: shapeToUse, 
                 lightGroup, 
                 dirLight,        
-                ambientLight,   
+                ambientLight,    
                 settingsGroup,
                 itemId: item.id,
                 isDragging: false, 
@@ -1458,7 +1480,7 @@
             }
         }
 
-        function renderHTML() {
+function renderHTML() {
             const container = document.getElementById('content-anchor');
             
             // Helper to generate a single item card
@@ -1479,33 +1501,17 @@
                             </div>
                         </div>
                     </div>
-                    <div class="text-center"><p class="text-[10px] font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p></div>
+                    <div class="text-center"><p class="text-[9px] font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p></div>
                 </div>
             `;
 
-            let html = `<div class="page-sheet">
-                <div class="flex justify-between items-end border-b-0 border-gray-800 pb-0 mb-0">
-                    <div><img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-12 mb-2 object-contain"></div>
-                    <div class="text-right">
-                        <h2 class="text-lg font-bold text-gray-800">${COMPANY_INFO.subtitle}</h2>
-                        <p class="text-xs text-gray-500 mt-1">${COMPANY_INFO.contact}</p>
-                    </div>
-                </div>`;
-
+            let html = `<div class="page-sheet">`;
             let lastSection = "";
 
-            CATEGORIES.forEach((cat) => {
-                // Check for Section Change (Title)
-                if (cat.section && cat.section !== lastSection) {
-                     html += `<h1 class="text-2xl font-black text-gray-900 mb-4 mt-8 pb-1 border-b-0 border-gray-900 tracking-tighter uppercase page-break-avoid">${cat.section}</h1>`;
-                     lastSection = cat.section;
-                }
-
-                html += `<div class="mb-6 page-break-avoid">
-                        <h3 class="text-base font-bold uppercase text-gray-800 border-l-4 border-blue-600 pl-3 mb-2">${cat.title}</h3>
-                        ${cat.description ? `<p class="text-xs text-gray-600 mb-4 max-w-2xl">${cat.description}</p>` : ''}`;
+            CATEGORIES.forEach((cat, index) => {
+                const isNewSection = cat.section && cat.section !== lastSection;
                 
-                // Group Items by Subheading
+                // 1. PROCESS ITEMS FIRST (To determine layout)
                 const itemsBySub = {};
                 const nullSubItems = [];
 
@@ -1517,51 +1523,84 @@
                         nullSubItems.push(item);
                     }
                 });
-
-                // Render Null Subheading items first (Directly under Heading)
-                if (nullSubItems.length > 0) {
-                     html += `<div class="grid grid-cols-4 gap-4 mb-4">
-                        ${nullSubItems.map(item => renderItemCard(cat, item)).join('')}
-                     </div>`;
+                
+                // 2. RENDER PAGE HEADER + SECTION TITLE (Only if New Section)
+                if (isNewSection) {
+                    lastSection = cat.section;
+                    
+                    html += `
+                        <div class="${index > 0 ? 'break-before-page pt-10' : ''} mb-8 mt-0 block">
+                            <div class="flex justify-between items-start border-b border-gray-200 pb-2 mb-6">
+                                <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-6 object-contain">
+                                <div class="text-right">
+                                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">${COMPANY_INFO.subtitle}</h2>
+                                    <p class="text-[9px] text-gray-400 mt-0.5 leading-none">${COMPANY_INFO.contact}</p>
+                                </div>
+                            </div>
+                            <h1 class="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none">${cat.section}</h1>
+                        </div>
+                    `;
                 }
 
-                // Render Subgroups - 2 COLUMN LOGIC
+                    // LAYOUT A: Has Subheadings -> Description to the RIGHT
+                    html += `
+                        <div class="mt-6 mb-4 border-l-4 pt-5 border-blue-600 pl-3 page-break-avoid flex justify-between items-end">
+                             <h3 class="text-base font-bold uppercase text-gray-800">${cat.title}</h3>
+                             ${cat.description ? `<p class="text-xs text-gray-500 italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
+                        </div>
+                    `;
+
+                
+                // 4. RENDER ITEMS
+                // Render Null Subheading items first
+                if (nullSubItems.length > 0) {
+                     html += `<div class="grid grid-cols-5 gap-2 mb-4">
+                        ${nullSubItems.map(item => renderItemCard(cat, item)).join('')}
+                      </div>`;
+                }
+
+                // Render Subgroups
                 const subKeys = Object.keys(itemsBySub);
                 if (subKeys.length > 0) {
-                    const useColumns = subKeys.length > 1; // Only use columns if we have multiple groups
-                    
-                    if (useColumns) html += `<div class="grid grid-cols-2 gap-x-8 gap-y-4 items-start break-inside-avoid">`; 
-                    
                     for (const subName of subKeys) {
                         const items = itemsBySub[subName];
-                        const subDesc = cat.subheadingDescriptions && cat.subheadingDescriptions[subName] ? 
-                                        `<p class="text-[10px] text-gray-500 mb-2">${cat.subheadingDescriptions[subName]}</p>` : '';
+                        const count = items.length;
+                        const subDescText = cat.subheadingDescriptions && cat.subheadingDescriptions[subName] ? cat.subheadingDescriptions[subName] : '';
+                        
+                        if (count <= 3) {
+                            const widthClass = count === 1 ? 'w-1/5' : count === 2 ? 'w-2/5' : 'w-3/5';
+                            const gridClass = count === 1 ? 'grid-cols-1' : count === 2 ? 'grid-cols-2' : 'grid-cols-3';
 
-                        html += `<div class="${useColumns ? 'break-inside-avoid' : 'mb-4'}">
-                            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 pb-1 border-b border-gray-200">${subName}</h4>
-                            ${subDesc}
-                            <div class="grid ${useColumns ? 'grid-cols-3 gap-3' : 'grid-cols-5 gap-4'}">
-                                ${items.map(item => renderItemCard(cat, item)).join('')}
-                            </div>
-                        </div>`;
+                            html += `
+                                <div class="mb-6 break-inside-avoid">
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 pb-1 border-b border-gray-200">${subName}</h4>
+                                    <div class="flex gap-6 items-start">
+                                         <div class="${widthClass} grid ${gridClass} gap-2 flex-none">
+                                            ${items.map(item => renderItemCard(cat, item)).join('')}
+                                         </div>
+                                         <div class="flex-1 pt-2">
+                                            ${subDescText ? `<p class="text-[10px] text-gray-500 leading-relaxed">${subDescText}</p>` : ''}
+                                         </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="mb-4 break-inside-avoid">
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 pb-1 border-b border-gray-200">${subName}</h4>
+                                    ${subDescText ? `<p class="text-[10px] text-gray-500 mb-2">${subDescText}</p>` : ''}
+                                    <div class="grid grid-cols-5 gap-2">
+                                        ${items.map(item => renderItemCard(cat, item)).join('')}
+                                    </div>
+                                </div>`;
+                        }
                     }
-
-                    if (useColumns) html += `</div>`;
                 }
-
-                // Add Button (Global for category)
-                html += `<div class="flex justify-center mt-2 border-t border-dashed border-gray-200 pt-2">
-                            <div class="add-card flex flex-row gap-2 items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-full hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition group" onclick="addItem(${cat.id})">
-                                <div class="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-200 group-hover:text-blue-700 transition"><i class="fas fa-plus text-[10px] text-gray-400 group-hover:text-blue-600"></i></div>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-blue-600 uppercase">Add Item</span>
-                            </div>
-                        </div>
-                    </div>`;
             });
-            html += `<div class="absolute bottom-4 left-0 right-0 text-center"><div class="w-16 h-1 bg-gray-500 mx-auto mb-2"></div><p class="text-[10px] text-gray-400 uppercase tracking-widest">${COMPANY_INFO.title} &copy; ${currentYear}</p></div></div>`;
+            
             container.innerHTML = html;
         }
-
+        
         function toggleAdvanced() {
             const panel = document.getElementById('advanced-overrides');
             panel.classList.toggle('open');
@@ -1648,7 +1687,7 @@
                     </div>
                     
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Subheading</label>
+                        <label class="block text-xs  font-bold text-gray-500 mb-1">Subheading</label>
                         <input list="subheading-list" type="text" value="${item.subheading || ''}" onchange="updateCurrentItem('subheading', this.value)" placeholder="None (Top Level)" class="w-full border rounded p-2 text-sm">
                         <datalist id="subheading-list">${datalistOpts}</datalist>
                     </div>
@@ -1963,14 +2002,6 @@
             if (dir === -1 && idx > 0) [cat.items[idx], cat.items[idx-1]] = [cat.items[idx-1], cat.items[idx]];
             else if (dir === 1 && idx < cat.items.length - 1) [cat.items[idx], cat.items[idx+1]] = [cat.items[idx+1], cat.items[idx]];
             rebuildApp();
-        }
-
-        function addItem(catId) {
-            const cat = CATEGORIES.find(c => c.id === catId);
-            const newItem = { id: Date.now(), name: "New Material", color: "#cccccc", shape: "cube", materialSet: "none", roughness: 0.5, metalness: 0, bumpScale: 0.005, textureScale: 1, textureRotation: 0, textureOffsetX: 0, textureOffsetY: 0, brightness: 1, contrast: 1, saturation: 1, tintLevel: 1 };
-            cat.items.push(newItem);
-            rebuildApp();
-            openModal(catId, newItem.id);
         }
 
         function downloadHTML() {
