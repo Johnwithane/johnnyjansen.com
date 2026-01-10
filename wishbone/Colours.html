@@ -21,10 +21,21 @@
         #editor-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         #editor-modal.active { display: flex; }
 
-        /* Page Layout */
-        /* Updated: Reduced top padding to 10mm for 'very top' placement */
-        .page-sheet { background: white; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 10mm 15mm; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; }
+        /* Page Layout - Screen View */
+        .page-sheet { 
+            background: white; 
+            width: 210mm; 
+            min-height: 297mm; 
+            margin: 20px auto; 
+            /* Top padding 10mm puts logo high up, identical to print view */
+            padding: 10mm 15mm; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            position: relative; 
+        }
         
+        /* Spacing between categories on the same page */
+        .category-block { margin-bottom: 2rem; }
+
         .scene-element { width: 100%; aspect-ratio: 1 / 1; position: relative; cursor: grab; touch-action: none; z-index: 20; }
         .scene-element:active { cursor: grabbing; }
         .print-image { display: none; width: 100%; height: 100%; object-fit: contain; }
@@ -46,33 +57,47 @@
 
         /* Print Logic */
         @media print {
-            /* Updated: Remove printer margins so content hits the very edge */
-            @page { margin: 0mm; size: auto; }
-            body { background: white; margin: 0; }
+            @page { margin: 0; size: auto; }
+            body { 
+                background: white; 
+                margin: 0;
+                /* Force browsers to print background colors/images exactly as seen on screen */
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
             
             .no-print, #c, #c-modal { display: none !important; }
             
-            /* Updated: Ensure page-sheet fills the paper with consistent padding */
-            .page-sheet { margin: 0; width: 100%; box-shadow: none; padding: 10mm 15mm; break-after: always; }
+            /* The Sheet becomes the page */
+            .page-sheet { 
+                margin: 0; 
+                width: 100%; 
+                height: 100%; 
+                box-shadow: none; 
+                /* IDENTICAL padding to screen view to ensure alignment matches */
+                padding: 10mm 15mm; 
+                overflow: hidden; /* prevents spillover generating blank pages */
+                page-break-after: always;
+            }
+
+            /* Last page shouldn't force a blank page after it */
+            .page-sheet:last-child { page-break-after: auto; }
             
             .print-image { 
                 display: block !important; 
-                position: absolute;         
-                top: 50%;                   
-                left: 50%;                  
+                position: absolute;          
+                top: 50%;                    
+                left: 50%;                   
                 transform: translate(-50%, -50%); 
-                width: 140%;              
-                height: 140%;             
-                max-width: none;            
-                object-fit: contain;        
-                z-index: 50;               
+                width: 140%;               
+                height: 140%;              
+                max-width: none;             
+                object-fit: contain;         
+                z-index: 50;                 
             }
 
             .scene-element, .add-card, .item-controls { display: none !important; }
             .page-break-avoid { break-inside: avoid; }
-            
-            /* This ensures the new page starts cleanly */
-            .break-before-page { break-before: page; }
         }
     </style>
 </head>
@@ -881,9 +906,9 @@
         "title": "Natural Wood Alternative",
         "section": "LUMBER COLORS",
         "subheadingDescriptions": {
-                "Accoya": "",
-                "Hardened Bamboo": "",
-                "Red Cedar": ""
+                "Accoya": "Accoya® Modified Wood is based on a proprietary process that transforms fast-growing, certified",
+                "Hardened Bamboo": "Hardened Bamboo involves modifying full length bamboo strands under intense heat and pressure.",
+                "Red Cedar": "Western Red Cedar is sourced from British Columbia and has excellent natural oils that resist insects."
             },
         "type": "wood",
         "description": "Premium natural and modified wood options.",
@@ -1505,13 +1530,63 @@
                 </div>
             `;
 
-            let html = `<div class="page-sheet">`;
+            // Helper for the Document Header (Logo + Contact + Section Title)
+            const getPageHeader = (sectionTitle) => `
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2 mb-4">
+                    <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-6 object-contain">
+                    <div class="text-right">
+                        <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">${COMPANY_INFO.subtitle}</h2>
+                        <p class="text-[9px] text-gray-400 mt-0.5 leading-none">${COMPANY_INFO.contact}</p>
+                    </div>
+                </div>
+                ${sectionTitle ? `<h1 class="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none mb-8">${sectionTitle}</h1>` : ''}
+            `;
+
+            // Start the logic
+            let html = ``;
             let lastSection = "";
+            let isFirstPage = true;
 
             CATEGORIES.forEach((cat, index) => {
                 const isNewSection = cat.section && cat.section !== lastSection;
                 
-                // 1. PROCESS ITEMS
+                // Specific Check for "Textured Powders" to force a split
+                const isForcedBreak = cat.title === "Textured Powders"; 
+                
+                // --- PAGE BREAK LOGIC ---
+                if (isNewSection || isForcedBreak) {
+                    
+                    if (!isFirstPage) {
+                        html += `</div>`; // Close previous page
+                        html += `<div class="page-sheet">`; // Start new page
+                    } else {
+                        html += `<div class="page-sheet">`; // Start first page
+                        isFirstPage = false;
+                    }
+
+                    // Update tracker for natural section changes
+                    if (isNewSection) {
+                        lastSection = cat.section;
+                    }
+
+                    // --- HEADER LOGIC ---
+                    // Updated: We always pass cat.section to getPageHeader.
+                    // This ensures the "POWDER COLORS" title appears on Page 2 (Textured Powders) as well.
+                    html += getPageHeader(cat.section);
+                }
+
+                // --- CATEGORY CONTENT ---
+                html += `<div class="category-block">`; 
+
+                // 1. Category Title
+                html += `
+                    <div class="mt-4 mb-4 page-break-avoid flex justify-between items-end">
+                         <h3 class="text-base font-bold uppercase text-white bg-blue-600 w-fit px-2">${cat.title}</h3>
+                         ${cat.description ? `<p class="text-xs text-gray-500 italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
+                    </div>
+                `;
+
+                // 2. Sorting Items
                 const itemsBySub = {};
                 const nullSubItems = [];
 
@@ -1523,54 +1598,24 @@
                         nullSubItems.push(item);
                     }
                 });
-                
-                // 2. RENDER HEADERS
-                if (isNewSection) {
-                    lastSection = cat.section;
-                    html += `
-                        <div class="${index > 0 ? 'break-before-page pt-10' : ''} mb-8 mt-0 block">
-                            <div class="flex justify-between items-start border-b border-gray-200 pb-2 mb-4">
-                                <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-6 object-contain">
-                                <div class="text-right">
-                                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">${COMPANY_INFO.subtitle}</h2>
-                                    <p class="text-[9px] text-gray-400 mt-0.5 leading-none">${COMPANY_INFO.contact}</p>
-                                </div>
-                            </div>
-                            <h1 class="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">${cat.section}</h1>
-                        </div>
-                    `;
-                }
 
-                html += `
-                    <div class="mt-8 mb-4 page-break-avoid flex justify-between items-end">
-                         <h3 class="text-base font-bold uppercase text-white bg-blue-600 w-fit px-2">${cat.title}</h3>
-                         ${cat.description ? `<p class="text-xs text-gray-500 italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
-                    </div>
-                `;
-
-                // 3. RENDER ITEMS
-                
-                // A. Null Subheading items (Directly under Heading)
+                // 3. Render Null Subheading items
                 if (nullSubItems.length > 0) {
                       html += `<div class="grid grid-cols-5 gap-2 mb-4">
                         ${nullSubItems.map(item => renderItemCard(cat, item)).join('')}
                       </div>`;
                 }
 
-                // B. Render Subgroups with Layout Logic
+                // 4. Render Subgroups (Paired Layout)
                 const subKeys = Object.keys(itemsBySub);
-                
                 if (subKeys.length > 0) {
                     
-                    // Helper to generate the block HTML
                     const renderSubBlock = (subName, items, desc, forceFullWidth = false) => {
                         const count = items.length;
-                        
                         let widthClass = 'w-full'; 
                         let gridClass = 'grid-cols-5';
                         
                         if (forceFullWidth) {
-                            // FIX: use w-4/5 (80%) of the 50% container to simulate 2 columns of a 5-column grid (40% total page width)
                             widthClass = 'w-4/5'; 
                             gridClass = 'grid-cols-2';
                         } else {
@@ -1590,7 +1635,6 @@
                         `;
                     };
 
-                    // Loop with look-ahead logic
                     for (let i = 0; i < subKeys.length; i++) {
                         const subName = subKeys[i];
                         const items = itemsBySub[subName];
@@ -1598,7 +1642,6 @@
                         
                         let isPaired = false;
 
-                        // CHECK: Can we pair this with the next one?
                         if (items.length <= 2 && i + 1 < subKeys.length) {
                             const nextSubName = subKeys[i+1];
                             const nextItems = itemsBySub[nextSubName];
@@ -1607,7 +1650,6 @@
                                 isPaired = true;
                                 const nextDesc = cat.subheadingDescriptions && cat.subheadingDescriptions[nextSubName] ? cat.subheadingDescriptions[nextSubName] : '';
                                 
-                                // Render Side-by-Side Wrapper
                                 html += `
                                     <div class="flex gap-8 mb-6 break-inside-avoid">
                                         <div class="w-1/2">
@@ -1618,8 +1660,7 @@
                                         </div>
                                     </div>
                                 `;
-                                
-                                i++; // Skip next iteration
+                                i++; 
                             }
                         }
                         
@@ -1628,9 +1669,11 @@
                         }
                     }
                 }
+
+                html += `</div>`; 
             });
             
-            html += `</div>`;
+            html += `</div>`; 
             container.innerHTML = html;
         }
 
