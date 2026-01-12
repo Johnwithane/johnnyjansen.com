@@ -1,17 +1,26 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wishbone Interactive Catalog - Condensed</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-<style>
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
 
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; margin: 0; overflow-x: hidden; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f3f4f6; 
+            margin: 0; 
+            overflow-x: hidden; 
+        }
 
         /* 3D Canvas Layers */
         #c { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40; pointer-events: none; display: block; background: transparent; }
@@ -27,41 +36,44 @@
             width: 210mm; 
             min-height: 297mm; 
             margin: 20px auto; 
-            /* Top padding 10mm puts logo high up, identical to print view */
             padding: 10mm 15mm; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
             position: relative; 
+            /* Added for footer positioning */
+            display: flex;
+            flex-direction: column;
         }
         
         /* Spacing between categories on the same page */
         .category-block { margin-bottom: 2rem; }
 
+        /* 3D Item Containers */
         .scene-element { width: 100%; aspect-ratio: 1 / 1; position: relative; cursor: grab; touch-action: none; z-index: 20; }
         .scene-element:active { cursor: grabbing; }
         .print-image { display: none; width: 100%; height: 100%; object-fit: contain; }
 
-        /* UI Controls */
+        /* UI Controls (Hover Buttons) */
         .item-controls { opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 50; }
         .group:hover .item-controls { opacity: 1; }
         .control-btn { pointer-events: auto; background: white; color: #4B5563; border-radius: 9999px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.2s; font-size: 10px; }
         .control-btn:hover { background: #2563EB; color: white; transform: scale(1.1); }
         .control-btn.btn-delete:hover { background: #EF4444; color: white; }
 
-        /* Form Elements */
+        /* Form Elements Styles */
         input[type=range] { width: 100%; accent-color: #4B5563; cursor: pointer; }
         select, input[type=text], input[type=color] { border: 1px solid #e5e7eb; border-radius: 0.375rem; }
         select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; }
         
+        /* Advanced Panel Animation */
         .advanced-panel { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .advanced-panel.open { max-height: 500px; overflow-y: auto; }
 
-        /* Print Logic */
+        /* Print Logic (PDF Generation) */
         @media print {
             @page { margin: 0; size: auto; }
             body { 
                 background: white; 
                 margin: 0;
-                /* Force browsers to print background colors/images exactly as seen on screen */
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
@@ -74,26 +86,27 @@
                 width: 100%; 
                 height: 100%; 
                 box-shadow: none; 
-                /* IDENTICAL padding to screen view to ensure alignment matches */
                 padding: 10mm 15mm; 
-                overflow: hidden; /* prevents spillover generating blank pages */
+                overflow: hidden; 
                 page-break-after: always;
+                /* Added for footer positioning */
+                display: flex !important;
+                flex-direction: column !important;
             }
-
             /* Last page shouldn't force a blank page after it */
             .page-sheet:last-child { page-break-after: auto; }
             
             .print-image { 
                 display: block !important; 
-                position: absolute;          
-                top: 50%;                    
-                left: 50%;                   
+                position: absolute;           
+                top: 50%;                     
+                left: 50%;                    
                 transform: translate(-50%, -50%); 
-                width: 140%;               
-                height: 140%;              
-                max-width: none;             
-                object-fit: contain;         
-                z-index: 50;                 
+                width: 140%;                
+                height: 140%;               
+                max-width: none;              
+                object-fit: contain;          
+                z-index: 50;                  
             }
 
             .scene-element, .add-card, .item-controls { display: none !important; }
@@ -103,12 +116,12 @@
 </head>
 <body>
 
-    <canvas id="c" width="3817" height="1957"></canvas>
-    <canvas id="c-modal" width="3817" height="1957"></canvas>
+    <canvas id="c"></canvas>
+    <canvas id="c-modal"></canvas>
 
     <div class="no-print fixed top-4 right-4 z-50 flex gap-2 flex-col items-end">
         <div class="flex gap-2">
-            <button onclick="prepareAndPrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition flex items-center gap-2">
+            <button onclick="prepareAndPrint()" class="bg-[#213f7d] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition flex items-center gap-2">
                 <i class="fas fa-print"></i> Print PDF
             </button>
         </div>
@@ -127,15 +140,15 @@
         <div class="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] h-[85vh] flex overflow-hidden">
             
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
-                <div class="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</div>
+                <div class="absolute top-4 left-4 text-xs font-bold text-[#828282] uppercase tracking-widest">Live Preview</div>
                 
                 <div class="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2">
                     <input type="checkbox" id="save-angle-check" class="cursor-pointer accent-blue-600 w-4 h-4">
-                    <label for="save-angle-check" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Sync Angle</label>
+                    <label for="save-angle-check" class="text-xs font-bold text-[#828282] cursor-pointer select-none">Sync Angle</label>
                 </div>
 
                 <div id="modal-scene-target" class="w-full aspect-square relative z-50 cursor-grab active:cursor-grabbing"></div>
-                <div class="absolute bottom-4 text-xs text-gray-400 text-center w-full px-4">
+                <div class="absolute bottom-4 text-xs text-[#828282] text-center w-full px-4">
                     Left Click: Rotate Object <br> 
                     (Toggle 'Sync Angle' to save changes to all items)
                 </div>
@@ -143,8 +156,8 @@
 
             <div class="w-1/2 p-6 overflow-y-auto flex flex-col">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-800">Edit Material</h2>
-                    <button onclick="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition">
+                    <h2 class="text-xl font-bold text-[#828282]">Edit Material</h2>
+                    <button onclick="cancelEdit()" class="text-[#828282] hover:text-[#828282] transition">
                         <i class="fas fa-times fa-lg"></i>
                     </button>
                 </div>
@@ -157,7 +170,7 @@
                         <i class="fas fa-trash"></i> Delete
                     </button>
                     <div class="flex gap-2">                        
-                        <button onclick="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded transition">
+                        <button onclick="cancelEdit()" class="bg-gray-100 hover:bg-gray-200 text-[#828282] font-bold py-2 px-4 rounded transition">
                             Cancel
                         </button>
                         <button onclick="saveAndCloseModal()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-6 rounded transition">
@@ -205,16 +218,16 @@
             filters: false
         };
 
-// -- DATA_START --
-        let CATEGORIES = [
+        // -- DATA_START --
+            let CATEGORIES = [
     {
         "id": 1,
         "title": "Gloss Powders",
-        "section": "POWDER COLORS",
+        "section": "POWDER colours",
         "subheadingDescriptions": {
-                "Standard": "",
-                "Premium": ""
-            },
+            "Standard": "",
+            "Premium": ""
+        },
         "type": "metal",
         "description": "Smooth, shiny surfaces with bold and bright colours.",
         "items": [
@@ -413,11 +426,11 @@
     {
         "id": 2,
         "title": "Low Lustre Powders",
-        "section": "POWDER COLORS",
+        "section": "POWDER colours",
         "subheadingDescriptions": {
-                "Standard": "",
-                "Premium": ""
-            },
+            "Standard": "",
+            "Premium": ""
+        },
         "type": "metal",
         "description": "Smooth, easy to clean surfaces that resist fingerprints.",
         "items": [
@@ -592,11 +605,11 @@
     {
         "id": 3,
         "title": "Textured Powders",
-        "section": "POWDER COLORS",
+        "section": "POWDER colours",
         "subheadingDescriptions": {
-                "Standard": "",
-                "Premium": ""
-            },
+            "Standard": "",
+            "Premium": ""
+        },
         "type": "metal",
         "description": "Fine or coarse textures that help hide blemishes and scratches.",
         "items": [
@@ -804,7 +817,7 @@
     {
         "id": 4,
         "title": "Recycled Plastic",
-        "section": "LUMBER COLORS",
+        "section": "LUMBER colours",
         "type": "plastic",
         "description": "Non-toxic, ultra-durable, low maintenance. 100% recycled.",
         "items": [
@@ -904,19 +917,19 @@
     {
         "id": 5,
         "title": "Natural Wood Alternative",
-        "section": "LUMBER COLORS",
+        "section": "LUMBER colours",
         "subheadingDescriptions": {
-                "Accoya": "Accoya® Modified Wood is based on a proprietary process that transforms fast-growing, certified",
-                "Hardened Bamboo": "Hardened Bamboo involves modifying full length bamboo strands under intense heat and pressure.",
-                "Red Cedar": "Western Red Cedar is sourced from British Columbia and has excellent natural oils that resist insects."
-            },
+            "Accoya®": "Sustainable timber transformed into high-performance lumber. It offers superior hardness, durability, and resistance to rot.",
+            "Hardened Bamboo": "Heat-treated for extreme density, outperforming hardwoods like Ipe. It is fire-resistant, stable, and allows for easy on-site removal of graffiti.",
+            "Red Cedar": "Sourced from British Columbia with natural oils that resist insects and decay. It provides superior stability without extra treatment."
+        },
         "type": "wood",
         "description": "Premium natural and modified wood options.",
         "items": [
             {
                 "id": 501,
-                "name": "Accoya Natural",
-                "subheading": "Accoya",
+                "name": "Accoya® Natural",
+                "subheading": "Accoya®",
                 "color": "#E3CAA5",
                 "shape": "plank",
                 "roughness": 0.8,
@@ -935,8 +948,8 @@
             },
             {
                 "id": 1767990374328,
-                "name": "Accoya Grey",
-                "subheading": "Accoya",
+                "name": "Accoya® Grey",
+                "subheading": "Accoya®",
                 "color": "#8f857e",
                 "shape": "plank",
                 "roughness": 0.7,
@@ -1012,7 +1025,7 @@
         ]
     }
 ];
-        let GLOBAL_SETTINGS = {
+            let GLOBAL_SETTINGS = {
     "metal": {
         "shape": "cube",
         "rotation": {
@@ -1020,7 +1033,7 @@
             "y": 0.5799999999999987,
             "z": 0
         },
-        "scale": 1.2,
+        "scale": 1.15,
         "lightRotation": 0.3,
         "lightTilt": 0,
         "envRotation": 0.56,
@@ -1030,8 +1043,8 @@
     "composite": {
         "shape": "plank",
         "rotation": {
-            "x": -0.059999999999999894,
-            "y": 0.3599999999999993,
+            "x": -0.12999999999999987,
+            "y": 0.3499999999999993,
             "z": 0
         },
         "scale": 1.2,
@@ -1042,7 +1055,7 @@
         "ambientIntensity": 0.3
     }
 };
-// -- DATA_END --
+            // -- DATA_END --
 
         const SHAPE_TYPES = ['sphere', 'cube', 'plank', 'cylinder'];
         
@@ -1505,7 +1518,7 @@
             }
         }
 
-        function renderHTML() {
+function renderHTML() {
             const container = document.getElementById('content-anchor');
             
             // Helper to generate a single item card
@@ -1526,20 +1539,19 @@
                             </div>
                         </div>
                     </div>
-                    <div class="text-center"><p class="text-[9px] font-bold text-gray-800 uppercase leading-tight tracking-wide">${item.name}</p></div>
+                    <div class="text-center"><p class="text-[10px] font-light pt-2 text-[#828282] uppercase leading-tight tracking-wide">${item.name}</p></div>
                 </div>
             `;
 
             // Helper for the Document Header (Logo + Contact + Section Title)
             const getPageHeader = (sectionTitle) => `
-                <div class="flex justify-between items-start border-b border-gray-200 pb-2 mb-4">
-                    <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-6 object-contain">
+                <div class="flex justify-between items-end border-b border-gray-200 pb-4 mb-8">
+                    <h1 class="text-4xl font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
                     <div class="text-right">
-                        <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">${COMPANY_INFO.subtitle}</h2>
-                        <p class="text-[9px] text-gray-400 mt-0.5 leading-none">${COMPANY_INFO.contact}</p>
+                        <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-8 object-contain mb-1 ml-auto">
+                        <p class="text-[10px] text-[#828282] font-medium tracking-wider leading-none">${COMPANY_INFO.contact}</p>
                     </div>
                 </div>
-                ${sectionTitle ? `<h1 class="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none mb-8">${sectionTitle}</h1>` : ''}
             `;
 
             // Start the logic
@@ -1570,8 +1582,6 @@
                     }
 
                     // --- HEADER LOGIC ---
-                    // Updated: We always pass cat.section to getPageHeader.
-                    // This ensures the "POWDER COLORS" title appears on Page 2 (Textured Powders) as well.
                     html += getPageHeader(cat.section);
                 }
 
@@ -1580,9 +1590,9 @@
 
                 // 1. Category Title
                 html += `
-                    <div class="mt-4 mb-4 page-break-avoid flex justify-between items-end">
-                         <h3 class="text-base font-bold uppercase text-white bg-blue-600 w-fit px-2">${cat.title}</h3>
-                         ${cat.description ? `<p class="text-xs text-gray-500 italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
+                    <div class="mt-4 mb-8 page-break-avoid flex justify-between items-end">
+                         <h3 class="text-base font-bold uppercase text-white bg-[#213f7d] w-fit px-2">${cat.title}</h3>
+                         ${cat.description ? `<p class="text-[14px] text-[#828282] italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
                     </div>
                 `;
 
@@ -1626,8 +1636,8 @@
                         
                         return `
                             <div>
-                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-0 pb-0 border-b-2 border-gray-200 w-fit pr-20">${subName}</h4>
-                                ${desc ? `<p class="text-[10px] text-gray-500 mb-2 mt-1 leading-relaxed">${desc}</p>` : '<div class="mb-2"></div>'}
+                                <h4 class="text-xs font-bold text-[#828282] uppercase tracking-widest mb-0 pb-0 border-b border-gray-200 w-fit pr-20">${subName}</h4>
+                                ${desc ? `<p class="text-[10px] text-[#828282] mb-2 mt-1 leading-relaxed">${desc}</p>` : '<div class="mb-2"></div>'}
                                 <div class="${widthClass} grid ${gridClass} gap-2">
                                     ${items.map(item => renderItemCard(cat, item)).join('')}
                                 </div>
@@ -1671,6 +1681,40 @@
                 }
 
                 html += `</div>`; 
+
+            // --- FOOTER LOGIC ---
+                // Check if this is the last category of the current section
+                const nextCat = CATEGORIES[index + 1];
+                const isLastInSection = !nextCat || nextCat.section !== cat.section;
+
+                if (isLastInSection) {
+                    let footerText = "";
+                    let footerImg = ""; // Variable to hold the optional image URL
+
+                    if (cat.section === "POWDER colours") {
+                        footerText = "Custom powder colours can be selected based on the RAL colour management system. Premium powder colours incur a $30 * surcharge per item.";
+                        
+                        // OPTIONAL: Add image URL below (e.g., "https://site.com/ral-logo.png")
+                        footerImg = "https://upload.wikimedia.org/wikipedia/commons/3/3c/RAL_Colours_logo.svg"; 
+                        
+                    } else if (cat.section === "LUMBER colours") {
+                        footerText = "Stains or oils specified by the customer can optionally be applied by Wishbone during manufacture. Contact us for further details.";
+                        
+                        // OPTIONAL: Add image URL below
+                        footerImg = ""; 
+                    }
+
+                    if (footerText) {
+                        html += `
+                            <div class="mt-auto pt-4 border-t border-gray-200 break-inside-avoid flex items-center gap-4">
+                                 ${footerImg ? `<img src="${footerImg}" class="h-12 w-auto object-contain" alt="Footer Icon">` : ''}
+                                 <p class="text-[14px] text-[#828282] font-medium leading-relaxed max-w-2xl">
+                                    ${footerText}
+                                 </p>
+                            </div>
+                        `;
+                    }
+                }
             });
             
             html += `</div>`; 
@@ -1758,101 +1802,101 @@
             document.getElementById('modal-controls').innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Name</label>
-                        <input type="text" value="${item.name}" onchange="updateCurrentItem('name', this.value)" class="w-full border rounded p-2 text-sm font-bold text-gray-800">
+                        <label class="block text-xs font-bold text-[#828282] mb-1">Name</label>
+                        <input type="text" value="${item.name}" onchange="updateCurrentItem('name', this.value)" class="w-full border rounded p-2 text-sm font-bold text-[#828282]">
                     </div>
                     
                     <div>
-                        <label class="block text-xs  font-bold text-gray-500 mb-1">Subheading</label>
+                        <label class="block text-xs  font-bold text-[#828282] mb-1">Subheading</label>
                         <input list="subheading-list" type="text" value="${item.subheading || ''}" onchange="updateCurrentItem('subheading', this.value)" placeholder="None (Top Level)" class="w-full border rounded p-2 text-sm">
                         <datalist id="subheading-list">${datalistOpts}</datalist>
                     </div>
 
-                    <div><label class="block text-xs font-bold text-gray-500 mb-1">Shape</label>
+                    <div><label class="block text-xs font-bold text-[#828282] mb-1">Shape</label>
                         <select onchange="updateGlobalShape(this.value)" class="w-full border rounded p-2 bg-white">${SHAPE_TYPES.map(t => `<option value="${t}" ${GLOBAL_SETTINGS[settingsGroup].shape === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('')}</select>
                     </div>
                 </div>
 
-                 <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mt-4">
-                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2"><i class="fas fa-globe"></i> Global ${settingsGroup.toUpperCase()} Settings</h4>
+                 <div class="bg-gray-100 p-3 rounded-lg border border-[#828282] mt-4">
+                    <h4 class="text-xs font-bold text-[#828282] uppercase mb-3 flex items-center gap-2"><i class="fas fa-globe"></i> Global ${settingsGroup.toUpperCase()} Settings</h4>
                     <div class="space-y-3">
-                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Shape Scale</label><input type="range" min="0.5" max="1.5" step="0.05" value="${shapeDef.scale||1}" oninput="updateGlobalPreview('scale', this.value)"></div>
-                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Rotate</label><input type="range" min="0" max="6.28" step="0.1" value="${shapeDef.lightRotation||0}" oninput="updateGlobalPreview('lightRotation', this.value)"></div>
-                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Tilt</label><input type="range" min="-1.5" max="1.5" step="0.1" value="${shapeDef.lightTilt||0}" oninput="updateGlobalPreview('lightTilt', this.value)"></div>
-                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Env Rotation</label><input type="range" min="0" max="1" step="0.01" value="${shapeDef.envRotation||0}" oninput="updateGlobalPreview('envRotation', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Shape Scale</label><input type="range" min="0.5" max="1.5" step="0.05" value="${shapeDef.scale||1}" oninput="updateGlobalPreview('scale', this.value)"></div>
+                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Light Rotate</label><input type="range" min="0" max="6.28" step="0.1" value="${shapeDef.lightRotation||0}" oninput="updateGlobalPreview('lightRotation', this.value)"></div>
+                        <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Light Tilt</label><input type="range" min="-1.5" max="1.5" step="0.1" value="${shapeDef.lightTilt||0}" oninput="updateGlobalPreview('lightTilt', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Env Rotation</label><input type="range" min="0" max="1" step="0.01" value="${shapeDef.envRotation||0}" oninput="updateGlobalPreview('envRotation', this.value)"></div>
                          
                          <hr class="border-gray-300">
-                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Light Intensity</label><input type="range" min="0" max="3" step="0.1" value="${shapeDef.lightIntensity!==undefined ? shapeDef.lightIntensity : 1.2}" oninput="updateGlobalPreview('lightIntensity', this.value)"></div>
-                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-700">Shadow Soft</label><input type="range" min="0" max="2" step="0.1" value="${shapeDef.ambientIntensity!==undefined ? shapeDef.ambientIntensity : 0.4}" oninput="updateGlobalPreview('ambientIntensity', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Light Intensity</label><input type="range" min="0" max="3" step="0.1" value="${shapeDef.lightIntensity!==undefined ? shapeDef.lightIntensity : 1.2}" oninput="updateGlobalPreview('lightIntensity', this.value)"></div>
+                         <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Shadow Soft</label><input type="range" min="0" max="2" step="0.1" value="${shapeDef.ambientIntensity!==undefined ? shapeDef.ambientIntensity : 0.4}" oninput="updateGlobalPreview('ambientIntensity', this.value)"></div>
                     </div>
                 </div>
 
-                <hr class="border-gray-200 my-4">
+                <hr class="border-[#828282] my-4">
 
                 <div class="mb-4">
                     <div class="flex justify-between items-end mb-1">
-                        <label class="block text-xs font-bold text-gray-500">Material Set (${catType.toUpperCase()})</label>
+                        <label class="block text-xs font-bold text-[#828282]">Material Set (${catType.toUpperCase()})</label>
                         <div class="flex items-center gap-1">
                             <input type="checkbox" id="sync-material" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.material ? 'checked' : ''} onchange="updateSyncState('material', this.checked)">
                             <label for="sync-material" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
                         </div>
                     </div>
-                    <select onchange="updateCurrentItem('materialSet', this.value)" class="w-full border-2 border-blue-100 rounded p-2 font-bold text-gray-700">
+                    <select onchange="updateCurrentItem('materialSet', this.value)" class="w-full border-2 border-blue-100 rounded p-2 font-bold text-[#828282]">
                         <option value="none" ${item.materialSet === 'none' ? 'selected' : ''}>None (Color Only)</option>
                         ${generateOptions(item.materialSet, false).replace('Default (From Set)', '').replace('BLANK', '')} 
                     </select>
                 </div>
 
-                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="border border-[#828282] rounded-lg overflow-hidden">
                     <button onclick="toggleAdvanced()" class="w-full bg-gray-50 p-2 text-left flex justify-between items-center hover:bg-gray-100">
-                        <span class="text-xs font-bold text-gray-600">Advanced / Manual Overrides</span><i id="adv-icon" class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        <span class="text-xs font-bold text-[#828282]">Advanced / Manual Overrides</span><i id="adv-icon" class="fas fa-chevron-down text-[#828282] text-xs"></i>
                     </button>
                     <div id="advanced-overrides" class="advanced-panel bg-white p-3 space-y-3">
-                        <p class="text-[10px] text-gray-400 italic">Overrides allow you to select ANY texture from ANY category.</p>
+                        <p class="text-[10px] text-[#828282] italic">Overrides allow you to select ANY texture from ANY category.</p>
                         ${['map', 'bumpMap', 'normalMap', 'roughnessMap', 'metalnessMap'].map(key => `
-                            <div><label class="block text-[10px] font-bold text-gray-500 capitalize">${key} Override</label>
-                            <select onchange="updateOverride('${key}', this.value)" class="w-full border rounded p-1 text-xs text-gray-600">${generateOptions(item.overrides?.[key], true)}</select></div>
+                            <div><label class="block text-[10px] font-bold text-[#828282] capitalize">${key} Override</label>
+                            <select onchange="updateOverride('${key}', this.value)" class="w-full border rounded p-1 text-xs text-[#828282]">${generateOptions(item.overrides?.[key], true)}</select></div>
                         `).join('')}
                     </div>
                 </div>
 
                 <div class="space-y-4 pt-2 mt-4 bg-gray-50 p-2 rounded">
                     <div class="flex justify-between items-center mb-2">
-                        <h5 class="text-xs font-bold uppercase text-gray-400">Material Physics</h5>
+                        <h5 class="text-xs font-bold uppercase text-[#828282]">Material Physics</h5>
                         <div class="flex items-center gap-1">
                             <input type="checkbox" id="sync-physics" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.physics ? 'checked' : ''} onchange="updateSyncState('physics', this.checked)">
                             <label for="sync-physics" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Gloss/Rough</label><input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateMaterialProp('roughness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Metalness</label><input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateMaterialProp('metalness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Depth</label><input type="range" min="0" max="3" step="0.1" value="${item.bumpScale !== undefined ? item.bumpScale : 1.0}" oninput="updateMaterialProp('bumpScale', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Gloss/Rough</label><input type="range" min="0" max="1" step="0.05" value="${item.roughness}" oninput="updateMaterialProp('roughness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Metalness</label><input type="range" min="0" max="1" step="0.05" value="${item.metalness}" oninput="updateMaterialProp('metalness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Texture Depth</label><input type="range" min="0" max="3" step="0.1" value="${item.bumpScale !== undefined ? item.bumpScale : 1.0}" oninput="updateMaterialProp('bumpScale', this.value)"></div>
                     
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Texture Scale</label><input type="range" min="0.1" max="5.0" step="0.1" value="${item.textureScale}" oninput="updateMaterialProp('textureScale', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Rotate</label><input type="range" min="0" max="360" step="1" value="${item.textureRotation||0}" oninput="updateMaterialProp('textureRotation', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset X</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetX||0}" oninput="updateMaterialProp('textureOffsetX', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Tex Offset Y</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetY||0}" oninput="updateMaterialProp('textureOffsetY', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Texture Scale</label><input type="range" min="0.1" max="5.0" step="0.1" value="${item.textureScale}" oninput="updateMaterialProp('textureScale', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Tex Rotate</label><input type="range" min="0" max="360" step="1" value="${item.textureRotation||0}" oninput="updateMaterialProp('textureRotation', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Tex Offset X</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetX||0}" oninput="updateMaterialProp('textureOffsetX', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Tex Offset Y</label><input type="range" min="-1" max="1" step="0.01" value="${item.textureOffsetY||0}" oninput="updateMaterialProp('textureOffsetY', this.value)"></div>
                 </div>
 
                 <div class="space-y-4 pt-2 mt-2 bg-gray-50 p-2 rounded">
                     <div class="flex justify-between items-center mb-2">
-                        <h5 class="text-xs font-bold uppercase text-gray-400">Filters (No Tint)</h5>
+                        <h5 class="text-xs font-bold uppercase text-[#828282]">Filters (No Tint)</h5>
                         <div class="flex items-center gap-1">
                             <input type="checkbox" id="sync-filters" class="accent-blue-600 cursor-pointer" ${SYNC_STATE.filters ? 'checked' : ''} onchange="updateSyncState('filters', this.checked)">
                             <label for="sync-filters" class="text-[10px] text-blue-600 font-bold cursor-pointer select-none">Sync ${catTitle}</label>
                         </div>
                     </div>
                     <div class="flex items-center gap-4 border-b border-gray-200 pb-4 mb-2">
-                        <label class="w-24 text-xs font-bold text-gray-600">Tint Color</label>
+                        <label class="w-24 text-xs font-bold text-[#828282]">Tint Color</label>
                         <input type="color" value="${item.color}" oninput="updateMaterialProp('color', this.value)" class="w-10 h-8 rounded border border-gray-300 cursor-pointer p-0">
                         <div class="flex-1 flex items-center gap-2">
-                             <label class="text-[10px] font-bold text-gray-400">Str</label>
+                             <label class="text-[10px] font-bold text-[#828282]">Str</label>
                              <input type="range" min="0" max="1" step="0.05" value="${item.tintLevel !== undefined ? item.tintLevel : 1.0}" oninput="updateMaterialProp('tintLevel', this.value)">
                         </div>
                     </div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Brightness</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness ?? 1}" oninput="updateMaterialProp('brightness', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Contrast</label><input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast ?? 1}" oninput="updateMaterialProp('contrast', this.value)"></div>
-                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-gray-600">Saturation</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation ?? 1}" oninput="updateMaterialProp('saturation', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Brightness</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.brightness ?? 1}" oninput="updateMaterialProp('brightness', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Contrast</label><input type="range" min="0.5" max="2.0" step="0.1" value="${item.contrast ?? 1}" oninput="updateMaterialProp('contrast', this.value)"></div>
+                    <div class="flex items-center gap-4"><label class="w-24 text-xs font-bold text-[#828282]">Saturation</label><input type="range" min="0.0" max="2.0" step="0.1" value="${item.saturation ?? 1}" oninput="updateMaterialProp('saturation', this.value)"></div>
                 </div>
             `;
             
@@ -2127,7 +2171,7 @@ function copyHTMLCode() {
                     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
                     item.mesh.scale.setScalar(shapeDef.scale || 1.0);
                     item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
-                    item.lightGroup.rotation.x = shapeDef.lightTilt || 0;
+                    item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
                     if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
 
                     if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
