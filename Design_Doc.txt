@@ -1,0 +1,198 @@
+﻿MASTER DESIGN DOCUMENT: POCKET JAMS (v19 - OLED Edition)
+Power Architecture: 3.7V LiPo Battery (USB-C Rechargeable)
+Audio Engine: v19(Multi-Track, Smart Ducking, Sample Capture, Dual FX Bus, I2S)
+Visual Interface: 128x32 pixel OLED Display (I2C)
+Prototype: https://johnnyjansen.com/PocketJams.html
+Link to HTML: https://drive.google.com/file/d/1zWohaYKQBhMEHpevMhvKfyGzw3ZnuWtE/view?usp=sharing
+
+
+
+
+  
+
+________________
+
+
+1. Executive Summary
+* The Product: A credit-card-sized, handheld audio workstation. It separates "Live Play" (Drums/Synth) from "Recording" (Voice/Samples) with dedicated FX chains.
+* The Promise: "Visualizing the Groove." A screen-based workflow that provides real-time waveform feedback and precise parameter control.
+* The Upgrade: v19 replaces the abstract LED strip with a 128x32 OLED Display. Crucially, it moves the architecture to the ESP32-S3, utilizing 8MB of PSRAM to allow for high-fidelity stereo overdubbing and extended loop times that were impossible on the RP2040.
+2. Functional Specification (The Interface)
+The device is arranged into 5 Control Zones.
+Zone 1: The HUD (Top Edge)
+* Hardware: 128x32 pixel monochromatic OLED Display (SSD1306 driver via I2C).
+* Default State: Displays layered waveforms of active tracks (Drums = Bottom, Synth = Middle, Voice = Top).
+* Context Popups:
+   * FX Adjustment: Turning a knob momentarily covers the screen with the parameter name and value (e.g., "REVERB 45%").
+   * Status Messages: Displays "READY TO REC", "DUBBING", "WAITING FOR SYNC", or "MIC ON".
+* Loop Bar: A single pixel line at the bottom indicates the playhead position within the loop.
+Zone 2: The FX Lab (Top Controls)
+Two 360° Rotary Encoders with Push-Button switches.
+* Left Knob (PRE-FX): Affects the raw sound before the master mix.
+   * Click: Cycles Modes.
+   * Mode 1 (Reverb): Controls Room Size & Mix.
+   * Mode 2 (Delay): Controls Feedback & Time.
+   * Mode 3 (Distortion): Controls WaveShaper Drive amount.
+* Center: MEMS Microphone (hidden behind grille).
+* Right Knob (POST-FX / MASTER): Affects the final output bus.
+   * Click: Cycles Modes.
+   * Mode 1 (Filter): Left = Low Pass / Center = Clean / Right = High Pass.
+   * Mode 2 (Beat Repeat): Glitch sub-divisions (1/2, 1/4, 1/8, 1/16, 1/32).
+   * Mode 3 (Speed): Tape playback speed (Left = Slow/Reverse / Right = Fast).
+Zone 3: Transport (Middle Belt)
+Three large, illuminated tactile buttons.
+* Blue Button (PAUSE):
+   * Tap: Play / Stop.
+   * Hold + Instrument: Mute/Unmute that specific track.
+* Red Button (REC):
+   * Tap: Arm Loop (Wait for sound) / Toggle Overdub.
+   * Hold (Momentary): Force "Voice Mode" recording immediately (Punch-in).
+* Orange Button (UNDO):
+   * Tap: Undo last layer/overdub.
+   * Hold (1s): Clear currently selected track.
+   * Hold (1.5s) + Rec: Factory Reset (Clear All).
+Zone 4: Mode Selectors
+* Scale Button (Round Tactile Button):
+   * Tap: Toggles between Major and Minor scale.
+   * Combo: Hold a Pad + Tap Scale Button = Enters Chromatic Mode (Plays that sample across the pads as a keyboard).
+* Instrument Buttons (3x Tactile):
+   * [SYNTH]: Selects Synth track. Hold to cycle synth patches (Saw, Bass, Pad, Acid, etc.).
+   * [VOICE]: Selects Mic/Sampler track.
+   * [DRUMS]: Selects Drum track. Hold to cycle drum kits (808, Gameboy, Custom).
+Zone 5: The Grid (Performance)
+* Hardware: 4x2 Matrix (8 Total) Tactile Switches.
+* Function: Triggers notes or drum hits.
+* Visuals: OLED displays the active note/sample name when hit.
+3. User Flow & Feature Breakdown
+This section outlines the specific user interactions implemented in the HTML prototype.
+* A. The Recording Workflow (Looping)
+   * The device uses "Signal Threshold Recording" to ensure perfect loops without needing a metronome.
+   * Arming: Tap [REC]. OLED flashes "READY TO RECORD".
+   * Action: Play a note or speak. Recording starts instantly when sound is detected.
+   * Stopping: Tap [REC] again. The device waits for the end of the musical bar (quantized) before closing the loop.
+   * Overdubbing: Once a loop exists, Tapping [REC] enters Overdub mode (Gold status on OLED).
+* B. Voice Sampling (The Pad Sampler)
+   * Hold: Press and hold an Empty Pad.
+   * Wait: After 600ms, the OLED says "LISTENING...".
+   * Speak: Say your sample ("Hey!", "Boom", "Yeah").
+   * Release: Release the pad. The sample is saved to that button.
+   * Playback: Tap that pad to trigger your voice sample.
+* C. Chromatic Mode (Keyboard)
+   * Select: Hold down a Pad that contains a sample (Drum or Voice).
+   * Trigger: While holding the pad, tap the [SCALE] button.
+   * Result: OLED displays "KEYBOARD MODE". The 8 pads now play that single sample pitched up/down.
+* D. Smart Ducking
+   * Behavior: When recording vocals (Mic input), the device automatically lowers the volume of Drums/Synth so you can hear yourself.
+4. Technical Architecture
+* Brain: Seeed Studio XIAO ESP32-S3 (or generic ESP32-S3-WROOM-1 N16R8).
+   * Reason for switch: The RP2040 lacked the RAM for overdub buffers. The S3 includes 8MB PSRAM allowing for ~45 seconds of stereo audio manipulation.
+* Display: 0.91" OLED (128x32) I2C interface.
+* Audio Output: I2S DAC (PCM5102A).
+* Audio Input: I2S MEMS Microphone (INMP441).
+* Input Hardware:
+   * 2x EC11 Rotary Encoders.
+   * 12x Tactile Switches (Resistor Ladder or Shift Register).
+* Power: Native LiPo. The XIAO ESP32-S3 contains an onboard charge controller. 3.7V LiPo connects directly to battery pads.
+5. Complete Cost Breakdown by Phase
+Prices in CAD.
+PHASE 1: The "Spaghetti" Breadboard
+Goal: Verify I2S Audio, PSRAM Buffering, and OLED Library.
+Component
+	Part Detail
+	Qty
+	Unit Cost
+	Total
+	Microcontroller
+	Seeed XIAO ESP32-S3
+	1
+	$9.50
+	$9.50
+	Audio DAC
+	PCM5102A Breakout
+	1
+	$11.00
+	$11.00
+	Display
+	0.91" OLED (I2C)
+	1
+	$8.00
+	$8.00
+	Knobs
+	EC11 Rotary Encoder
+	2
+	$3.00
+	$6.00
+	Microphone
+	INMP441 Breakout
+	1
+	$9.00
+	$9.00
+	Buttons
+	Tactile Switches
+	15
+	$0.20
+	$3.00
+	Battery
+	600mAh LiPo Pouch
+	1
+	$5.00
+	$5.00
+	Audio Jack
+	3.5mm TRRS Breakout
+	1
+	$3.00
+	$3.00
+	Breadboard/Wires
+	Standard
+	1
+	$14.00
+	$14.00
+	PHASE 1 TOTAL
+	
+
+	
+
+	
+
+	~$68.50 CAD
+	PHASE 3: Small Batch Production (500 Units)
+Target MSRP: $99.00 CAD.
+Component
+	Strategy
+	Bulk Price
+	ESP32-S3 Module
+	WROOM-1 (N16R8) Reel
+	$4.50
+	OLED Module
+	Bulk Import (generic SSD1306)
+	$2.50
+	Audio Codec
+	ES8388 (Stereo In/Out)
+	$2.20
+	PCB/Assembly
+	4-Layer / Panelized / SMT
+	$6.50
+	Mechanicals
+	Injection Mold Case
+	$3.50
+	Battery
+	LiPo Pouch
+	$3.00
+	COGS
+	
+
+	~$22.20 CAD
+	6. Financial Summary
+* Profit Per Unit: $99.00 - $22.20 = $76.80 Gross Profit.
+* Margin: ~77%.
+* Note: Using a LiPo increases the "Premium feel" of the device (rechargeable) vs AAA batteries, allowing for a potentially higher MSRP if needed.
+7. Next Steps
+1. Immediate: Order the Seeed XIAO ESP32-S3 and a standard 3.7V LiPo battery.
+2. Environment: Install PlatformIO (VS Code).
+3. Library: Install pschatzmann/arduino-audio-tools to handle the complex I2S buffering on the ESP32.
+4. Code Port: Begin porting the JavaScript logic from the prototype to C++, utilizing the AudioTools library for the DSP chain.
+8. Build Notes
+* Power Management: To maximize LiPo life, the firmware must aggressively sleep the OLED and lower CPU clock speed when in "Idle" mode for more than 2 minutes.
+* Noise Floor: Moving to LiPo and removing the Boost Converter will significantly lower the noise floor (hiss) compared to the previous AAA design.
+* Heat: The ESP32-S3 runs hotter than the RP2040. Ensure the enclosure has minor venting or heat dissipation near the MCU.
+* ________________
