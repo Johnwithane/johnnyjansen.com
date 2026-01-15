@@ -34,7 +34,7 @@
         .page-sheet { 
             background: white; 
             width: 210mm; 
-            min-height: 297mm; 
+            min-height: 275mm; 
             margin: 20px auto; 
             padding: 10mm 15mm; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
@@ -86,7 +86,7 @@
                 width: 100%; 
                 height: 100%; 
                 box-shadow: none; 
-                padding: 10mm 15mm; 
+                padding: 10mm 15mm 5mm; 
                 overflow: hidden; 
                 page-break-after: always;
                 /* Added for footer positioning */
@@ -120,10 +120,18 @@
     <canvas id="c-modal"></canvas>
 
     <div class="no-print fixed top-4 right-4 z-50 flex gap-2 flex-col items-end">
-        <div class="flex gap-2">
-            <button onclick="prepareAndPrint()" class="bg-[#213f7d] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition flex items-center gap-2">
-                <i class="fas fa-print"></i> Print PDF
+        <div class="relative">
+            <button onclick="togglePrintMenu()" class="bg-[#213f7d] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition flex items-center gap-2">
+                <i class="fas fa-print"></i> Print PDF <i class="fas fa-chevron-down text-xs ml-1"></i>
             </button>
+            <div id="print-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 overflow-hidden border border-gray-100">
+                <button onclick="prepareAndPrint('high')" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#213f7d] font-medium border-b border-gray-100 transition">
+                    High Quality (PNG)
+                </button>
+                <button onclick="prepareAndPrint('normal')" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#213f7d] font-medium transition">
+                    Normal (WebP)
+                </button>
+            </div>
         </div>
         <button onclick="downloadHTML()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
             <i class="fas fa-download"></i> Download HTML
@@ -2159,11 +2167,32 @@
             });
         }
 
-        async function prepareAndPrint() {
+        function togglePrintMenu() {
+            document.getElementById('print-menu').classList.toggle('hidden');
+        }
+
+        window.addEventListener('click', (e) => {
+            const menu = document.getElementById('print-menu');
+            const btn = document.querySelector('button[onclick="togglePrintMenu()"]');
+            if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        async function prepareAndPrint(qualitySetting) {
+            document.getElementById('print-menu').classList.add('hidden');
             isAnimating = false;
             if(document.getElementById('editor-modal').classList.contains('active')) closeModal();
             
-            renderer.setSize(1024, 1024);
+            let size = 1024;
+            let format = 'image/png';
+            let quality = undefined;
+
+            if (qualitySetting === 'normal') {
+                size = 256; format = 'image/webp'; quality = 0.80;
+            }
+
+            renderer.setSize(size, size);
             
             for (const item of scenes) {
                 const group = item.settingsGroup;
@@ -2191,7 +2220,7 @@
                 item.camera.updateProjectionMatrix();
 
                 const img = document.getElementById(`print-${item.element.id.split('-')[1]}`);
-                if (img) img.src = renderer.domElement.toDataURL('image/png');
+                if (img) img.src = renderer.domElement.toDataURL(format, quality);
             }
             
             setTimeout(() => { 
