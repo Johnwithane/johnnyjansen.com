@@ -133,9 +133,9 @@
                 </button>
             </div>
         </div>
-        <button onclick="downloadHTML()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
+        <!-- <button onclick="downloadHTML()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
             <i class="fas fa-download"></i> Download HTML
-        </button>
+        </button> -->
 
         <button onclick="copyHTMLCode()" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
             <i class="fas fa-code"></i> Copy Code
@@ -2144,26 +2144,18 @@
         }
 
         function copyHTMLCode() {
-            let html = document.documentElement.outerHTML;
-            const scriptData = `// -- DATA_START --
-            let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};
-            let GLOBAL_SETTINGS = ${JSON.stringify(GLOBAL_SETTINGS, null, 4)};
-            // -- DATA_END --`;
+            const code = `let CATEGORIES = ${JSON.stringify(CATEGORIES, null, 4)};\nlet GLOBAL_SETTINGS = ${JSON.stringify(GLOBAL_SETTINGS, null, 4)};`;
 
-            const dataRegex = /\/\/ -- DATA_START --[\s\S]*?\/\/ -- DATA_END --/;
-            html = html.replace(dataRegex, scriptData);
-            html = html.replace(/[\s\S]*?<\/script>/, "");
-
-            navigator.clipboard.writeText(html).then(() => {
-                alert("Full HTML Code copied successfully!");
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Categories code copied successfully!");
             }).catch(err => {
                 const textarea = document.createElement('textarea');
-                textarea.value = html;
+                textarea.value = code;
                 document.body.appendChild(textarea);
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                alert("Full HTML Code copied successfully!");
+                alert("Categories code copied successfully!");
             });
         }
 
