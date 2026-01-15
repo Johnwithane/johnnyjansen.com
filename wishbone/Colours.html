@@ -655,10 +655,10 @@
                 "subheading": "",
                 "color": "#302b27",
                 "shape": "cube",
-                "roughness": 0.6,
-                "metalness": 0.3,
+                "roughness": 0.75,
+                "metalness": 0.45,
                 "materialSet": "metal/metal17",
-                "bumpScale": 3,
+                "bumpScale": 0.7,
                 "textureScale": 0.9,
                 "textureRotation": 1,
                 "textureOffsetX": 1,
@@ -669,7 +669,7 @@
                     "metalnessMap": "BLANK",
                     "map": "metal/metal-oilBronze"
                 },
-                "saturation": 2,
+                "saturation": 0.7,
                 "tintLevel": 0
             },
             {
@@ -1505,10 +1505,10 @@
             }
         }
 
-// Helper to generate a single item card
-        const renderItemCard = (cat, item, isCompact = false) => `
-            <div class="flex flex-col group page-break-avoid relative">
-                <div class="relative w-full aspect-square ${isCompact ? 'mb-1' : 'mb-2'} bg-transparent rounded transition">
+        // Helper to generate a single item card
+        const renderItemCard = (cat, item, isCompact = false, extraClasses = '') => `
+            <div class="flex flex-col group page-break-avoid relative ${extraClasses}">
+                <div class="relative w-full aspect-square ${isCompact ? 'mb-2' : 'mb-4'} bg-transparent rounded transition">
                     <div id="scene-${item.id}" class="scene-element"></div>
                     <img id="print-${item.id}" class="print-image" src="" />
                     <div class="item-controls absolute inset-0 z-50 flex flex-col justify-between p-2">
@@ -1523,7 +1523,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="text-center"><p class="${isCompact ? 'text-[7px]' : 'text-[10px]'} font-light pt-0 text-[#828282] uppercase leading-tight tracking-wide">${item.name}</p></div>
+                <div class="text-center"><p class="${isCompact ? 'text-[8px] -mb-2' : 'text-[10px] mb-0'} font-light pt-0 text-[#828282] uppercase leading-tight tracking-wide">${item.name}</p></div>
             </div>
         `;
 
@@ -1532,7 +1532,7 @@
             
             // Helper for the Document Header (Logo + Contact + Section Title)
             const getPageHeader = (sectionTitle) => `
-                <div class="flex justify-between items-end border-b border-gray-200 pb-4 mb-8">
+                <div class="flex justify-between items-end border-b border-gray-200 pb-4 mb-0">
                     <h1 class="text-4xl font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
                     <div class="text-right">
                         <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-8 object-contain mb-1 ml-auto">
@@ -1584,7 +1584,7 @@
 
                 // 1. Category Title
                 html += `
-                    <div class="mt-0 mb-2 page-break-avoid flex justify-between items-end">
+                    <div class="page-break-avoid ${isPowderSection ? 'mb-0 mt-4' : 'mb-4 mt-8'} flex justify-between items-end">
                          <h3 class="text-base font-bold uppercase text-white bg-[#213f7d] w-fit px-2">${cat.title}</h3>
                          ${cat.description ? `<p class="text-[12px] text-[#828282] italic text-right max-w-lg leading-tight pl-4">${cat.description}</p>` : ''}
                     </div>
@@ -1603,10 +1603,20 @@
                     }
                 });
 
-                // 3. Render Null Subheading items
+// 3. Render Null Subheading items
                 if (nullSubItems.length > 0) {
+                      // SET YOUR CUSTOM LIMIT HERE (e.g., 5 items per row)
+                      const maxRowItems = 5; 
+
                       html += `<div class="grid grid-cols-${totalColumns} ${gapSize} mb-0">
-                        ${nullSubItems.map(item => renderItemCard(cat, item, isPowderSection)).join('')}
+                        ${nullSubItems.map((item, index) => {
+                            // Logic: If index is divisible by maxRowItems (and not 0), start new line
+                            const forceNewRow = (index > 0 && index % maxRowItems === 0);
+                            // 'col-start-1' forces the item to start at the first column of the next row
+                            const extraClass = forceNewRow ? 'col-start-1' : '';
+                            
+                            return renderItemCard(cat, item, isPowderSection, extraClass);
+                        }).join('')}
                       </div>`;
                 }
 
@@ -1628,7 +1638,7 @@
                         
                         return `
                             <div>
-                                <h4 class="text-xs font-bold text-[#828282] uppercase tracking-widest mb-0 pb-0 border-b border-gray-200 w-fit pr-20">${subName}</h4>
+                                <h4 class="text-xs font-bold text-[#828282] uppercase mt-3 tracking-widest mb-0 pb-0 border-b border-gray-200 w-fit pr-20">${subName}</h4>
                                 ${desc ? `<p class="text-[10px] text-[#828282] mb-2 mt-1 leading-relaxed">${desc}</p>` : '<div class="mb-2"></div>'}
                                 <div class="${widthClass} grid ${gridClass} gap-2">
                                     ${items.map(item => renderItemCard(cat, item)).join('')}
@@ -1712,6 +1722,7 @@
             container.innerHTML = html;
         }
 
+        
         function toggleAdvanced() {
             const panel = document.getElementById('advanced-overrides');
             panel.classList.toggle('open');
