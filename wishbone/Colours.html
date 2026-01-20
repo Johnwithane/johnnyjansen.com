@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -140,6 +142,9 @@
         <button onclick="copyHTMLCode()" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
             <i class="fas fa-code"></i> Copy Code
         </button>
+        <button id="btn-download-all" onclick="downloadAllImages()" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition flex items-center gap-2 text-sm">
+            <i class="fas fa-images"></i> Download Material Images
+        </button>
     </div>
 
     <div id="content-anchor"></div>
@@ -150,9 +155,14 @@
             <div class="w-1/2 bg-gray-100 relative flex flex-col justify-center items-center border-r border-gray-200">
                 <div class="absolute top-4 left-4 text-xs font-bold text-[#828282] uppercase tracking-widest">Live Preview</div>
                 
-                <div class="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2">
-                    <input type="checkbox" id="save-angle-check" class="cursor-pointer accent-blue-600 w-4 h-4">
-                    <label for="save-angle-check" class="text-xs font-bold text-[#828282] cursor-pointer select-none">Sync Angle</label>
+                <div class="absolute top-4 right-4 z-50 flex gap-2">
+                    <button onclick="downloadModalImage()" class="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2 hover:bg-white transition text-xs font-bold text-[#828282]">
+                        <i class="fas fa-download"></i> PNG
+                    </button>
+                    <div class="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2">
+                        <input type="checkbox" id="save-angle-check" class="cursor-pointer accent-blue-600 w-4 h-4">
+                        <label for="save-angle-check" class="text-xs font-bold text-[#828282] cursor-pointer select-none">Sync Angle</label>
+                    </div>
                 </div>
 
                 <div id="modal-scene-target" class="w-full aspect-square relative z-50 cursor-grab active:cursor-grabbing"></div>
@@ -201,7 +211,7 @@
         const COMPANY_INFO = {
             title: "Wishbone Site Furnishings",
             subtitle: `${currentYear} COLOUR & MATERIAL GUIDE`, 
-            contact: "WishboneLtd.com | sales@wishboneltd.com | (866) 626-0476",
+            contact: "WishboneLtd.com | (866) 626-0476 sales@wishboneltd.com",
             logoUrl: "https://wishboneltd.com/templates/yootheme/cache/5e/Wishbone-site-furnishings-80-5e794194.webp"
         };
 
@@ -916,8 +926,8 @@ let CATEGORIES = [
         "title": "Natural Wood Alternative",
         "section": "LUMBER colours",
         "subheadingDescriptions": {
-            "Accoya®": "Made from an acetylation process using acetic acid. Creates extremely dimensionally stable and durable wood.",
-            "Hardened Bamboo": "Thermally modified for extreme density, outperforming hardwoods like Ipe. Fire-resistant, stable, and allows for easy on-site removal of graffiti.",
+            "Accoya®": "Acetylation modifies the wood to repel water rather than absorb it. This creates extreme dimensional stability and durability.",
+            "Hardened Bamboo": "Created by compressing full-length bamboo strands under intense heat and pressure. The result is an extremely dense, fire-resistant material that allows for easy on-site maintenance, allowing for simple on-site sanding to remove graffiti or minor scratches.",
             "Red Cedar": "Sourced from British Columbia with natural oils that resist insects and decay. It provides superior stability without extra treatment."
         },
         "type": "wood",
@@ -1533,7 +1543,7 @@ let GLOBAL_SETTINGS = {
                         </div>
                     </div>
                 </div>
-                <div class="text-center"><p class="${isCompact ? 'text-[8px] -mb-1' : 'text-[10px] mb-0'} font-light pt-0 text-[#828282] uppercase leading-tight tracking-wide">${item.name}</p></div>
+                <div class="text-center"><p class="${isCompact ? 'text-[8px] -mb-1' : 'text-[10px] mb-0'} font-normal pt-0 text-[#828282] uppercase leading-tight tracking-wide">${item.name}</p></div>
             </div>
         `;
 
@@ -1542,11 +1552,13 @@ let GLOBAL_SETTINGS = {
             
             // Helper for the Document Header (Logo + Contact + Section Title)
             const getPageHeader = (sectionTitle) => `
-                <div class="flex justify-between items-end border-b border-gray-200 pb-4 mb-0">
-                    <h1 class="text-4xl font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
+                <div class="flex justify-between items-end border-b border-gray-200 pb-2 mb-0">
+                    <div>
+                        <h1 class="text-4xl mb-2 font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
+                    </div>
                     <div class="text-right">
-                        <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-12 object-contain mb-2 -mt-2 ml-auto">
-                        <p class="text-[10px] text-[#828282] font-medium tracking-wider leading-none">${COMPANY_INFO.contact}</p>
+                        <img src="${COMPANY_INFO.logoUrl}" alt="Logo" class="h-[60px] w-auto object-contain mb-0 ml-auto">
+
                     </div>
                 </div>
             `;
@@ -1707,11 +1719,11 @@ let GLOBAL_SETTINGS = {
                     let footerImg = ""; // Variable to hold the optional image URL
 
                     if (cat.section === "POWDER colours") {
-                        footerText = "Custom powder colours can be selected based on the RAL colour management system. Premium powder colours incur a $30 * surcharge per item.";
+                        footerText = "Custom powder colours can be selected based on the RAL colour management system.";
                         footerImg = "https://upload.wikimedia.org/wikipedia/commons/3/3c/RAL_Colours_logo.svg"; 
                         
                     } else if (cat.section === "LUMBER colours") {
-                        footerText = "Stains or oils specified by the customer can optionally be applied by Wishbone during manufacture. Contact us for further details.";
+                        footerText = "Stains or oils can optionally be applied during manufacture. Contact us for further details.";
                         footerImg = ""; 
                     }
 
@@ -1722,6 +1734,8 @@ let GLOBAL_SETTINGS = {
                                  <p class="text-[14px] text-[#828282] font-medium leading-relaxed max-w-2xl">
                                     ${footerText}
                                  </p>
+                                <p class="text-[14px] text-[#828282] font-medium leading-relaxed">${COMPANY_INFO.contact}</p>
+
                             </div>
                         `;
                     }
@@ -2223,6 +2237,114 @@ let GLOBAL_SETTINGS = {
                 if(canvas) renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
                 requestAnimationFrame(render); 
             }, 500);
+        }
+
+        async function downloadModalImage() {
+            if (!modalSceneData) return;
+            
+            const width = modalCanvas.clientWidth;
+            const height = modalCanvas.clientHeight;
+            
+            // Pause rendering loop
+            isAnimating = false;
+
+            modalRenderer.setSize(1024, 1024);
+            modalRenderer.clear();
+            modalRenderer.render(modalSceneData.scene, modalSceneData.camera);
+            
+            modalCanvas.toBlob(function(blob) {
+                let filename = `material_${modalSceneData.itemId}`;
+                for (const cat of CATEGORIES) {
+                    const found = cat.items.find(i => i.id === modalSceneData.itemId);
+                    if (found) {
+                        const safeName = found.name.replace(/[^a-z0-9\s\-_]/gi, '').trim();
+                        filename = `WB_Colour_${safeName}`;
+                        break;
+                    }
+                }
+                saveAs(blob, `${filename}.png`);
+                // Restore size
+                modalRenderer.setSize(width, height, false);
+                isAnimating = true;
+                requestAnimationFrame(render);
+            });
+        }
+
+        async function downloadAllImages() {
+            const btn = document.getElementById('btn-download-all');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+
+            try {
+                const zip = new JSZip();
+                const folder = zip.folder("materials");
+                
+                isAnimating = false;
+                renderer.setSize(1024, 1024);
+                
+                for (const item of scenes) {
+                    const group = item.settingsGroup;
+                    const shapeDef = GLOBAL_SETTINGS[group];
+                    
+                    // Save state
+                    const originalRot = item.mesh.rotation.clone();
+                    const originalScale = item.mesh.scale.clone();
+                    const originalLightRotY = item.lightGroup.rotation.y;
+                    const originalLightRotX = item.lightGroup.rotation.x;
+                    const originalZoom = item.camera.zoom;
+
+                    if(shapeDef) {
+                        item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                        item.mesh.scale.setScalar(shapeDef.scale || 1.0);
+                        item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
+                        item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
+                        if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
+                        if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
+                        if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
+                    }
+
+                    item.camera.zoom = 1.1; 
+                    item.camera.updateProjectionMatrix();
+
+                    renderer.clear();
+                    renderer.render(item.scene, item.camera);
+
+                    const blob = await new Promise(resolve => renderer.domElement.toBlob(resolve, 'image/png'));
+                    
+                    let name = "material_" + item.itemId;
+                    for(const cat of CATEGORIES) {
+                        const found = cat.items.find(i => i.id === item.itemId);
+                        if(found) { 
+                            const safeName = found.name.replace(/[^a-z0-9\s\-_]/gi, '').trim();
+                            name = `WB_Colour_${safeName}`;
+                            break; 
+                        }
+                    }
+                    folder.file(`${name}.png`, blob);
+
+                    // Restore
+                    item.mesh.rotation.copy(originalRot);
+                    item.mesh.scale.copy(originalScale);
+                    item.lightGroup.rotation.y = originalLightRotY;
+                    item.lightGroup.rotation.x = originalLightRotX;
+                    item.camera.zoom = originalZoom;
+                    item.camera.updateProjectionMatrix();
+                }
+
+                const content = await zip.generateAsync({type:"blob"});
+                saveAs(content, "wishbone_materials.zip");
+
+            } catch (e) {
+                console.error(e);
+                alert("Error generating images");
+            } finally {
+                if(canvas) renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+                isAnimating = true;
+                requestAnimationFrame(render);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         window.onload = function() { initThree(); rebuildApp(); render(); };
