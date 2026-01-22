@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wishbone Interactive Catalog - Condensed</title>
+    <title>Wishbone Colours</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -16,7 +16,7 @@
     
     <style>
         body { 
-            font-family: 'Helvetica Neue', Helvetica, sans-serif; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             background-color: #f3f4f6; 
             margin: 0; 
             overflow-x: hidden; 
@@ -71,9 +71,13 @@
         /* Print Logic (PDF Generation) */
         @media print {
             @page { margin: 0; size: auto; }
+            * {
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+            }
             body { 
                 background: white; 
                 margin: 0;
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
@@ -216,7 +220,7 @@
         const MATERIAL_LIBRARY = {
             wood: ['wood-accoya', 'wood-redCedar', 'bamboo-dark', 'bamboo-light'],
             plastic: ['plastic-black', 'plastic-grey', 'plastic-redwood', 'plastic-walnut', 'plastic-sand'],
-            metal: ['metal-oilBronze', 'metal-pewter', 'metal01', 'metal02', 'metal03', 'metal04', 'metal05', 'metal06', 'metal07', 'metal08', 'metal09', 'metal10', 'metal11', 'metal12', 'metal13', 'metal14', 'metal15', 'metal16', 'metal17', 'metal19']
+            metal: ['metal-oilBronze', 'metal-pewter', 'metal05', 'metal09', 'metal17']
         };
         const SUFFIXES = {
             map: '_Color.jpg',
@@ -253,17 +257,20 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#0064c2",
                 "shape": "cube",
-                "roughness": 0.45,
-                "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "roughness": 0.2,
+                "metalness": 0.45,
+                "materialSet": "metal/metal17",
+                "textureScale": 3.5,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.8,
                 "contrast": 1.3,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK",
+                    "metalnessMap": "BLANK"
+                },
+                "bumpScale": 0.5,
                 "saturation": 1
             },
             {
@@ -272,17 +279,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#007e8f",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.9,
                 "contrast": 1.3,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 0.7
             },
             {
@@ -291,10 +300,10 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#2e4838",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
@@ -303,7 +312,7 @@ let CATEGORIES = [
                 "overrides": {
                     "map": "BLANK"
                 },
-                "bumpScale": 2.3,
+                "bumpScale": 0.7,
                 "saturation": 0.7
             },
             {
@@ -312,17 +321,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#58b04c",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.8,
                 "contrast": 1.3,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 1.8
             },
             {
@@ -331,17 +342,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#fec701",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.9,
                 "contrast": 1.2,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 1.8
             },
             {
@@ -350,17 +363,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#fe714d",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.9,
                 "contrast": 1.6,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 1.5
             },
             {
@@ -369,17 +384,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#d32222",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.8,
                 "contrast": 1.3,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 1.1
             },
             {
@@ -388,17 +405,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#dc3254",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 1,
                 "contrast": 1.4,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 1
             },
             {
@@ -407,10 +426,10 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#a24a90",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
@@ -419,7 +438,7 @@ let CATEGORIES = [
                 "overrides": {
                     "map": "BLANK"
                 },
-                "bumpScale": 1.9,
+                "bumpScale": 0.7,
                 "saturation": 0.9
             },
             {
@@ -428,17 +447,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#1b3780",
                 "shape": "cube",
-                "roughness": 0.45,
+                "roughness": 0.2,
                 "metalness": 0.6,
-                "materialSet": "metal/metal09",
-                "textureScale": 0.1,
+                "materialSet": "metal/metal17",
+                "textureScale": 2.6,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
                 "brightness": 0.8,
                 "contrast": 1.3,
-                "overrides": {},
-                "bumpScale": 3,
+                "overrides": {
+                    "map": "BLANK"
+                },
+                "bumpScale": 0.7,
                 "saturation": 0.7
             }
         ]
@@ -451,7 +472,7 @@ let CATEGORIES = [
             "": ""
         },
         "type": "metal",
-        "description": "Smooth, easy to clean surfaces that resist fingerprints.",
+        "description": "Matte finish, easy to clean surfaces that resist fingerprints.",
         "items": [
             {
                 "id": 204,
@@ -521,21 +542,21 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#4c8694",
                 "shape": "cube",
-                "roughness": 0.5,
-                "metalness": 0.5,
-                "materialSet": "metal/metal01",
+                "roughness": 1,
+                "metalness": 0.3,
+                "materialSet": "metal/metal17",
                 "textureScale": 0.5,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
-                "brightness": 1,
-                "contrast": 1.1,
+                "brightness": 0.8,
+                "contrast": 1.2,
                 "saturation": 0.8,
                 "overrides": {
                     "map": "BLANK",
-                    "roughnessMap": "BLANK"
+                    "metalnessMap": "BLANK"
                 },
-                "bumpScale": 1.1
+                "bumpScale": 0.6
             },
             {
                 "id": 1768251501779,
@@ -543,21 +564,21 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#89927c",
                 "shape": "cube",
-                "roughness": 0.5,
-                "metalness": 0.2,
-                "materialSet": "metal/metal01",
+                "roughness": 1,
+                "metalness": 0.25,
+                "materialSet": "metal/metal17",
                 "textureScale": 0.5,
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
-                "brightness": 0.8,
-                "contrast": 1.8,
-                "saturation": 1.5,
+                "brightness": 0.6,
+                "contrast": 1.2,
+                "saturation": 0.8,
                 "overrides": {
                     "map": "BLANK",
-                    "roughnessMap": "BLANK"
+                    "metalnessMap": "BLANK"
                 },
-                "bumpScale": 1.1
+                "bumpScale": 0.6
             },
             {
                 "id": 1768252033210,
@@ -634,17 +655,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#000000",
                 "shape": "cube",
-                "roughness": 0.45,
-                "metalness": 0.2,
-                "materialSet": "metal/metal02",
-                "bumpScale": 1.1,
-                "textureScale": 1.3,
+                "roughness": 0.6,
+                "metalness": 0.55,
+                "materialSet": "metal/metal17",
+                "bumpScale": 0.8,
+                "textureScale": 0.1,
                 "textureRotation": 0,
                 "textureOffsetX": -0.45,
                 "textureOffsetY": 0.83,
                 "brightness": 1,
                 "contrast": 1,
-                "overrides": {}
+                "overrides": {
+                    "metalnessMap": "BLANK"
+                }
             },
             {
                 "id": 1768252956357,
@@ -709,7 +732,7 @@ let CATEGORIES = [
                 "overrides": {
                     "map": "BLANK",
                     "bumpMap": "BLANK",
-                    "metalnessMap": "metal/metal01"
+                    "metalnessMap": "BLANK"
                 },
                 "saturation": 1.6
             },
@@ -719,18 +742,19 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#F5F5F5",
                 "shape": "cube",
-                "roughness": 0.4,
-                "metalness": 0.8,
-                "materialSet": "metal/metal02",
-                "bumpScale": 1.8,
-                "textureScale": 1.5,
+                "roughness": 0.6,
+                "metalness": 0.55,
+                "materialSet": "metal/metal17",
+                "bumpScale": 0.8,
+                "textureScale": 0.1,
                 "textureRotation": 0,
-                "textureOffsetX": 0,
-                "textureOffsetY": 0,
+                "textureOffsetX": -0.45,
+                "textureOffsetY": 0.83,
                 "brightness": 1,
-                "contrast": 1,
+                "contrast": 0.8,
                 "overrides": {
-                    "map": "BLANK"
+                    "map": "BLANK",
+                    "metalnessMap": "BLANK"
                 }
             },
             {
@@ -762,7 +786,7 @@ let CATEGORIES = [
                 "roughness": 0.8,
                 "metalness": 0.4,
                 "materialSet": "metal/metal17",
-                "bumpScale": 3,
+                "bumpScale": 1.1,
                 "textureScale": 0.7,
                 "textureRotation": 1,
                 "textureOffsetX": 1,
@@ -773,18 +797,18 @@ let CATEGORIES = [
                     "map": "BLANK",
                     "bumpMap": "BLANK"
                 },
-                "saturation": 1.6
+                "saturation": 0.7
             },
             {
                 "id": 1768252535094,
                 "name": "Cactus Green",
                 "subheading": "",
-                "color": "#595e46",
+                "color": "#505e45",
                 "shape": "cube",
                 "roughness": 0.8,
                 "metalness": 0.4,
                 "materialSet": "metal/metal17",
-                "bumpScale": 3,
+                "bumpScale": 1.2,
                 "textureScale": 0.7,
                 "textureRotation": 1,
                 "textureOffsetX": 1,
@@ -795,7 +819,7 @@ let CATEGORIES = [
                     "map": "BLANK",
                     "bumpMap": "BLANK"
                 },
-                "saturation": 1.6
+                "saturation": 1.1
             },
             {
                 "id": 212,
@@ -803,18 +827,20 @@ let CATEGORIES = [
                 "subheading": "",
                 "color": "#496969",
                 "shape": "cube",
-                "roughness": 0.35,
-                "metalness": 0.2,
-                "materialSet": "metal/metal02",
-                "bumpScale": 0.5,
-                "textureScale": 5,
-                "textureRotation": 0,
-                "textureOffsetX": 0,
+                "roughness": 1,
+                "metalness": 0.3,
+                "materialSet": "metal/metal17",
+                "bumpScale": 0.7,
+                "textureScale": 0.4,
+                "textureRotation": 1,
+                "textureOffsetX": 1,
                 "textureOffsetY": 0,
-                "brightness": 1,
-                "contrast": 1,
+                "brightness": 0.7,
+                "contrast": 1.5,
                 "overrides": {
-                    "map": "BLANK"
+                    "map": "BLANK",
+                    "bumpMap": "BLANK",
+                    "metalnessMap": "BLANK"
                 }
             }
         ]
@@ -1541,7 +1567,7 @@ let GLOBAL_SETTINGS = {
                         </div>
                     </div>
                 </div>
-                <div class="text-center"><p class="${isCompact ? 'text-[8px] -mb-1' : 'text-[10px] mb-0'} font-base  tracking-widest pt-0 text-[#828282] uppercase leading-tight">${item.name}</p></div>
+                <div class="text-center"><p class="${isCompact ? 'text-[8px] -mb-1' : 'text-[10px] mb-0'} font-bold  tracking-wide pt-0 text-[#828282] uppercase leading-tight">${item.name}</p></div>
             </div>
         `;
 
@@ -1552,6 +1578,7 @@ let GLOBAL_SETTINGS = {
             const getPageHeader = (sectionTitle) => `
                 <div class="flex justify-between items-end border-b-2 border-gray-100 pb-2 mb-0">
                     <div>
+                        ${sectionTitle === 'POWDER colours' ? '<p class="text-[10px] font-bold text-[#828282] uppercase tracking-[0.2em] mb-0 leading-none">Super Durable</p>' : ''}
                         <h1 class="text-4xl mb-2 font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
                     </div>
                     <div class="text-right">
@@ -1573,7 +1600,7 @@ let GLOBAL_SETTINGS = {
                 const isPowderSection = cat.section === "POWDER colours";
                 const totalColumns = isPowderSection ? 7 : 5; // 8 Cols for Powders, 5 for Lumber
                 const gapSize = isPowderSection ? 'gap-1' : 'gap-2';
-                const categoryMargin = isPowderSection ? 'margin-bottom: 0rem;' : 'margin-bottom: 2rem;';
+                const categoryMargin = isPowderSection ? 'margin-bottom: 0rem;' : 'margin-bottom: 0rem;';
                 
                 // Specific Check for "Textured Powders" to force a split ONLY if we aren't compressing
                 // Since we want all powders on one page, we disable forced breaks for powders
@@ -1604,7 +1631,7 @@ let GLOBAL_SETTINGS = {
 
                 // 1. Category Title
                 html += `
-                    <div class="page-break-avoid ${isPowderSection ? 'mb-0 mt-6' : 'mb-4 mt-8'} flex justify-between items-end">
+                    <div class="page-break-avoid ${isPowderSection ? 'mb-0 mt-6' : 'mb-4 mt-6'} flex justify-between items-end">
                          <h3 class="text-base font-bold uppercase text-white bg-[#213f7d] w-fit px-2">${cat.title}</h3>
                          ${cat.description ? `<p class="text-[12px] text-[#828282] italic text-right max-w-lg tracking-widest leading-tight pl-4">${cat.description}</p>` : ''}
                     </div>
@@ -2204,16 +2231,16 @@ let GLOBAL_SETTINGS = {
                 const group = item.settingsGroup;
                 const shapeDef = GLOBAL_SETTINGS[group];
                 
-                if(shapeDef) {
-                    item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
-                    item.mesh.scale.setScalar(shapeDef.scale || 1.0);
-                    item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
-                    item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
-                    if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
+                // if(shapeDef) {
+                //     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                //     item.mesh.scale.setScalar(shapeDef.scale || 1.0);
+                //     item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
+                //     item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
+                //     if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
 
-                    if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
-                    if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
-                }
+                //     if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
+                //     if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
+                // }
 
                 const originalZoom = item.camera.zoom;
                 item.camera.zoom = 1.1; 
@@ -2246,6 +2273,8 @@ let GLOBAL_SETTINGS = {
             // Pause rendering loop
             isAnimating = false;
 
+            const originalPixelRatio = modalRenderer.getPixelRatio();
+            modalRenderer.setPixelRatio(1);
             modalRenderer.setSize(1024, 1024);
             modalRenderer.clear();
             modalRenderer.render(modalSceneData.scene, modalSceneData.camera);
@@ -2262,6 +2291,7 @@ let GLOBAL_SETTINGS = {
                 }
                 saveAs(blob, `${filename}.png`);
                 // Restore size
+                modalRenderer.setPixelRatio(originalPixelRatio);
                 modalRenderer.setSize(width, height, false);
                 isAnimating = true;
                 requestAnimationFrame(render);
@@ -2274,11 +2304,13 @@ let GLOBAL_SETTINGS = {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
             btn.disabled = true;
 
+            const originalPixelRatio = renderer.getPixelRatio();
+
             try {
                 const zip = new JSZip();
-                const folder = zip.folder("materials");
                 
                 isAnimating = false;
+                renderer.setPixelRatio(1);
                 renderer.setSize(1024, 1024);
                 
                 for (const item of scenes) {
@@ -2286,21 +2318,21 @@ let GLOBAL_SETTINGS = {
                     const shapeDef = GLOBAL_SETTINGS[group];
                     
                     // Save state
-                    const originalRot = item.mesh.rotation.clone();
-                    const originalScale = item.mesh.scale.clone();
-                    const originalLightRotY = item.lightGroup.rotation.y;
-                    const originalLightRotX = item.lightGroup.rotation.x;
+                    // const originalRot = item.mesh.rotation.clone();
+                    // const originalScale = item.mesh.scale.clone();
+                    // const originalLightRotY = item.lightGroup.rotation.y;
+                    // const originalLightRotX = item.lightGroup.rotation.x;
                     const originalZoom = item.camera.zoom;
 
-                    if(shapeDef) {
-                        item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
-                        item.mesh.scale.setScalar(shapeDef.scale || 1.0);
-                        item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
-                        item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
-                        if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
-                        if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
-                        if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
-                    }
+                    // if(shapeDef) {
+                    //     item.mesh.rotation.set(shapeDef.rotation.x, shapeDef.rotation.y, shapeDef.rotation.z);
+                    //     item.mesh.scale.setScalar(shapeDef.scale || 1.0);
+                    //     item.lightGroup.rotation.y = shapeDef.lightRotation || 0;
+                    //     item.lightGroup.rotation.x = shapeDef.lightTilt || 0; 
+                    //     if(window.GLOBAL_ENV_MAP) window.GLOBAL_ENV_MAP.offset.x = shapeDef.envRotation || 0;
+                    //     if (shapeDef.lightIntensity !== undefined && item.dirLight) item.dirLight.intensity = shapeDef.lightIntensity;
+                    //     if (shapeDef.ambientIntensity !== undefined && item.ambientLight) item.ambientLight.intensity = shapeDef.ambientIntensity;
+                    // }
 
                     item.camera.zoom = 1.1; 
                     item.camera.updateProjectionMatrix();
@@ -2311,21 +2343,26 @@ let GLOBAL_SETTINGS = {
                     const blob = await new Promise(resolve => renderer.domElement.toBlob(resolve, 'image/png'));
                     
                     let name = "material_" + item.itemId;
+                    let sectionName = "Other";
+                    let categoryName = "Misc";
+
                     for(const cat of CATEGORIES) {
                         const found = cat.items.find(i => i.id === item.itemId);
                         if(found) { 
                             const safeName = found.name.replace(/[^a-z0-9\s\-_]/gi, '').trim();
                             name = `WB_Colour_${safeName}`;
+                            if (cat.section) sectionName = cat.section;
+                            if (cat.title) categoryName = cat.title;
                             break; 
                         }
                     }
-                    folder.file(`${name}.png`, blob);
+                    zip.folder(sectionName).folder(categoryName).file(`${name}.png`, blob);
 
                     // Restore
-                    item.mesh.rotation.copy(originalRot);
-                    item.mesh.scale.copy(originalScale);
-                    item.lightGroup.rotation.y = originalLightRotY;
-                    item.lightGroup.rotation.x = originalLightRotX;
+                    // item.mesh.rotation.copy(originalRot);
+                    // item.mesh.scale.copy(originalScale);
+                    // item.lightGroup.rotation.y = originalLightRotY;
+                    // item.lightGroup.rotation.x = originalLightRotX;
                     item.camera.zoom = originalZoom;
                     item.camera.updateProjectionMatrix();
                 }
@@ -2337,6 +2374,7 @@ let GLOBAL_SETTINGS = {
                 console.error(e);
                 alert("Error generating images");
             } finally {
+                renderer.setPixelRatio(originalPixelRatio);
                 if(canvas) renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
                 isAnimating = true;
                 requestAnimationFrame(render);
