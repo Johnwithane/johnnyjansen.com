@@ -214,7 +214,7 @@
             title: "Wishbone Site Furnishings",
             subtitle: `${currentYear} COLOUR & MATERIAL GUIDE`, 
             contact: "WishboneLtd.com | (866) 626-0476 sales@wishboneltd.com",
-            logoUrl: "https://wishboneltd.com/templates/yootheme/cache/5e/Wishbone-site-furnishings-80-5e794194.webp"
+            logoUrl: "Wishbone_Logo.png"
         };
 
         const MATERIAL_LIBRARY = {
@@ -571,9 +571,9 @@ let CATEGORIES = [
                 "textureRotation": 0,
                 "textureOffsetX": 0,
                 "textureOffsetY": 0,
-                "brightness": 0.6,
+                "brightness": 0.7,
                 "contrast": 1.2,
-                "saturation": 0.8,
+                "saturation": 1.6,
                 "overrides": {
                     "map": "BLANK",
                     "metalnessMap": "BLANK"
@@ -1578,7 +1578,7 @@ let GLOBAL_SETTINGS = {
             const getPageHeader = (sectionTitle) => `
                 <div class="flex justify-between items-end border-b-2 border-gray-100 pb-2 mb-0">
                     <div>
-                        ${sectionTitle === 'POWDER colours' ? '<p class="text-[10px] font-bold text-[#828282] uppercase tracking-[0.2em] mb-0 leading-none">Super Durable</p>' : ''}
+                        ${sectionTitle === 'POWDER colours' ? '<p class="text-[10px] font-black text-[#828282] uppercase tracking-[0.2em] mb-0 leading-none">Super Durable*</p>' : ''}
                         <h1 class="text-4xl mb-2 font-black text-[#213f7d] tracking-tighter uppercase leading-none">${sectionTitle || 'CATALOG'}</h1>
                     </div>
                     <div class="text-right">
@@ -1744,6 +1744,7 @@ let GLOBAL_SETTINGS = {
                     let footerImg = ""; // Variable to hold the optional image URL
 
                     if (cat.section === "POWDER colours") {
+                        html += `<p class="text-right text-[12px] text-[#828282] font-light italic mt-2 mb-0 tracking-wide">* Meets AAMA 2604 specification</p>`;
                         footerText = "Custom powder colours can be selected based on the RAL colour management system.";
                         footerImg = "https://upload.wikimedia.org/wikipedia/commons/3/3c/RAL_Colours_logo.svg"; 
                         
