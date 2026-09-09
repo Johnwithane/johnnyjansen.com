@@ -60,7 +60,17 @@ useSeo({
       </div>
     </header>
 
-    <div v-if="project.image" class="mx-auto max-w-6xl px-5 pt-10">
+    <div v-if="project.before" class="mx-auto grid max-w-6xl gap-6 px-5 pt-10 md:grid-cols-2">
+      <figure class="m-0">
+        <img :src="project.before.image" :alt="`${project.name}, before`" width="1440" height="900" class="w-full rounded-lg border border-line">
+        <figcaption class="mt-2 text-sm text-ink-3">{{ project.before.caption }}</figcaption>
+      </figure>
+      <figure class="m-0">
+        <img :src="project.image" :alt="`${project.name}, after`" width="1440" height="900" class="w-full rounded-lg border border-line">
+        <figcaption class="mt-2 text-sm text-ink-3">{{ project.before.afterCaption }}</figcaption>
+      </figure>
+    </div>
+    <div v-else-if="project.image" class="mx-auto max-w-6xl px-5 pt-10">
       <img
         :src="project.image"
         :alt="`${project.name} at desktop width`"

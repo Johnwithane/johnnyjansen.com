@@ -41,6 +41,9 @@ const prepare = {
 // Sites whose product view needs a live Firestore stream cannot render through
 // the curl relay; their card image is placed by hand and never overwritten.
 const manual = new Set(["remoose"]);
+// Extra frames that are not a project's own URL. The old Wishbone site is
+// captured from the apex while it still exists, for the before-and-after.
+const extras = [{ file: "wishbone-before", url: "https://wishboneltd.com", prepare: "wishbone" }];
 // Optional slugs on the command line limit the run.
 const only = process.argv.slice(2);
 const direct = process.env.DIRECT === "1";
@@ -89,5 +92,30 @@ for (const p of projects.filter((p) => (p.url || urlOverride[p.slug]) && (only.l
     }
     await context.close();
   }
+}
+for (const x of extras.filter((x) => only.length === 0 || only.includes(x.file))) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+  if (!direct) {
+    await page.route("**/*", async (route) => {
+      if (route.request().method() !== "GET") return route.fulfill({ status: 204 });
+      try {
+        const res = await curlFetch(route.request().url());
+        await route.fulfill({ status: res.status, headers: { "content-type": res.contentType }, body: res.body });
+      } catch {
+        await route.abort();
+      }
+    });
+  }
+  try {
+    await page.goto(x.url, { waitUntil: "load", timeout: 90_000 });
+    await page.waitForTimeout(6000);
+    await prepare[x.prepare]?.(page);
+    await page.screenshot({ path: `public/static/work/${x.file}.jpg`, type: "jpeg", quality: 82 });
+    console.log("captured", x.file);
+  } catch (err) {
+    console.log("failed", x.file, String(err).split("\n")[0]);
+  }
+  await context.close();
 }
 await browser.close();

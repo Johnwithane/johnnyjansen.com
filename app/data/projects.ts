@@ -20,6 +20,7 @@ export interface Project {
   stack: string;
   video?: { provider: "vimeo" | "youtube"; id: string; title: string };
   image?: string;
+  before?: { image: string; caption: string; afterCaption: string };
   draft?: boolean;
 }
 
@@ -66,6 +67,11 @@ export const projects: Project[] = [
     stack: "Nuxt 3 (SSR), Vue 3, TypeScript, Tailwind, Firebase (Firestore, Functions, Hosting), Ragic ERP, three.js, Vertex AI, Playwright, Vitest",
     video: { provider: "youtube", id: "oopMUokWKD8", title: "Wishbone brand film" },
     image: "/static/work/wishbone.jpg",
+    before: {
+      image: "/static/work/wishbone-before.jpg",
+      caption: "Before: the site the company had, editable by nobody, with the catalogue in PDFs.",
+      afterCaption: "After: the platform, launched September 2026. Search, a tile feed ranked by what visitors respond to, the Studio, and quoting.",
+    },
     draft: true,
   },
   {
