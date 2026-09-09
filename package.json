@@ -1,0 +1,42 @@
+{
+  "name": "johnnyjansen.com",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"app/**/*.{ts,vue,css}\" \"server/**/*.ts\" \"*.{ts,md,json}\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "verify": "npm run lint && npm run typecheck && npm run test:run && npm run generate",
+    "deploy:hosting": "npm run generate && firebase deploy --only hosting",
+    "deploy:preview": "npm run generate && firebase hosting:channel:deploy preview --expires 7d"
+  },
+  "dependencies": {
+    "@nuxtjs/sitemap": "^8.5.0",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "nuxt": "^4.5.2",
+    "nuxt-gtag": "^5.0.0",
+    "vue": "^3.5.42",
+    "vue-router": "^4.6.0"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "eslint": "^10.10.0",
+    "prettier": "^3.6.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.0",
+    "vue-tsc": "^3.3.11"
+  },
+  "engines": { "node": ">=22.12.0" }
+}

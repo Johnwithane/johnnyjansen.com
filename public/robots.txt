@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /tools/
+Disallow: /wishbone/
+Disallow: /WishboneColours.html
+
+Sitemap: https://johnnyjansen.com/sitemap.xml

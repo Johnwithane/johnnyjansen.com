@@ -1,0 +1,36 @@
+{
+  "hosting": {
+    "public": ".output/public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "redirects": [
+      { "source": "/resume.html", "destination": "/resume", "type": 301 },
+      { "source": "/index.html", "destination": "/", "type": 301 },
+      { "source": "/PocketJams.html", "destination": "/tools/PocketJams.html", "type": 301 },
+      { "source": "/PocketJamsEditor.html", "destination": "/tools/PocketJamsEditor.html", "type": 301 },
+      { "source": "/PocketJams-old.html", "destination": "/tools/PocketJams-old.html", "type": 301 },
+      { "source": "/CollageCreator.html", "destination": "/tools/CollageCreator.html", "type": 301 },
+      { "source": "/mathlibs.html", "destination": "/tools/mathlibs.html", "type": 301 }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css|woff2|png|jpg|jpeg|webp|mp4|svg)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  }
+}

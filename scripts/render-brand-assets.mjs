@@ -1,0 +1,22 @@
+// Renders the PWA icons and the default Open Graph image from HTML with the
+// Playwright Chromium. Re-run after changing the headline or the mark:
+//   node scripts/render-brand-assets.mjs
+import { chromium } from "@playwright/test";
+const mark = (size, radius) => `<!doctype html><html><body style="margin:0;background:#050505">
+<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#050505;border-radius:${radius}px;font-family:'DejaVu Sans',Arial,sans-serif;font-weight:700;color:#37FF8B;font-size:${size*0.46}px;letter-spacing:-0.06em">JJ</div></body></html>`;
+const og = `<!doctype html><html><body style="margin:0"><div style="width:1200px;height:630px;background:#050505;color:#f1f4f2;font-family:'DejaVu Sans',Arial,sans-serif;padding:72px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between">
+<div style="font-family:'DejaVu Sans Mono',monospace;font-size:20px;letter-spacing:.1em;color:#37FF8B">FRACTIONAL CTO · KELOWNA, BC</div>
+<div style="font-size:64px;font-weight:700;line-height:1.08;letter-spacing:-.02em;max-width:1000px">The digital platform behind your product business.</div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:26px;color:#aab5ae"><span>Johnny Jansen</span><span>johnnyjansen.com</span></div></div></body></html>`;
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const page = await browser.newPage();
+for (const [size, file] of [[192, "public/icons/icon-192.png"], [512, "public/icons/icon-512.png"]]) {
+  await page.setViewportSize({ width: size, height: size });
+  await page.setContent(mark(size, 0));
+  await page.screenshot({ path: file, omitBackground: false });
+}
+await page.setViewportSize({ width: 1200, height: 630 });
+await page.setContent(og);
+await page.screenshot({ path: "public/og-default.png" });
+await browser.close();
+console.log("rendered");

@@ -1,0 +1,14 @@
+node_modules
+.nuxt
+.output
+.data
+.cache
+dist
+.env
+.env.*
+!.env.example
+.firebase
+firebase-debug.log
+playwright-report
+test-results
+.DS_Store

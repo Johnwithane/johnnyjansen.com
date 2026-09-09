@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. The brand block is the only place a colour is defined; every
+ * component reads a token. The mint on black is the identity Johnny kept from
+ * the old site. Case studies are long reads, so the default is a light page
+ * with the mint as accent, and the dark surfaces are used for the hero,
+ * header and footer. Never inline a hex in a component.
+ */
+:root {
+  /* brand */
+  --brand-mint: #37ff8b;
+  --brand-mint-ink: #0f7a45; /* mint darkened until it reads on white */
+  --brand-black: #050505;
+
+  /* light surfaces (default) */
+  --bg: #f7f9f7;
+  --surface: #ffffff;
+  --surface-2: #eef2ef;
+  --ink: #101612;
+  --ink-2: #47524b;
+  --ink-3: #78837c;
+  --line: #d9e0db;
+  --accent: var(--brand-mint-ink);
+  --accent-soft: #e2f6ea;
+  --accent-on-dark: var(--brand-mint);
+
+  /* dark surfaces used by hero, header, footer regardless of theme */
+  --dark-bg: var(--brand-black);
+  --dark-surface: #101512;
+  --dark-ink: #f1f4f2;
+  --dark-ink-2: #aab5ae;
+  --dark-line: #232b26;
+
+  --font-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-mint: var(--brand-mint);
+  --color-dark-bg: var(--dark-bg);
+  --color-dark-surface: var(--dark-surface);
+  --color-dark-ink: var(--dark-ink);
+  --color-dark-ink-2: var(--dark-ink-2);
+  --color-dark-line: var(--dark-line);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+body { margin: 0; }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.015em; text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dark-zone :focus-visible { outline-color: var(--brand-mint); }
+
+.prose-jj { max-width: 66ch; }
+.prose-jj p { margin: 0 0 1em; color: var(--ink-2); }
+.prose-jj p strong { color: var(--ink); font-weight: 600; }
+.prose-jj ul { padding-left: 1.2em; margin: 0 0 1em; color: var(--ink-2); }
+.prose-jj li { margin: 0 0 0.4em; }
+.prose-jj h2 { font-size: 1.6rem; margin: 2.2rem 0 0.7rem; font-weight: 600; }
+.prose-jj h3 { font-size: 1.15rem; margin: 1.6rem 0 0.5rem; font-weight: 600; }
+
+.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
