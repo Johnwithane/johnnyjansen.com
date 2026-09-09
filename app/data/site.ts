@@ -65,6 +65,7 @@ export const ENGAGEMENT = [
 export const NAV = [
   { label: "Work", to: "/work" },
   { label: "How I build", to: "/how-i-build" },
+  { label: "Lab", to: "/lab" },
   { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
 ] as const;

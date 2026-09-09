@@ -6,7 +6,7 @@ Steps only Johnny can do. Grouped by what they unblock. Tick them off in the com
 
 - [ ] **Get written sign-off from Wishbone leadership** for a public case study naming the company, and a one or two sentence quote from them. Until then `draft: true` stays on the `wishbone` entry in `app/data/projects.ts`.
 - [ ] **Gather three or four real numbers** and replace the `[Number to confirm]` lines in `projects.ts`: products synced from Ragic, quote requests since launch, staff using the admin, a page speed or organic search change.
-- [ ] **Screenshots and a walkthrough video** of the public site, the configurator and the admin (60 to 90 seconds, no customer data on screen). Drop screenshots in `public/static/work/` and set `image` on the project.
+- [ ] **A walkthrough video** of the public site, the configurator and the admin (60 to 90 seconds, no customer data on screen). Screenshots are done (`public/static/work/`); the video replaces the brand film on the case study when it exists.
 
 ## Before launch
 

@@ -1,5 +1,6 @@
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "~~/app/data/site";
 import { projects } from "~~/app/data/projects";
+import { publicPrototypes } from "~~/app/data/lab";
 
 // Plain-text index for LLM crawlers. No proven ranking effect, costs nothing.
 export default defineEventHandler((event) => {
@@ -7,6 +8,9 @@ export default defineEventHandler((event) => {
   const work = projects
     .filter((p) => !p.draft)
     .map((p) => `- [${p.name}](${SITE_URL}/work/${p.slug}): ${p.tagline}`)
+    .join("\n");
+  const lab = publicPrototypes()
+    .map((p) => `- [${p.name}](${SITE_URL}/lab/${p.slug}): ${p.summary}`)
     .join("\n");
   return `# ${SITE_NAME}
 
@@ -21,5 +25,8 @@ export default defineEventHandler((event) => {
 
 ## Case studies
 ${work}
+
+## Lab (public prototypes)
+${lab}
 `;
 });

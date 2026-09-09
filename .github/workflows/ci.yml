@@ -14,10 +14,16 @@ jobs:
         with: { version: 10 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir functions install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:run
+      - run: pnpm --dir functions build
+      - run: pnpm --dir functions test
+      - run: pnpm test:rules
       - run: pnpm generate
         env:
           NUXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NUXT_PUBLIC_FORM_ENDPOINT }}
