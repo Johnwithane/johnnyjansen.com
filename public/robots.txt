@@ -1,7 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /tools/
 Disallow: /wishbone/
-Disallow: /WishboneColours.html
+Disallow: /lab/admin
 
 Sitemap: https://johnnyjansen.com/sitemap.xml

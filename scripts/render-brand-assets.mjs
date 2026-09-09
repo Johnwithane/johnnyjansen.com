@@ -18,5 +18,16 @@ for (const [size, file] of [[192, "public/icons/icon-192.png"], [512, "public/ic
 await page.setViewportSize({ width: 1200, height: 630 });
 await page.setContent(og);
 await page.screenshot({ path: "public/og-default.png" });
+
+// One share image per case study, same frame, the project's own words.
+const { projects } = await import("../app/data/projects.ts");
+for (const p of projects) {
+  const card = `<!doctype html><html><body style="margin:0"><div style="width:1200px;height:630px;background:#050505;color:#f1f4f2;font-family:'DejaVu Sans',Arial,sans-serif;padding:72px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between">
+<div style="font-family:'DejaVu Sans Mono',monospace;font-size:20px;letter-spacing:.1em;color:#37FF8B">CASE STUDY · ${p.years.toUpperCase()}</div>
+<div><div style="font-size:72px;font-weight:700;line-height:1.05;letter-spacing:-.02em">${p.name}</div><div style="font-size:34px;color:#aab5ae;margin-top:18px;max-width:1000px;line-height:1.25">${p.tagline}</div></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:26px;color:#aab5ae"><span>Johnny Jansen</span><span>johnnyjansen.com</span></div></div></body></html>`;
+  await page.setContent(card);
+  await page.screenshot({ path: `public/og/${p.slug}.png` });
+}
 await browser.close();
 console.log("rendered");

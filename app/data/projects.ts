@@ -31,7 +31,7 @@ export const projects: Project[] = [
     kind: "flagship",
     years: "2025 to 2026",
     status: "Launched September 2026, in daily use",
-    role: "Marketing Director. Designed and built the whole platform in-house, solo",
+    role: "Marketing Director. Brand refresh, then the whole platform, designed and built in-house, solo",
     url: "https://wishboneltd.com",
     summary:
       "Wishbone has made site furniture in Langley, BC since 1995: benches, tables, waste receptacles, bike racks, for parks and campuses across North America. My father founded it. When it changed hands I joined as Marketing Director, and found a company with an ERP, a catalogue in spreadsheets and PDFs, a website nobody could edit, and no system of record for products. I built that system, and the public site on top of it, in-house from Kelowna, with the team using it and filing ideas from inside the admin the whole way.",
@@ -48,6 +48,7 @@ export const projects: Project[] = [
       "Quoting and a design studio: a 3D space planner, mood boards, and a quote request that lands in the sales inbox with the exact configuration attached",
       "Price behind login by design, with security rules and tests that keep it there",
       "An admin with over a hundred screens, an AI assistant that looks data up instead of guessing, analytics, and a bug reporting loop from the public site",
+      "A tightened brand system: one typeface, one palette, enforced as tokens in code so the site cannot drift off-brand",
     ],
     detail: {
       title: "The tile engine",
@@ -74,7 +75,7 @@ export const projects: Project[] = [
     kind: "product",
     years: "2022 to today",
     status: "Live, rebuilt on a new stack in 2026",
-    role: "Co-founder, product, design and front end",
+    role: "Co-founder. Brand, product, design and front end",
     url: "https://remoose.com",
     collaborators: ["Lance Priebe, co-creator of Club Penguin", "Nicole Thompson"],
     summary:
@@ -111,9 +112,9 @@ export const projects: Project[] = [
     kind: "product",
     years: "2025 to 2026",
     status: "Live",
-    role: "Everything technical; my brother, a Red Seal tradesperson, on the product",
+    role: "Brand, design and everything technical; my brother James, a Red Seal tradesperson, on the product",
     url: "https://blueseal.app",
-    collaborators: ["My brother, Red Seal tradesperson"],
+    collaborators: ["James Jansen, Red Seal tradesperson"],
     summary:
       "Blue Seal is a two-sided app where clients hire verified tradespeople and tradespeople run their book of business. Every tradesperson passes certification and ID vetting before they go live, which is the whole point: it is a curated compare and choose between vetted professionals, not a race to the lowest bid.",
     problem: [
@@ -144,7 +145,7 @@ export const projects: Project[] = [
     kind: "product",
     years: "2026",
     status: "In active development, tested on real tours",
-    role: "Design and build",
+    role: "Brand, design and build",
     url: "https://bettertour.app",
     collaborators: ["Drew McTaggart, Dear Rouge", "James Butler, tour manager"],
     summary:
@@ -177,7 +178,7 @@ export const projects: Project[] = [
     kind: "product",
     years: "2025 to 2026",
     status: "Live, in development",
-    role: "Build; my son Forest, co-designer and lead tester",
+    role: "Brand and build; my son Forest, co-designer and lead tester",
     collaborators: ["Forest Jansen, co-designer"],
     summary:
       "Pocket Jams is a web-based social music platform for kids and families. Make beats with a hardware-style deck and step sequencer, then hang out in pixel-art multiplayer rooms with avatars, jam stations and missions. Music is saved, published to a feed, remixed with attribution, and arranged in a simple studio. My son Forest designs it with me and tests every build on his phone.",
@@ -208,7 +209,7 @@ export const projects: Project[] = [
     kind: "product",
     years: "2026",
     status: "In development",
-    role: "Design and build, with the family",
+    role: "Brand, design and build, with the family",
     summary:
       "My wife's family gathered to mark a hundred years since immigrating to Canada. A pile of cousins met for the first time and wanted the same thing: everyone on one tree, with the photos and stories attached. WaldeTree is that. A private social network where the tree is the home screen, built from their GEDCOM files.",
     problem: [

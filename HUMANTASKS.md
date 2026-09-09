@@ -7,7 +7,6 @@ Steps only Johnny can do. Grouped by what they unblock. Tick them off in the com
 - [ ] **Get written sign-off from Wishbone leadership** for a public case study naming the company, and a one or two sentence quote from them. Until then `draft: true` stays on the `wishbone` entry in `app/data/projects.ts`.
 - [ ] **Gather three or four real numbers** and replace the `[Number to confirm]` lines in `projects.ts`: products synced from Ragic, quote requests since launch, staff using the admin, a page speed or organic search change.
 - [ ] **Screenshots and a walkthrough video** of the public site, the configurator and the admin (60 to 90 seconds, no customer data on screen). Drop screenshots in `public/static/work/` and set `image` on the project.
-- [ ] **Confirm your brother's name and trade** for the Blue Seal page (`collaborators` in `projects.ts`).
 
 ## Before launch
 
@@ -17,7 +16,14 @@ Steps only Johnny can do. Grouped by what they unblock. Tick them off in the com
 - [ ] **Set the repo variable `NUXT_PUBLIC_FORM_ENDPOINT`** to the Formspree endpoint (the old one is in `.env.example`) so the contact form works at launch. The SiteMason lead function replaces it later.
 - [ ] **Read `docs/ARCHITECTURE.md` § Cutover** before merging to `main`. The old site is served by GitHub Pages from `main`; merging without the Pages source switched to GitHub Actions takes the site down.
 - [ ] **Google Search Console**: verify `johnnyjansen.com`, submit `/sitemap.xml`.
-- [ ] **Confirm the client logos** on the About page (Disney, LEGO, Ocean Wise, Vancouver Aquarium, Hyper Hippo, RocketSnail, Blumhouse, 604, Light Organ, Wishbone) can still be shown. Remove any that cannot from `clientLogos` in `app/data/film.ts`.
+
+## Before the lab works (Firebase project)
+
+- [ ] **Create the Firebase project** (`johnnyjansen-com`, or rename in `.firebaserc`). Enable **Authentication** with the Google and Anonymous providers, **Firestore**, **Storage**, and **Functions** (Blaze plan; the three functions idle at zero).
+- [ ] **Add the web app** in the console and copy its config into the repo variables `NUXT_PUBLIC_FIREBASE_API_KEY`, `..._AUTH_DOMAIN`, `..._PROJECT_ID`, `..._STORAGE_BUCKET`, `..._APP_ID` (and a local `.env` for `pnpm dev`).
+- [ ] **Set `ADMIN_EMAILS`** in `functions/.env` to your Google account (see `functions/.env.example`).
+- [ ] **Deploy the backend once**: `pnpm deploy:backend`. Confirm the CLI prints the success line for rules, storage and the three functions. This has to be live before the lab branch merges.
+- [ ] **Sign in at `/lab/admin`**, press **Publish registry**, and set a password for `sandbox`. Then open `/lab/sandbox` in a private window and try the password. That is the whole loop.
 
 ## After launch
 

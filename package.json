@@ -15,9 +15,12 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "verify": "npm run lint && npm run typecheck && npm run test:run && npm run generate",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:run && pnpm functions:build && pnpm generate",
     "deploy:hosting": "npm run generate && firebase deploy --only hosting",
-    "deploy:preview": "npm run generate && firebase hosting:channel:deploy preview --expires 7d"
+    "deploy:preview": "npm run generate && firebase hosting:channel:deploy preview --expires 7d",
+    "test:rules": "firebase --project demo-jj-rules emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
+    "functions:build": "pnpm --dir functions build",
+    "deploy:backend": "pnpm functions:build && firebase deploy --only firestore:rules,storage,functions"
   },
   "dependencies": {
     "@nuxtjs/sitemap": "^8.5.0",
@@ -25,7 +28,8 @@
     "nuxt": "^4.5.2",
     "nuxt-gtag": "^5.0.0",
     "vue": "^3.5.42",
-    "vue-router": "^4.6.0"
+    "vue-router": "^4.6.0",
+    "firebase": "^12.18.0"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
@@ -36,7 +40,17 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",
     "vitest": "^5.0.0",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "firebase-tools": "^15.29.0",
+    "@firebase/rules-unit-testing": "^5.0.2"
   },
-  "engines": { "node": ">=22.12.0" }
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver"
+    ]
+  }
 }

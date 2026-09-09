@@ -62,3 +62,18 @@ describe("videos", () => {
     }
   });
 });
+
+describe("lab registry", () => {
+  it("has unique slugs, static entries point at real files, component entries have loaders", async () => {
+    const { prototypes } = await import("~/data/lab");
+    const { prototypeLoaders } = await import("~/lab/registry");
+    const { existsSync } = await import("node:fs");
+    const slugs = prototypes.map((p) => p.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    for (const p of prototypes) {
+      if (p.kind === "static") expect(existsSync(`public${p.href}`), p.slug).toBe(true);
+      else expect(prototypeLoaders[p.slug], p.slug).toBeTypeOf("function");
+      expect(p.slug).not.toBe("admin");
+    }
+  });
+});

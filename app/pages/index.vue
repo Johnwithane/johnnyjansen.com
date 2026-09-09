@@ -55,6 +55,11 @@ useSeo({
             customers actually buy.
           </p>
           <p>
+            The brand is part of the build. Every product on this site carries an identity I designed, and the
+            Wishbone platform started with a brand refresh, so the site, the print and the product photography
+            all read as one company.
+          </p>
+          <p>
             <strong>AI-native with senior guardrails.</strong> I build with AI coding tools and I say so. Every project
             ships typed, linted, tested, with default-deny security rules and a CI that refuses a red build.
             <NuxtLink to="/how-i-build">Here is exactly how.</NuxtLink>

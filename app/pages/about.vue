@@ -6,7 +6,7 @@ import { reel, musicVideos, documentaries, series, awards } from "~/data/film";
 useSeo({
   title: "About",
   description:
-    "Johnny Jansen: fifteen years in brand, content and product for Disney, LEGO and Ocean Wise, then a startup that ran out of money as AI coding tools arrived. Now a full-stack builder in Kelowna, BC.",
+    "Johnny Jansen has always built systems that turn an audience's ideas into the next thing: Club Penguin, LEGO Life, Ocean Wise, then Remoose and Wishbone. Brand, product and code.",
   path: "/about",
   type: "profile",
   jsonLd: [personJsonLd(), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "About", path: "/about" }])],
@@ -19,35 +19,44 @@ useSeo({
       <div class="grid gap-10 md:grid-cols-[1fr_320px]">
         <div class="prose-jj">
           <p class="eyebrow text-ink-3">About</p>
-          <h1 class="mt-1 text-4xl font-bold">From the person who needed the software to the person who builds it</h1>
+          <h1 class="mt-1 text-4xl font-bold">I have always built systems that turn an audience's ideas into the next thing</h1>
           <p class="mt-4 text-lg">
-            I started as a filmmaker. For a decade I made brand and community content for Disney Interactive, LEGO,
-            Ocean Wise and a games studio, directed music videos that won a Leo Award and a Juno nomination, and ran
-            the creative side of a startup. Along the way I was always the person asking a developer for a feature
-            and waiting.
+            First with content. Now with software. The tools changed; the job did not.
           </p>
-          <h2>Remoose changed that</h2>
+          <h2>Community systems, 2010 to 2019</h2>
           <p>
-            In 2022, coming off the user generated content work I had done for LEGO Life, I started prototyping
-            Remoose with Lance Priebe, the co-creator of Club Penguin, and Nicole Thompson: a remix tool for kids
-            that turns a few taps into a looping animation someone else can remix. We incorporated in 2024. We ran
-            out of funding right as the first AI coding tools appeared, and the team spent the next two years
-            teaching me to build the thing myself. Remoose is live again, on a stack I rebuilt, and it is the
-            portfolio piece that explains where the rest came from.
+            At Disney Interactive I was Businesmoose, the in-game face of Club Penguin. The job looked like making
+            videos. The job was actually a loop: read what the community was asking for, turn it into content, watch
+            what they did with it, repeat. Sixty-one videos and fourteen million views came out of that loop, and so
+            did the moderation and content systems behind them.
           </p>
-          <h2>Then a real business</h2>
+          <p>
+            At LEGO, Build Your Own Adventure made the loop the product. Kids voted on brick piles, submitted builds,
+            and the story went where they sent it. Two seasons of user generated content on LEGO Life, with the voting
+            and submission systems prototyped for the platform. At Ocean Wise the same shape ran three series and the
+            exhibit screens at the Vancouver Aquarium. Even the music videos I am known for, Record Shop among them,
+            were built the same way: complex systems planned to the frame, then shot.
+          </p>
+          <h2>Remoose, 2022 to today</h2>
+          <p>
+            Coming off the LEGO work I started prototyping Remoose with Lance Priebe, the co-creator of Club Penguin,
+            and Nicole Thompson: a remix tool where a few taps make a looping animation someone else can remix. I did
+            the brand, the product and the front end. We incorporated in 2024. We ran out of funding right as the
+            first AI coding tools appeared, and the next two years turned me into the person who builds the system
+            instead of the person who asks for it. Remoose is live again, on a stack I rebuilt.
+          </p>
+          <h2>Wishbone, 2025 to today</h2>
           <p>
             My father founded Wishbone Site Furnishings in 1995. When he sold the company I joined as Marketing
-            Director, and there was an opportunity to build the company's whole digital infrastructure from nothing:
-            the public site, the product information system, the link to the ERP, the configurator, the quoting. It
-            launched in September 2026 and the team runs it every day. It is the clearest example of how I work: a
-            working platform early, the team using it while it is built, every idea and bug filed from inside the
-            app, and the platform kept running by the person who built it.
+            Director. I tightened the brand first, then built the whole digital platform from nothing: the public
+            site, the product information system, the link to the ERP, the configurator, the quoting. It launched in
+            September 2026 and the team runs it every day, filing ideas and bugs from inside the admin. The same loop
+            as Club Penguin, with a manufacturer's team instead of a community of kids.
           </p>
           <p>
-            Between the two I built products with people I love: a trades marketplace with my brother, a music
-            world with my son, a tour management app with musicians, and a family archive for my wife's family.
-            Each one is on the <NuxtLink to="/work">work page</NuxtLink>.
+            Between the two I built products with people I love, brand and code both: a trades marketplace with my
+            brother, a music world with my son, a tour management app with musicians, and a family archive for my
+            wife's family. Each one is on the <NuxtLink to="/work">work page</NuxtLink>.
           </p>
           <p>I live in Kelowna, BC, with my family. I work with clients anywhere in Canada and the US.</p>
         </div>

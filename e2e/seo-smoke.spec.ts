@@ -48,3 +48,31 @@ test("the home page is usable at phone width", async ({ page }) => {
   await page.getByRole("button", { name: "Menu" }).click();
   await expect(page.locator("#mobile-nav")).toBeVisible();
 });
+
+test("the lab index lists public prototypes and is indexable", async ({ page }) => {
+  await page.goto("/lab");
+  const robots = await page.locator('meta[name="robots"]').getAttribute("content");
+  expect(robots).toContain("index");
+  await expect(page.getByRole("link", { name: "Powder coat colour catalogue" })).toBeVisible();
+  await expect(page.getByText("Sandbox")).toHaveCount(0);
+});
+
+test("a static prototype embeds its page", async ({ page }) => {
+  await page.goto("/lab/wishbone-colours");
+  await expect(page.locator('iframe[title="Powder coat colour catalogue"]')).toHaveAttribute("src", "/WishboneColours.html");
+});
+
+test("a private prototype is noindex and degrades without Firebase", async ({ page }) => {
+  const res = await page.goto("/lab/sandbox");
+  expect(res?.status()).toBe(200);
+  const robots = await page.locator('meta[name="robots"]').getAttribute("content");
+  expect(robots).toContain("noindex");
+  await expect(page.getByText("not configured")).toBeVisible();
+});
+
+test("the sitemap excludes private prototypes and the admin", async ({ request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text();
+  expect(xml).toContain("/lab/wishbone-colours");
+  expect(xml).not.toContain("/lab/sandbox");
+  expect(xml).not.toContain("/lab/admin");
+});

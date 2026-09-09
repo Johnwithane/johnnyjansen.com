@@ -12,3 +12,5 @@ firebase-debug.log
 playwright-report
 test-results
 .DS_Store
+*-debug.log
+.firebase-emulator-data

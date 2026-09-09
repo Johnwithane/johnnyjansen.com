@@ -43,6 +43,30 @@ Order of operations:
 
 Either host serves the same generated directory. Firebase adds the redirects and cache headers in `firebase.json`; GitHub Pages serves clean URLs but ignores that file.
 
+## The lab (the one app layer, and why)
+
+Decided 2026-09-09. Johnny kept starting a new repo and a new Firebase project for every small idea (Mazzaroth is the example), which meant most ideas never started. The lab is one place on johnnyjansen.com to build and share prototypes, so a prototype costs a folder and a registry entry, not a repo.
+
+The portfolio stays exactly as above. The lab is additive:
+
+| Piece | Where | Note |
+| --- | --- | --- |
+| Registry | `app/data/lab.ts` | slug, name, summary, `access` (public or private), `kind` (static HTML under `public/`, or a Vue component under `app/lab/<slug>/`) |
+| Pages | `/lab` (index of public prototypes), `/lab/<slug>` (prerendered shell, noindex when private), `/lab/admin` (client-only owner console) | Shells prerender for SEO; the prototype body is `<ClientOnly>` |
+| Host | `components/lab/LabHost.vue` | Static: iframe plus open link. Component: password gate when private, then the component. Feedback drawer on every one |
+| Auth | Firebase Auth. Visitors are anonymous; the owner signs in with Google | `ensureAdmin` sets `admin: true` for emails in `ADMIN_EMAILS`. `unlockPrototype` trades a password for a `labs: [slug]` claim on the visitor's account, so the browser stays unlocked |
+| Data | Firestore `labs/{slug}/data/**` (the prototype's own), `labs/{slug}/feedback` (create by anyone who can open, read by admin, never edited), `labMeta/{slug}` (public flag, admin written, world readable), `labAccess/{slug}` (scrypt hashes, functions only) | `firestore.rules`, tested in `tests/rules/lab.test.ts` against the emulator |
+| Files | Storage `labs/{slug}/**` | 10 MB, images, PDF, audio, JSON, text |
+| Functions | `functions/src/index.ts`: `ensureAdmin`, `unlockPrototype`, `setPrototypePassword` | Node 22, Zod at the boundary, structured logs |
+
+The feedback drawer is the working method from the case studies, dogfooded: anyone using a prototype files an idea, bug or question from the page it is about, and the admin console lists them per prototype.
+
+Rules for the lab, in order of importance:
+
+1. The portfolio never imports Firebase. `useFirebase()` is lazy, client-only, and null when the project is not configured, so `pnpm generate` with no env produces the full site and a lab that says "not configured".
+2. Rules and functions deploy before the commit that depends on them (`pnpm deploy:backend`), same discipline as every other repo. Until the project exists, note "deploy pending project setup" in the commit body.
+3. A prototype that becomes a product graduates to its own repo. The lab is for things that are not products yet.
+
 ## Phase two: the SiteMason intake
 
 The contact form asks for a website URL. A Cloud Function in the SiteMason project writes the submission into its `leads` collection; the operator app's crawl and research pipeline then produces a private "what I would fix first" page to send back before the first call. Not in the first release (decided 2026-09-09).

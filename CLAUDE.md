@@ -18,7 +18,9 @@
 
 **johnnyjansen.com** is Johnny Jansen's portfolio and the front door of his consultancy. It sells one thing to one buyer: the digital platform behind a product business (public site, product data, ERP sync, configurator, quoting) for manufacturers and product companies across Canada and the US. Everything else on the site is evidence for that.
 
-It is a **prerendered static site**. Nuxt 4, every route baked to HTML at build time, served from Firebase Hosting (GitHub Pages until the Firebase project exists). There is no server, no database, no login and no admin. Content is typed data in `app/data/` and a commit is the CMS. This was a deliberate decision against the app shells in Johnny's other repos (BetterTour, Pocket Jams), because no AI search crawler runs JavaScript and a portfolio has nothing to do offline. Do not add an app layer here without a written reason in `docs/ARCHITECTURE.md`.
+It is a **prerendered static site** with one app layer bolted on the side. The portfolio (Nuxt 4, every route baked to HTML, served from Firebase Hosting, GitHub Pages until the project exists) has no server, no database and no login; content is typed data in `app/data/` and a commit is the CMS. That was a deliberate decision against the app shells in Johnny's other repos, because no AI search crawler runs JavaScript.
+
+The **lab** (`/lab`) is the app layer: prototypes hosted here instead of a repo each, with Firebase Auth, Firestore, Storage and three Cloud Functions behind them. Visitors are anonymous and unlock a private prototype with a password; Johnny signs in with Google as admin. The reason and the shape are in `docs/ARCHITECTURE.md` § The lab. The portfolio never imports Firebase; `useFirebase()` is lazy and null when unconfigured.
 
 ---
 
@@ -32,6 +34,8 @@ It is a **prerendered static site**. Nuxt 4, every route baked to HTML at build 
 6. **No `any`.** Strict TypeScript. `nuxt typecheck` runs in CI.
 7. **Mobile first.** 375px is the floor. The e2e suite checks the home page there.
 8. **Minimal by default.** Fewer words, fewer sections, fewer dependencies. A new npm package needs a reason in the commit body.
+9. **Default deny in the lab.** Every Firestore and Storage path has an explicit rule, and every rule has an allow test and a deny test in `tests/rules/`. Password hashes are functions-only. Feedback is never editable.
+10. **Firebase changes deploy before the commit that depends on them.** `pnpm deploy:backend` (rules, storage, functions), confirm the CLI's success line, then commit. Suspended while no project exists: write "deploy pending project setup" in the commit body instead.
 
 ---
 
@@ -55,7 +59,7 @@ Commit: "Site: short description"
 Push. CI deploys main.
 ```
 
-**Before any commit:** `pnpm verify` passes and `pnpm test:e2e` passes.
+**Before any commit:** `pnpm verify` passes, `pnpm test:e2e` passes, and `pnpm test:rules` passes if the rules changed.
 
 ---
 
@@ -68,8 +72,13 @@ app/
 ├── composables/useSeo.ts # Title, meta, canonical, OG, JSON-LD builders
 ├── data/                 # THE CONTENT. site.ts, projects.ts, film.ts, career.ts
 ├── layouts/default.vue
-├── pages/                # index, work/index, work/[slug], how-i-build, about, contact, resume
+├── pages/                # index, work/index, work/[slug], how-i-build, about, contact, resume, lab/*
+├── lab/<slug>/index.vue  # Component prototypes. Register in app/data/lab.ts
+├── components/lab/       # LabHost (static iframe or gated component), LabPasswordGate, LabFeedback
+├── composables/useFirebase.ts, useLabAuth.ts   # Lazy client Firebase; shared auth + claims
 └── error.vue
+functions/src/            # ensureAdmin, unlockPrototype, setPrototypePassword. Node 22, Zod
+firestore.rules, storage.rules, tests/rules/   # Default deny. Emulator tests via pnpm test:rules
 server/routes/llms.txt.ts # Plain-text index for LLM crawlers
 public/                   # Static assets. static/ (logos, photos), videos/, icons/, og-default.png
 public/wishbone, public/WishboneColours.html, public/tools/   # Legacy standalone tools kept at their old URLs. Not linked. Disallowed in robots.txt.
@@ -84,6 +93,7 @@ Rules:
 - Video embeds go through `VideoEmbed` (click to load). Never a raw iframe: fifty of them was the old site's biggest problem.
 - The domain is read from `app/data/site.ts`. Never hardcoded.
 - `app/data/site.ts` `OFFER` is the one purchasable first step. Change the price there and nowhere else.
+- **A new prototype**: a folder under `app/lab/<slug>/` (copy `sandbox`), an entry in `app/data/lab.ts` with a loader, and its own data under `labs/<slug>/data/**`. Private by default. Set its password in `/lab/admin`, then send the link and the word. Nothing else.
 
 ---
 
@@ -107,8 +117,11 @@ pnpm lint / lint:fix
 pnpm typecheck
 pnpm test:run        # Vitest
 pnpm test:e2e        # Playwright against .output/public (run generate first)
-pnpm verify          # lint + typecheck + test:run + generate
-node scripts/render-brand-assets.mjs   # Regenerate icons and og-default.png
+pnpm verify          # lint + typecheck + test:run + functions build + generate
+pnpm test:rules      # Firestore rules against the emulator (needs Java)
+pnpm deploy:backend  # rules + storage + functions, BEFORE the commit that needs them
+node scripts/render-brand-assets.mjs   # Regenerate icons and OG images
+firebase emulators:start   # Auth, Firestore, Storage, Functions locally for lab work
 ```
 
 pnpm, not npm: npm 10's resolver fails on this dependency graph.
@@ -122,6 +135,8 @@ CI (`.github/workflows/ci.yml`) runs verify and e2e on every push. On `main` it 
 Environment (build time, all optional):
 - `NUXT_PUBLIC_GTAG_ID` GA4 id. Empty disables analytics.
 - `NUXT_PUBLIC_FORM_ENDPOINT` where the contact form posts. Empty renders a mailto fallback.
+- `NUXT_PUBLIC_FIREBASE_*` the lab's client config. All empty = lab says "not configured", portfolio unaffected.
+- `functions/.env` `ADMIN_EMAILS` the Google accounts that become admin.
 
 ---
 
@@ -150,5 +165,6 @@ Environment (build time, all optional):
 - [ ] Copy has no dashes and no placeholder outside a draft
 - [ ] Looked at it at 375px
 - [ ] If a project changed, its `draft` flag is correct
+- [ ] If rules or functions changed: rules tests pass, and it is deployed (or the commit body says the deploy is pending project setup)
 - [ ] If a human step is needed, it is in `HUMANTASKS.md`
 - [ ] Commit message: `Site: short description`, no dashes

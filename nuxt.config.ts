@@ -1,12 +1,14 @@
 import tailwindcss from "@tailwindcss/vite";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "./app/data/site";
 import { projects } from "./app/data/projects";
+import { prototypes } from "./app/data/lab";
 
 // Prerendered static site. Every route is baked to HTML at build time so
 // Google and the AI crawlers (none of which run JavaScript) read the same
 // page a visitor does. There is no server at runtime. See docs/ARCHITECTURE.md.
 const projectRoutes = projects.map((p) => `/work/${p.slug}`);
-const publicRoutes = ["/", "/work", "/how-i-build", "/about", "/contact", "/resume"];
+const labRoutes = prototypes.map((p) => `/lab/${p.slug}`);
+const publicRoutes = ["/", "/work", "/how-i-build", "/about", "/contact", "/resume", "/lab"];
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-09-01",
@@ -20,7 +22,20 @@ export default defineNuxtConfig({
     public: {
       siteUrl: SITE_URL,
       formEndpoint: process.env.NUXT_PUBLIC_FORM_ENDPOINT ?? "",
+      // The lab's Firebase project. All empty = the lab shows "not configured"
+      // and the portfolio is unaffected.
+      firebase: {
+        apiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY ?? "",
+        authDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+        projectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+        storageBucket: process.env.NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+        appId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID ?? "",
+      },
     },
+  },
+  routeRules: {
+    // The admin console is an app, not a page: client rendered, never indexed.
+    "/lab/admin": { ssr: false, robots: false },
   },
   app: {
     head: {
@@ -44,13 +59,17 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: [...publicRoutes, ...projectRoutes, "/llms.txt"],
+      routes: [...publicRoutes, ...projectRoutes, ...labRoutes, "/llms.txt"],
     },
   },
   sitemap: {
     // Draft projects are prerendered (so a preview link works) but stay out
     // of the sitemap and carry noindex until they are cleared to publish.
-    exclude: projects.filter((p) => p.draft).map((p) => `/work/${p.slug}`),
+    exclude: [
+      ...projects.filter((p) => p.draft).map((p) => `/work/${p.slug}`),
+      ...prototypes.filter((p) => p.access === "private").map((p) => `/lab/${p.slug}`),
+      "/lab/admin",
+    ],
   },
   gtag: {
     // Empty id disables the module entirely. Set NUXT_PUBLIC_GTAG_ID at build.

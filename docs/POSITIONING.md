@@ -28,6 +28,14 @@ Audit, build, run (`ENGAGEMENT` in `app/data/site.ts`). The retainer is the busi
 
 One purchasable first step, the **Platform Audit** (`OFFER` in `app/data/site.ts`), fixed price, two weeks, a written plan the client keeps either way. Ongoing work starts after it. This is the pattern of the solo builders whose sites convert: name the first engagement, price it, gate the relationship behind it.
 
+## The through line (bio)
+
+One sentence carries the whole career: *I have always built systems that turn an audience's ideas into the next thing. First with content, now with software.* Club Penguin (community content loop), LEGO Build Your Own Adventure (voting and UGC as the product), Ocean Wise series, the music videos as complex planned systems, then Remoose, then Wishbone with its team filing ideas from inside the admin. Every stop is the same loop with different tools. Write the bio from that line and nothing on it reads as a career change.
+
+## Brand is part of the build
+
+Johnny designed the identity of every product on the site (Remoose, Blue Seal, BetterTour, Pocket Jams, WaldeTree) and tightened Wishbone's. Every role line says so. It is a differentiator against developers (who cannot) and agencies (who charge twice), and it is why the case studies can say "reads as one company".
+
 ## The marketer who builds
 
 One causal sentence, never two identities: *I spent fifteen years as the person who needed the software. Now I build it, so the site, the product data and the quote flow are designed around how customers actually buy.* Wishbone is the proof because it is a marketing-driven build end to end.
