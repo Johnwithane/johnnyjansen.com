@@ -21,11 +21,19 @@ await page.screenshot({ path: "public/og-default.png" });
 
 // One share image per case study, same frame, the project's own words.
 const { projects } = await import("../app/data/projects.ts");
+const { readFile } = await import("node:fs/promises");
+const { existsSync } = await import("node:fs");
 for (const p of projects) {
-  const card = `<!doctype html><html><body style="margin:0"><div style="width:1200px;height:630px;background:#050505;color:#f1f4f2;font-family:'DejaVu Sans',Arial,sans-serif;padding:72px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between">
-<div style="font-family:'DejaVu Sans Mono',monospace;font-size:20px;letter-spacing:.1em;color:#37FF8B">CASE STUDY · ${p.years.toUpperCase()}</div>
-<div><div style="font-size:72px;font-weight:700;line-height:1.05;letter-spacing:-.02em">${p.name}</div><div style="font-size:34px;color:#aab5ae;margin-top:18px;max-width:1000px;line-height:1.25">${p.tagline}</div></div>
-<div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:26px;color:#aab5ae"><span>Johnny Jansen</span><span>johnnyjansen.com</span></div></div></body></html>`;
+  // The screenshot rides along as a data URI so the page needs no server.
+  const shot = p.image && existsSync(`public${p.image}`) ? `data:image/jpeg;base64,${(await readFile(`public${p.image}`)).toString("base64")}` : null;
+  const picture = shot
+    ? `<div style="position:absolute;right:-40px;top:96px;width:560px;height:560px;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);transform:rotate(-3deg)"><img src="${shot}" style="width:100%;height:100%;object-fit:cover;object-position:top left"></div>`
+    : "";
+  const card = `<!doctype html><html><body style="margin:0"><div style="position:relative;width:1200px;height:630px;background:#050505;color:#f1f4f2;font-family:'DejaVu Sans',Arial,sans-serif;padding:72px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden">
+${picture}
+<div style="position:relative;font-family:'DejaVu Sans Mono',monospace;font-size:20px;letter-spacing:.1em;color:#37FF8B">CASE STUDY · ${p.years.toUpperCase()}${shot ? "" : " · JOHNNYJANSEN.COM"}</div>
+<div style="position:relative;max-width:${shot ? 560 : 1000}px"><div style="font-size:${shot ? 60 : 72}px;font-weight:700;line-height:1.05;letter-spacing:-.02em">${p.name}</div><div style="font-size:${shot ? 28 : 34}px;color:#aab5ae;margin-top:18px;line-height:1.25">${p.tagline}</div></div>
+<div style="position:relative;display:flex;gap:28px;align-items:flex-end;font-size:26px;color:#aab5ae"><span style="color:#f1f4f2">Johnny Jansen</span><span>${shot ? "johnnyjansen.com" : ""}</span></div></div></body></html>`;
   await page.setContent(card);
   await page.screenshot({ path: `public/og/${p.slug}.png` });
 }

@@ -65,7 +65,7 @@ export const projects: Project[] = [
     ],
     stack: "Nuxt 3 (SSR), Vue 3, TypeScript, Tailwind, Firebase (Firestore, Functions, Hosting), Ragic ERP, three.js, Vertex AI, Playwright, Vitest",
     video: { provider: "youtube", id: "oopMUokWKD8", title: "Wishbone brand film" },
-    image: "/static/stories/wishbone-card.jpg",
+    image: "/static/work/wishbone.jpg",
     draft: true,
   },
   {
@@ -104,6 +104,7 @@ export const projects: Project[] = [
     ],
     stack: "Vue 3, TypeScript, Canvas 2D, WebCodecs, Firebase, Zod, Vitest",
     video: { provider: "vimeo", id: "1102400408", title: "Remoose product demo" },
+    image: "/static/work/remoose.jpg",
   },
   {
     slug: "blue-seal",
@@ -137,6 +138,7 @@ export const projects: Project[] = [
     },
     outcome: ["Payments shipped to a test-mode Stripe account; live launch is gated on legal sign-off"],
     stack: "Vue 3, TypeScript, PrimeVue, Tailwind, Firebase, Stripe Connect, Vertex AI, Playwright, Vitest",
+    image: "/static/work/blue-seal.jpg",
   },
   {
     slug: "bettertour",
@@ -170,6 +172,7 @@ export const projects: Project[] = [
     },
     outcome: ["In use on real tours by the collaborators who designed it", "Monetisation built and dormant: free for the whole crew until the paywall is switched on"],
     stack: "Vue 3, TypeScript, Firebase, Vertex AI (Gemini), FlightAware, Stripe, Playwright, Vitest",
+    image: "/static/work/bettertour.jpg",
   },
   {
     slug: "pocket-jams",
@@ -201,6 +204,7 @@ export const projects: Project[] = [
     },
     outcome: ["Playable today by a kid on a phone, which is the only metric that has ever mattered on this one"],
     stack: "Vue 3, TypeScript, Web Audio, Tone.js, Firebase (Firestore, RTDB, Functions), Capacitor, Discord SDK, Vitest",
+    image: "/static/work/pocket-jams.jpg",
   },
   {
     slug: "waldetree",

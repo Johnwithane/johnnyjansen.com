@@ -81,7 +81,7 @@ functions/src/            # ensureAdmin, unlockPrototype, setPrototypePassword. 
 firestore.rules, storage.rules, tests/rules/   # Default deny. Emulator tests via pnpm test:rules
 server/routes/llms.txt.ts # Plain-text index for LLM crawlers
 public/                   # Static assets. static/ (logos, photos), videos/, icons/, og-default.png
-public/wishbone, public/WishboneColours.html, public/tools/   # Legacy standalone tools kept at their old URLs. Not linked. Disallowed in robots.txt.
+public/WishboneColours.html, public/tools/   # Standalone HTML prototypes, listed in the lab. public/wishbone/ is a duplicate, disallowed.
 docs/legacy/              # The old single-page site, for reference only
 scripts/render-brand-assets.mjs   # Renders icons + OG image from HTML with Playwright's Chromium
 tests/                    # Vitest. Content integrity: slugs, dashes, description length, placeholders
@@ -120,7 +120,8 @@ pnpm test:e2e        # Playwright against .output/public (run generate first)
 pnpm verify          # lint + typecheck + test:run + functions build + generate
 pnpm test:rules      # Firestore rules against the emulator (needs Java)
 pnpm deploy:backend  # rules + storage + functions, BEFORE the commit that needs them
-node scripts/render-brand-assets.mjs   # Regenerate icons and OG images
+node --experimental-strip-types scripts/render-brand-assets.mjs   # Icons + OG images (default and per project)
+node --experimental-strip-types scripts/capture-work-shots.mjs    # Live-site screenshots for the cards
 firebase emulators:start   # Auth, Firestore, Storage, Functions locally for lab work
 ```
 

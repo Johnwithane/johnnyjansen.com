@@ -12,7 +12,7 @@ useSeo({
   path: `/work/${project.slug}`,
   type: "article",
   noindex: project.draft,
-  image: project.image,
+  image: `/og/${project.slug}.png`,
   jsonLd: [
     {
       "@context": "https://schema.org",
@@ -59,6 +59,16 @@ useSeo({
         </dl>
       </div>
     </header>
+
+    <div v-if="project.image" class="mx-auto max-w-6xl px-5 pt-10">
+      <img
+        :src="project.image"
+        :alt="`${project.name} at desktop width`"
+        width="1440"
+        height="900"
+        class="w-full rounded-lg border border-line"
+      >
+    </div>
 
     <div class="mx-auto grid max-w-6xl gap-12 px-5 py-12 md:grid-cols-[1fr_280px] md:py-16">
       <div class="prose-jj">
