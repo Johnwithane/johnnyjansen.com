@@ -37,11 +37,12 @@ useSeo({
           </p>
           <h2>Then a real business</h2>
           <p>
-            My father founded Wishbone Site Furnishings in 1995. When he sold the company I was hired to take on his
-            digital duties, and there was an opportunity to build the company's whole digital infrastructure from
-            nothing: the public site, the product information system, the link to the ERP, the configurator, the
-            quoting. It launched in September 2026 and the team runs it every day. That is the work I want to do for
-            other product businesses.
+            My father founded Wishbone Site Furnishings in 1995. When he sold the company I joined as Marketing
+            Director, and there was an opportunity to build the company's whole digital infrastructure from nothing:
+            the public site, the product information system, the link to the ERP, the configurator, the quoting. It
+            launched in September 2026 and the team runs it every day. It is the clearest example of how I work: a
+            working platform early, the team using it while it is built, every idea and bug filed from inside the
+            app, and the platform kept running by the person who built it.
           </p>
           <p>
             Between the two I built products with people I love: a trades marketplace with my brother, a music

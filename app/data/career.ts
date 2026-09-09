@@ -9,10 +9,10 @@ export interface Role {
 export const career: Role[] = [
   {
     years: "2025 to today",
-    title: "Digital platform lead",
+    title: "Marketing Director",
     org: "Wishbone Site Furnishings",
     summary:
-      "Hired to take over the digital side of the company my father founded. Built the public site, product information system, ERP sync, configurator and quoting from scratch. Launched September 2026.",
+      "Marketing for the company my father founded, and the whole digital platform built in-house: public site, product information system, ERP sync, configurator and quoting. Launched September 2026.",
   },
   {
     years: "2024 to today",

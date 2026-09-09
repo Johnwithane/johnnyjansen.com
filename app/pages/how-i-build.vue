@@ -38,6 +38,10 @@ const principles = [
     body: "For apps used with no signal, every feature is run in an offline browser before it ships, and the boot path has an automated test that cuts the network.",
   },
   {
+    title: "The team uses it while it is built",
+    body: "A working platform goes in front of the people who will run it within weeks, and every idea, bug and request is filed from inside the app with the state needed to reproduce it. I build from that queue, not from a spec written before anyone had touched it. It is how one person ships a platform a whole team is happy with.",
+  },
+  {
     title: "Minimal by default",
     body: "Fewer buttons, fewer fields, fewer words. If a screen needs a paragraph to be understood, the screen gets redesigned instead.",
   },

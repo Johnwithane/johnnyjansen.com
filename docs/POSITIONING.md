@@ -16,6 +16,14 @@ A manufacturer or product company, typically 20 to 200 people, with an ERP, a ca
 
 Geography: anywhere remote in Canada and the US. Kelowna is in the footer and the JSON-LD, not the headline.
 
+## Discretion (read this twice)
+
+Johnny is employed as Marketing Director at Wishbone Site Furnishings. Wishbone's leadership will read this site. The site must never imply he is leaving, looking, or available now. Wishbone is described as an in-house build by their Marketing Director, which is the truth. No "seeking opportunities", no availability claims, no dates. The consultancy exists; how it grows is not on the page.
+
+## The engagement model
+
+Audit, build, run (`ENGAGEMENT` in `app/data/site.ts`). The retainer is the business model: build the platform, then stay on to run it. The middle step, the team using the platform while it is built and filing every idea and bug from inside the app, is the working method behind every project and the best answer to "how does one person keep a platform healthy". It is public.
+
 ## The offer
 
 One purchasable first step, the **Platform Audit** (`OFFER` in `app/data/site.ts`), fixed price, two weeks, a written plan the client keeps either way. Ongoing work starts after it. This is the pattern of the solo builders whose sites convert: name the first engagement, price it, gate the relationship behind it.

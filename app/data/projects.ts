@@ -31,10 +31,10 @@ export const projects: Project[] = [
     kind: "flagship",
     years: "2025 to 2026",
     status: "Launched September 2026, in daily use",
-    role: "Designed and built the whole platform, solo",
+    role: "Marketing Director. Designed and built the whole platform in-house, solo",
     url: "https://wishboneltd.com",
     summary:
-      "Wishbone has made site furniture in Langley, BC since 1995: benches, tables, waste receptacles, bike racks, for parks and campuses across North America. My father founded it. When it changed hands I was hired to take over his digital duties, and found a company with an ERP, a catalogue in spreadsheets and PDFs, a website nobody could edit, and no system of record for products. I built that system, and the public site on top of it, from Kelowna.",
+      "Wishbone has made site furniture in Langley, BC since 1995: benches, tables, waste receptacles, bike racks, for parks and campuses across North America. My father founded it. When it changed hands I joined as Marketing Director, and found a company with an ERP, a catalogue in spreadsheets and PDFs, a website nobody could edit, and no system of record for products. I built that system, and the public site on top of it, in-house from Kelowna, with the team using it and filing ideas from inside the admin the whole way.",
     problem: [
       "Product information lived in the ERP, in spreadsheets, in InDesign files and in staff heads. The website copied some of it by hand and drifted.",
       "Quoting meant a phone call and a PDF. There was no way for a landscape architect to configure a bench in the finish they wanted and ask for a price.",

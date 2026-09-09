@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HEADLINE, SUBHEAD, SITE_DESCRIPTION, PERSON } from "~/data/site";
+import { HEADLINE, SUBHEAD, SITE_DESCRIPTION, PERSON, ENGAGEMENT } from "~/data/site";
 import { projects, flagship } from "~/data/projects";
 
 const lead = computed(() => {
@@ -67,6 +67,20 @@ useSeo({
           height="750"
           class="w-full max-w-sm justify-self-center rounded-lg object-cover md:justify-self-end"
         >
+      </div>
+    </section>
+
+    <section class="border-t border-line">
+      <div class="mx-auto max-w-6xl px-5 py-14 md:py-20">
+        <p class="eyebrow text-ink-3">How it works</p>
+        <h2 class="mt-1 text-3xl font-semibold">Audit, build, run</h2>
+        <ol class="mt-8 grid gap-6 md:grid-cols-3">
+          <li v-for="(e, i) in ENGAGEMENT" :key="e.step" class="rounded-lg border border-line bg-surface p-6">
+            <p class="font-mono text-xs text-accent">{{ i + 1 }} · {{ e.step }}</p>
+            <h3 class="mt-2 font-display text-xl font-semibold">{{ e.title }}</h3>
+            <p class="mt-2 text-[15px] text-ink-2">{{ e.body }}</p>
+          </li>
+        </ol>
       </div>
     </section>
 

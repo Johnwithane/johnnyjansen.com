@@ -42,6 +42,26 @@ export const OFFER = {
   ],
 } as const;
 
+// How an engagement runs. The retainer is the business model: build it,
+// then stay on. The middle step is the working method behind every project.
+export const ENGAGEMENT = [
+  {
+    step: "Audit",
+    title: "Two weeks, a written plan",
+    body: "I read the site, the product data and the quoting process, and hand back what to build, in what order, and what it costs. Fixed price. You keep the plan either way.",
+  },
+  {
+    step: "Build",
+    title: "Your team uses it while I build it",
+    body: "A working platform in weeks, not a mockup. From then on your team works in it, and every idea, bug and request is filed from inside the app. That feedback loop is how one person ships fast without guessing what you need.",
+  },
+  {
+    step: "Run",
+    title: "I stay on",
+    body: "After launch, a monthly retainer keeps the platform running and ships what your team files. You never need to hire a developer or brief an agency. The person who built it is the person who answers.",
+  },
+] as const;
+
 export const NAV = [
   { label: "Work", to: "/work" },
   { label: "How I build", to: "/how-i-build" },
