@@ -155,11 +155,15 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 
 ## 8. Decisions and open questions
 
-Decided 2026-09-19: personal Gmail; everything on Firebase Hosting at `/app`; digest 06:30 Pacific; a `johnnyjansen` Claude Code environment carries `ME_TOKEN`; two adults now, child role designed in.
+Decided 2026-09-19: personal Gmail; everything on Firebase Hosting at `/app`; digest 06:30 Pacific; a `johnnyjansen` Claude Code environment carries `ME_TOKEN`.
 
-Open, to settle before the phase that needs them:
-- Kids: are there children to plan for, and should they ever sign in? (Phase 1 shapes roles.)
-- Photos: where do the originals live today (phone, Google Photos, a drive)? (Phase 6 worker input.)
-- Businesses: how many, and is either GST/HST registered? (Phase 3 invoice tax lines.)
-- Taxes: an accountant files, or you file yourselves? (Phase 4 package format.)
+Decided 2026-09-19, after the mockups:
+- **Kids: yes, and they may sign in later.** The `child` role is part of the Phase 1 claims and rules from the start (own chores, allowance, family calendar, no money, no vault numbers). Child accounts are created by an adult, not by invite email.
+- **Photos live in three places: iPhone/iCloud, Google Photos, and a drive or NAS folder.** The Phase 6 worker scans a folder set (the NAS path, an iCloud Photos download, a Google Takeout or synced folder) and dedupes ACROSS sources by perceptual hash, since the same shot will exist in more than one. Each index entry records every source path. "Open original" prefers the cloud link when one exists.
+- **Two or more side businesses, GST/HST status per business.** `businesses/{id}` carries `gstNumber?`; invoices show tax lines only when the business is registered; the yearly summary is per business and the T2125 statement is one per business. Names still needed.
+- **Taxes are a mix: accountant for the business year, self-filed for the rest.** The package therefore has two shapes: a per-business bundle for the accountant (PDF statement, expense CSV, receipts folder) and a personal bundle shaped for typing into filing software (slips, line totals, receipts).
+
+Still open:
+- The businesses' names and which are GST registered (Phase 3).
 - Bank sync: worth paying for later, or is CSV import enough? (Phase 2 scope.)
+- Her name and colour, for the household record (Phase 1, can be typed in the app).
