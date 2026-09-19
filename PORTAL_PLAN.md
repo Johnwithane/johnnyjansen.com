@@ -1,4 +1,6 @@
-# Personal management portal
+# Personal management portal (Phase 0 record)
+
+> Superseded as the plan by `FAMILY_PLAN.md` (2026-09-19). Kept as the record of what Phase 0 built and why.
 
 Johnny's own back office at `johnnyjansen.com/app`: a phone-first dashboard, a daily email that rounds up calendar + inbox + tasks, and a token endpoint so a Claude Code session on any machine (including the phone) can read and act on the same data. Started 2026-09-19.
 

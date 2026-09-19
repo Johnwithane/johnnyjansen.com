@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-> Read this first every session. `PORTAL_PLAN.md` says what we are building and where it is at. `HUMANTASKS.md` is what only Johnny can do.
+> Read this first every session. `FAMILY_PLAN.md` is the master spec (modules, household model, phases, design system). `PORTAL_PLAN.md` is the Phase 0 record. `HUMANTASKS.md` is what only Johnny can do.
 
 ## What this repo is
 
@@ -15,7 +15,7 @@ Nothing personal goes in the repo. It is public. Identity and credentials live i
 
 ## Session start
 
-1. Read this file, then `PORTAL_PLAN.md` (phases + open questions).
+1. Read this file, then `FAMILY_PLAN.md` (phases + open questions), then `PORTAL_PLAN.md` for what Phase 0 built.
 2. `git log -10`.
 3. If `$ME_TOKEN` is set, `npm run me today` works from here and is the fastest way to see the real state.
 
@@ -27,7 +27,8 @@ Same as bettertour and Wishbone, shortened:
 - Consistency over cleverness. Match the existing pattern.
 - Strict TS, no `any`. Zod at every boundary (`functions/src/me/schema.ts` is the model).
 - Mobile first, 375px. Johnny uses this on his phone.
-- Default deny in `firestore.rules`. The only role is `owner` (a custom claim set by `onUserCreated`). Never add a doc-lookup rule.
+- Default deny in `firestore.rules`. Phase 0: the only role is `owner` (a custom claim set by `onUserCreated`). Phase 1 replaces it with household claims `{ hid, role }` (FAMILY_PLAN.md section 3). Never add a doc-lookup rule.
+- Machines propose, people confirm. Anything AI or the laptop worker produces lands in the suggestions queue; a person accepts it through the normal service. Never write real data from an automation directly.
 - Offline: the portal reads from Firestore's persistent cache. Never `await` a Firestore write in a UI handler (the ack never comes offline); `onSnapshot` already shows it. Anything that needs the network (callables) is guarded by `navigator.onLine` and says so.
 - Firebase changes deploy before the commit that depends on them. A credential-less session writes "deploy owed" in the commit body and CI deploys on merge to `main` once `FIREBASE_DEPLOY_ENABLED` is on.
 - The `me` endpoint is a closed menu of actions, not a query surface. Add an action to `schema.ts` + `me.ts` + `scripts/me.mjs` together, and keep write actions to what the portal can do by hand.
