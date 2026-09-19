@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Tokens lifted from the portfolio's css/styles.css so the portal reads as
+   the same site: black ground, white type, the green as the one accent. */
+@theme {
+  --color-ink: #050505;
+  --color-panel: #121212;
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-fg: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.65);
+  --color-accent: #37ff8b;
+  --color-danger: #ff5c5c;
+  --font-sans: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* iOS zooms on focus below 16px and never zooms back. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}

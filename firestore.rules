@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ONE user. The owner claim is set by functions/src/auth/onUserCreated.ts
+    // when the signing-in Google account matches OWNER_EMAIL; every other
+    // account that signs in is deleted by the same trigger. So "owner" is the
+    // only role and there is no doc lookup anywhere in these rules.
+    function isOwner() {
+      return request.auth != null && request.auth.token.owner == true;
+    }
+
+    // Tasks are written from the portal (browser) and from the `me` endpoint
+    // (admin SDK, bypasses rules). Shape is kept honest at the boundary too:
+    // a title, a done flag, and the fields the portal knows about, nothing else.
+    match /tasks/{taskId} {
+      function validTask() {
+        let d = request.resource.data;
+        return d.title is string && d.title.size() > 0 && d.title.size() <= 500
+          && d.done is bool
+          && d.keys().hasOnly(['title', 'done', 'doneAt', 'due', 'notes', 'source', 'createdAt', 'updatedAt']);
+      }
+      allow read: if isOwner();
+      allow create: if isOwner() && validTask() && request.resource.data.source == 'portal';
+      allow update: if isOwner() && validTask();
+      allow delete: if isOwner();
+    }
+
+    // Written only by Cloud Functions (the daily digest job and `me`).
+    match /digests/{digestId} {
+      allow read: if isOwner();
+      allow create, update, delete: if false;
+    }
+
+    // The latest calendar + inbox pull, written by the sync job for the
+    // portal's Today view. Never written from the browser.
+    match /snapshots/{snapshotId} {
+      allow read: if isOwner();
+      allow create, update, delete: if false;
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if isOwner();
+    }
+  }
+}

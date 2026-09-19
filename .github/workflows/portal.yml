@@ -1,0 +1,85 @@
+name: Portal (check + deploy)
+
+# The static portfolio at the repo root is GitHub Pages and needs no build.
+# This workflow is for portal/ + functions/ + the Firebase rules: lint, build
+# and test on every push and PR; deploy to Firebase on main. Deploys are
+# skipped until the FIREBASE_SERVICE_ACCOUNT secret exists (HUMANTASKS.md).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "portal/**"
+      - "functions/**"
+      - "firebase.json"
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - ".github/workflows/portal.yml"
+  pull_request:
+    paths:
+      - "portal/**"
+      - "functions/**"
+      - "firebase.json"
+      - "firestore.rules"
+      - "firestore.indexes.json"
+  workflow_dispatch: {}
+
+concurrency:
+  group: portal-deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install portal deps
+        run: npm ci --prefix portal
+      - name: Install functions deps
+        run: npm ci --prefix functions
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+      - name: Test
+        run: npm run test:run
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portal-dist
+          path: portal/dist
+          retention-days: 1
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/download-artifact@v4
+        with:
+          name: portal-dist
+          path: portal/dist
+      - name: Install functions deps
+        run: npm ci --prefix functions
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Deploy rules + indexes
+        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes --project johnnyjansen-portal --non-interactive
+      - name: Deploy functions
+        run: npx firebase-tools@15 deploy --only functions --project johnnyjansen-portal --non-interactive --force
+      - name: Deploy hosting
+        run: npx firebase-tools@15 deploy --only hosting --project johnnyjansen-portal --non-interactive
