@@ -135,6 +135,35 @@ The same loop BetterTour runs, because it is how a two-person household keeps a 
 
 Reports live in `households/{hid}/feedback/{id}` with status open → triaged → in progress → shipped or won't. The queue is visible to both adults at More → Feedback as a board. From a Claude Code session: `npm run me feedback` lists the queue with screenshots downloaded, `npm run me feedback triage <id> <status> "note"` writes back, and `npm run me feedback brief <id>` asks Gemini for a developer brief (what is asked, how we know it is done, where to look). Dispatch turns a report into a GitHub issue on this repo with the `claude` label. A fix commit carries the trailer `Feedback-Id: <id>`; after a hosting deploy, CI calls `markFeedbackShipped` with the ids it found in the pushed commits, which is the only honest moment for "shipped". That status change notifies the reporter in the app and by email. Shipped items also appear in a "What's new" line on Today for a week.
 
+### 4.19 Setup wizard (two flows, one household)
+The first ten minutes decide whether a family tool gets used. The wizard's job is to make the app feel already set up, by reading what Google already knows and asking only what it cannot know. Two flows share one engine.
+
+**Principles.**
+- **Ask nothing we can read.** Names and photos come from the Google account. Calendars come from the calendar list. Bills, subscriptions, bank and card accounts, bookings, tax slips and client invoices are found by a one-time Gemini pass over the last 90 days of inbox subjects and senders (never bodies, and never stored: the scan returns candidates, the candidates land in the suggestions queue, the mail stays in Gmail).
+- **Every step is skippable and every step is resumable.** Progress lives in `households/{hid}/setup` per person. Closing the app mid-way costs nothing; Today shows a "Finish setup, 3 steps left" line until it is done, and each unfinished step can also be reached later from More.
+- **Nothing is written until the person taps it.** Every found thing is a suggestion. The wizard is the suggestions queue with a nicer face.
+- **Two minutes to first value.** The order is chosen so the first useful screen (Today with both calendars and tomorrow's bills) appears before the long tail (businesses, taxes, photos).
+- **It is smart about who you are.** The founder gets the household questions; the invited adult gets a shorter path with the answers the founder already gave shown as facts to confirm, not questions to re-answer. A child never sees the wizard; an adult sets them up.
+
+**Founder flow (Johnny).**
+1. **Sign in with Google.** Name and photo read; time zone from the phone. One question: household name (default "The <surname>s") and city.
+2. **Who lives here.** Add your wife by email now (the invite goes out immediately, from your Gmail, so she can start while you continue). Kids: names, birth years, whether they will sign in later. Each person picks a colour from the short list.
+3. **Connect Google.** Calendar and Gmail scopes, one consent. Then the calendar list: tick which calendars are family (school, work, personal), which stay private. The household calendar is created here.
+4. **What we found.** The 90-day scan, grouped: bills and subscriptions (sender, cadence, amount guess), accounts (bank and card senders), bookings coming up (flights, hotels, appointments), tax slips and receipts already in the inbox, clients you have invoiced from this address. Each group is a list with a tick per row; ticked rows become bills, accounts, calendar events, vault items and clients. Untick, or skip the whole group.
+5. **Money starter.** The accounts found plus any you add by name. Currency CAD. A default budget proposed from the found bills (rent, utilities, subscriptions) with envelopes for groceries and eating out left for you to size. Skip and the Money tab starts empty but working.
+6. **Businesses.** If step 4 found invoices you sent, they are grouped by the business name on them; confirm names, add GST numbers if registered, pick invoice numbering to continue from. If nothing was found, one screen: how many, names, registered or not.
+7. **Digest and quiet hours.** 6:30 default, weekend on or off, which sections. A test email lands immediately so the first one is not a surprise.
+8. **Done.** Today, populated. The photo worker, the vault and taxes are offered as "later" cards on Today rather than steps.
+
+**Invited flow (your wife).** The invite email says who invited her and what is already there. She signs in with Google; the invite token binds her to the household and her role.
+1. **You are in.** Her name and photo from Google; her colour preselected by the founder, changeable.
+2. **Connect Google.** Same consent, her calendars, her inbox scan. Her scan is what makes the app hers: her subscriptions, her bookings, her clients if she has any.
+3. **What we found.** Same screen, her results. Anything that duplicates a thing the founder already confirmed (the same Hydro bill from a shared address) is shown as "already in, from Johnny" and skipped.
+4. **Her private space.** Her own task list, digest time, and which of her calendars stay private. One line reminds her that private stays private, and the rules make it true.
+5. **Done.** Today, showing both people's day.
+
+**What "smart" means in code.** One callable, `setupScanInbox`, runs the Gemini pass (subjects, senders, dates; a Zod schema per group; a daily cap of two runs per person). One pure function, `planSetup(person, household)`, decides which steps show for whom, so the flow is testable without a browser. The wizard writes only through the normal services and the suggestions queue, so the rules gate it exactly like the rest of the app. Re-running the wizard later is allowed and only proposes what is new.
+
 ## 5. Suggestions queue (the pattern that ties it together)
 
 `households/{hid}/suggestions/{id}`: `{ kind, source: "gemini" | "laptop" | "rule", payload, status: pending | accepted | dismissed, createdAt }`. Receipts read, slips read, photo albums proposed, duplicates found, inbox items that look like bills or bookings, expiries found on documents. One screen ("Review", reachable from Today) shows them newest first with accept and dismiss. Accepting applies the payload through the normal service, so the rules gate it like a hand-made write. Nothing automated writes real data directly.
@@ -163,8 +192,8 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 | Phase | Ships | Notes |
 |---|---|---|
 | 0 | Single-owner portal: tasks, digest, `me`, Google pull | Done 2026-09-19, not yet deployed |
-| 1 | **Household + invite + feedback.** Household model, claims (adult, child), invite by email, per-person Google, merged family calendar, shared and private tasks, Today rebuilt for two, per-person digest, the feedback loop (report control, queue, `me feedback`, GitHub dispatch, shipped trailer) | Replaces the owner-only rules. Feedback goes in first so every later phase is reported on from day one |
-| 2 | **Money.** Accounts, CSV import, receipt capture with Gemini, categories mapped to tax lines, budgets, bills and subscriptions, suggestions queue | Gemini via Vertex, same as Wishbone |
+| 1 | **Household + invite + feedback + wizard.** Household model, claims (adult, child), invite by email, per-person Google, merged family calendar, shared and private tasks, Today rebuilt for two, per-person digest, the feedback loop (report control, queue, `me feedback`, GitHub dispatch, shipped trailer), and the setup wizard's spine (sign in, people, connect Google, calendars, digest, done; the inbox scan lands with Phase 2 when there is somewhere for bills and accounts to go) | Replaces the owner-only rules. Feedback goes in first so every later phase is reported on from day one |
+| 2 | **Money.** Accounts, CSV import, receipt capture with Gemini, categories mapped to tax lines, budgets, bills and subscriptions, suggestions queue, and the wizard's "What we found" inbox scan (bills, subscriptions, accounts, bookings) | Gemini via Vertex, same as Wishbone |
 | 3 | **Businesses.** Clients, invoices with PDF and email, mark paid, expenses and mileage, yearly summary | Invoice PDF rendered client-side |
 | 4 | **Taxes.** Year workspace, slip vault with reading, lines rollup, T2125-shaped statement, checklist, accountant package | Report over Phase 2 and 3 data |
 | 5 | **Meals, recipes and pantry.** Recipe database with URL and photo import, pantry with fridge and shelf photos, what can we make, meal plan to grocery minus pantry | Johnny's pick to come early; the module a family opens weekly |
@@ -186,7 +215,8 @@ Decided 2026-09-19, after the mockups:
 
 Decided 2026-09-19, later: image and document reading is Vertex AI (Gemini), the BetterTour pattern (section 5b). The BetterTour feedback loop is ported as module 4.18 and ships in Phase 1. Recipes, pantry photos and "what can we make" are a full module (4.4), Phase 5.
 
+Decided 2026-09-19, later still: a setup wizard for both adults (module 4.19), founder and invited flows, driven by a one-time Gemini scan of inbox subjects and senders. Spine ships in Phase 1, the scan in Phase 2.
+
 Still open:
 - The businesses' names and which are GST registered (Phase 3).
 - Bank sync: worth paying for later, or is CSV import enough? (Phase 2 scope.)
-- Her name and colour, for the household record (Phase 1, can be typed in the app).
