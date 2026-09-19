@@ -60,8 +60,14 @@ Week strip plus a day list. Sources: each adult's Google calendars, the househol
 ### 4.3 Tasks and chores
 Shared lists (Home, Errands, Reno, Groceries) and a private list per person. Assign, due date, repeat (weekly chores), notes, checklist. Grocery list is a task list with aisles and a "bought" swipe, and the meal plan feeds it. Chores can be assigned to a child later with allowance credits.
 
-### 4.4 Meals and grocery
-A seven-day grid. Tap a day, pick a recipe (a recipe is a title, a link, ingredients). "Add to grocery" pushes ingredients into the Groceries list, deduped. Deliberately small: this is what keeps most families using a tool weekly.
+### 4.4 Meals, recipes and pantry
+The kitchen module. Three connected things, all feeding the grocery list.
+
+- **Recipes.** A household recipe database: title, photo, source (URL or "Mum"), servings, time, ingredients (quantity, unit, item), steps, tags (weeknight, kids, batch, vegetarian), rating, notes, "last cooked". Three ways in: type it; paste a URL (a function fetches the page and Gemini pulls the recipe out of it); photograph a cookbook page or a handwritten card (Gemini reads it). Every import lands in the suggestions queue for a confirm. Scale servings on the fly. A cook log: when a planned meal is marked cooked, the recipe's history and rating update, and the family's favourites surface.
+- **Pantry.** What is in the house. Items with a rough quantity ("some", "half", "lots" beats grams), a location (fridge, freezer, pantry), and an optional best-before. Two ways in: tick things off a grocery trip as bought, or **photograph the fridge or pantry shelf**. Gemini lists what it sees with a confidence per item; the confirm screen shows the photo beside the list so a wrong guess is one tap to drop. "Used up" from a recipe's ingredients or from the list. The pantry is deliberately fuzzy: it exists to answer "do we have onions", not to count them.
+- **What can we make.** Rank recipes by how much of their ingredient list the pantry covers, weight by rating, recency (not last week's dinner), tags in play (weeknight on a Tuesday), and who is cooking. Each result says what is missing; one tap adds the missing items to groceries and the recipe to a day on the plan. A second mode takes a free-text ask ("something with the chicken thighs, 30 minutes") and lets Gemini pick from OUR recipes first, and suggest a new one only if nothing fits, which then lands as a draft recipe to confirm.
+- **Meal plan.** The seven-day grid, one recipe (or a plain note like "leftovers") per slot, who cooks. "Add to grocery" pushes the week's ingredients minus what the pantry says we have, deduped and grouped by aisle. Kids can rate a meal later (a thumbs up in the child role).
+- **Grocery list.** A task list with aisles and a bought swipe. Bought items can be ticked into the pantry in one motion.
 
 ### 4.5 Money
 - **Accounts**: chequing, savings, credit cards, cash, each shared or personal. Balances are entered or come from imports.
@@ -124,9 +130,23 @@ Yearly goals per person and for the household. A Sunday evening weekly review em
 ### 4.17 Assistant
 The `me` endpoint grows per-household actions (every module gets list/add/update/done). A Claude Code session on the phone with `ME_TOKEN` can do anything either adult can do by hand. Later, an in-app chat over the same actions with confirmation cards, the BetterTour pattern.
 
+### 4.18 Feedback: bugs, ideas, improvements (the BetterTour loop, ported)
+The same loop BetterTour runs, because it is how a two-person household keeps a tool honest. Every screen has a small **Report** control (More → Feedback, and a long-press on the tab bar). A report is: type (bug, idea, improvement), one line of description, optional screenshots, and an automatic environment dump (route, build, device, online state). For adults, Gemini asks two to four multiple-choice questions at submit time so the report arrives sharp (`aiClarifyFeedback`, capped per day).
+
+Reports live in `households/{hid}/feedback/{id}` with status open → triaged → in progress → shipped or won't. The queue is visible to both adults at More → Feedback as a board. From a Claude Code session: `npm run me feedback` lists the queue with screenshots downloaded, `npm run me feedback triage <id> <status> "note"` writes back, and `npm run me feedback brief <id>` asks Gemini for a developer brief (what is asked, how we know it is done, where to look). Dispatch turns a report into a GitHub issue on this repo with the `claude` label. A fix commit carries the trailer `Feedback-Id: <id>`; after a hosting deploy, CI calls `markFeedbackShipped` with the ids it found in the pushed commits, which is the only honest moment for "shipped". That status change notifies the reporter in the app and by email. Shipped items also appear in a "What's new" line on Today for a week.
+
 ## 5. Suggestions queue (the pattern that ties it together)
 
 `households/{hid}/suggestions/{id}`: `{ kind, source: "gemini" | "laptop" | "rule", payload, status: pending | accepted | dismissed, createdAt }`. Receipts read, slips read, photo albums proposed, duplicates found, inbox items that look like bills or bookings, expiries found on documents. One screen ("Review", reachable from Today) shows them newest first with accept and dismiss. Accepting applies the payload through the normal service, so the rules gate it like a hand-made write. Nothing automated writes real data directly.
+
+## 5b. AI: Vertex AI, the BetterTour pattern
+
+All image and document reading runs on **Vertex AI (Gemini 2.5 Flash)** inside Cloud Functions, exactly as BetterTour's `analyze*Document` callables do, so nothing is new to operate:
+
+- The client uploads to Storage (or sends base64 for small images), calls an `analyze` callable, gets back structured JSON validated by a Zod schema with null-tolerant coercions (Gemini emits nulls and numeric strings; the schema absorbs them). **The callable writes nothing.** The result becomes a suggestion; the person confirms; the normal service writes.
+- Per-purpose functions, one prompt each, one schema each: `analyzeReceipt` (merchant, date, lines, totals, tax, category guess, business guess), `analyzeTaxSlip` (slip type, issuer, boxes), `analyzeDocument` (type, expiry, people, numbers to mask), `analyzeRecipe` (from a URL's text or a photo), `analyzePantryPhoto` (items with confidence and location guess), `analyzeBooking` (dates, provider, confirmation number). Categories in a prompt come from the same constant the app uses, so the model can only answer inside the app's vocabulary.
+- A daily cap per household per purpose (`rateLimit`, the BetterTour helper) so a runaway loop cannot run up a bill. `VERTEX_MODEL` and `VERTEX_LOCATION` are env params so a model bump is a redeploy, not a code change.
+- The laptop's local model is the offline sibling for the heavy, private, repeatable jobs (photo library sorting, inbox triage). Vertex is for the on-demand reads where the phone camera is the input.
 
 ## 6. Design system (minimalist)
 
@@ -143,14 +163,15 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 | Phase | Ships | Notes |
 |---|---|---|
 | 0 | Single-owner portal: tasks, digest, `me`, Google pull | Done 2026-09-19, not yet deployed |
-| 1 | **Household + invite.** Household model, claims, invite by email, per-person Google, merged family calendar, shared and private tasks, Today rebuilt for two, per-person digest | Replaces the owner-only rules. First thing after the Firebase project exists |
+| 1 | **Household + invite + feedback.** Household model, claims (adult, child), invite by email, per-person Google, merged family calendar, shared and private tasks, Today rebuilt for two, per-person digest, the feedback loop (report control, queue, `me feedback`, GitHub dispatch, shipped trailer) | Replaces the owner-only rules. Feedback goes in first so every later phase is reported on from day one |
 | 2 | **Money.** Accounts, CSV import, receipt capture with Gemini, categories mapped to tax lines, budgets, bills and subscriptions, suggestions queue | Gemini via Vertex, same as Wishbone |
 | 3 | **Businesses.** Clients, invoices with PDF and email, mark paid, expenses and mileage, yearly summary | Invoice PDF rendered client-side |
 | 4 | **Taxes.** Year workspace, slip vault with reading, lines rollup, T2125-shaped statement, checklist, accountant package | Report over Phase 2 and 3 data |
-| 5 | **Vault, home and vehicles, people and occasions.** Documents with expiry reading, maintenance, contacts, birthdays and gifts | Storage rules per household |
-| 6 | **Photos.** Laptop worker (index, dedupe, tags, albums), portal timeline, albums, people, duplicates queue, print picks | Needs the laptop's GPU; local vision model |
-| 7 | **Meals and grocery, travel, health, goals and reviews.** Weekly and monthly review emails | |
-| 8 | **Automations and the local worker.** Rules engine, inbox triage on the laptop, `me` coverage of every module, in-app assistant | |
+| 5 | **Meals, recipes and pantry.** Recipe database with URL and photo import, pantry with fridge and shelf photos, what can we make, meal plan to grocery minus pantry | Johnny's pick to come early; the module a family opens weekly |
+| 6 | **Vault, home and vehicles, people and occasions.** Documents with expiry reading, maintenance, contacts, birthdays and gifts | Storage rules per household |
+| 7 | **Photos.** Laptop worker (index, dedupe across iCloud, Google Photos and the NAS; tags; albums), portal timeline, albums, people, duplicates queue, print picks | Needs the laptop's GPU; local vision model |
+| 8 | **Travel, health, goals and reviews.** Weekly and monthly review emails | |
+| 9 | **Automations and the local worker.** Rules engine, inbox triage on the laptop, `me` coverage of every module, in-app assistant | |
 | later | Kids module, bank sync connector, light theme, Microsoft 365 for the work mailbox | Decisions for Johnny when they come up |
 
 ## 8. Decisions and open questions
@@ -162,6 +183,8 @@ Decided 2026-09-19, after the mockups:
 - **Photos live in three places: iPhone/iCloud, Google Photos, and a drive or NAS folder.** The Phase 6 worker scans a folder set (the NAS path, an iCloud Photos download, a Google Takeout or synced folder) and dedupes ACROSS sources by perceptual hash, since the same shot will exist in more than one. Each index entry records every source path. "Open original" prefers the cloud link when one exists.
 - **Two or more side businesses, GST/HST status per business.** `businesses/{id}` carries `gstNumber?`; invoices show tax lines only when the business is registered; the yearly summary is per business and the T2125 statement is one per business. Names still needed.
 - **Taxes are a mix: accountant for the business year, self-filed for the rest.** The package therefore has two shapes: a per-business bundle for the accountant (PDF statement, expense CSV, receipts folder) and a personal bundle shaped for typing into filing software (slips, line totals, receipts).
+
+Decided 2026-09-19, later: image and document reading is Vertex AI (Gemini), the BetterTour pattern (section 5b). The BetterTour feedback loop is ported as module 4.18 and ships in Phase 1. Recipes, pantry photos and "what can we make" are a full module (4.4), Phase 5.
 
 Still open:
 - The businesses' names and which are GST registered (Phase 3).
