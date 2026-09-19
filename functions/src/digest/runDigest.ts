@@ -8,7 +8,7 @@ import { sendEmail } from "../google/gmail";
 import { collectToday, storeSnapshot } from "../sync/collect";
 import { buildDigest, type Digest } from "./buildDigest";
 
-export const PORTAL_URL = "https://me.johnnyjansen.com";
+export const PORTAL_URL = "https://johnnyjansen.com/app";
 
 export interface DigestRun extends Digest {
   dayKey: string;

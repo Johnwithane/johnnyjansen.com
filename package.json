@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "johnnyjansen.com: the static portfolio at the root, plus the personal management portal (portal/ + functions/).",
+  "description": "johnnyjansen.com: the static portfolio at the root plus the personal management portal (portal/ + functions/), one Firebase Hosting site.",
   "scripts": {
     "me": "node scripts/me.mjs",
     "google:auth": "node scripts/google-oauth.mjs",
@@ -14,11 +14,12 @@
     "functions:build": "npm --prefix functions run build",
     "functions:test": "npm --prefix functions run test",
     "lint": "npm run portal:lint",
-    "build": "npm run portal:build && npm run functions:build",
+    "build": "npm run portal:build && npm run site:build && npm run functions:build",
     "test:run": "npm run portal:test && npm run functions:test",
-    "deploy:portal": "npm run portal:build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
-    "deploy:functions": "firebase deploy --only functions"
+    "deploy:functions": "firebase deploy --only functions",
+    "site:build": "node scripts/build-site.mjs",
+    "deploy:hosting": "npm run portal:build && npm run site:build && firebase deploy --only hosting"
   },
   "engines": {
     "node": ">=20"

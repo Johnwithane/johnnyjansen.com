@@ -6,8 +6,10 @@
 
 Two things share one repo and one domain:
 
-1. **The portfolio** at the repo root (`index.html`, `resume.html`, `PocketJams.html`, `css/`, `js/`, `static/`, `videos/`). Plain static files, published by GitHub Pages at `https://johnnyjansen.com`. No build step. Leave it alone unless the task is about the portfolio.
-2. **The personal management portal**: `portal/` (Vue 3 + Vite + Tailwind, one user), `functions/` (Cloud Functions: daily digest, Google calendar + Gmail pull, the `me` endpoint), `scripts/me.mjs` (the CLI a Claude Code session uses), `firestore.rules`. Firebase project `johnnyjansen-portal`, hosted at `me.johnnyjansen.com` once DNS is set.
+1. **The portfolio** at the repo root (`index.html`, `resume.html`, `PocketJams.html`, `css/`, `js/`, `static/`, `videos/`). Plain static files, no build step. Leave it alone unless the task is about the portfolio.
+2. **The personal management portal**: `portal/` (Vue 3 + Vite + Tailwind, one user, served at `/app`), `functions/` (Cloud Functions: daily digest, Google calendar + Gmail pull, the `me` endpoint), `scripts/me.mjs` (the CLI a Claude Code session uses), `firestore.rules`.
+
+Both ship as ONE Firebase Hosting site (project `johnnyjansen-portal`): `scripts/build-site.mjs` copies the root static files into `dist/` and the portal build into `dist/app/`. GitHub Pages still serves the root until DNS moves (HUMANTASKS.md); the portfolio files stay at the root so that cutover is DNS only. Anything new at the repo root that is not site content must be added to the skip lists in `build-site.mjs`.
 
 Nothing personal goes in the repo. It is public. Identity and credentials live in Firebase params and Secret Manager (`functions/src/lib/params.ts`).
 
@@ -59,12 +61,12 @@ scripts/google-oauth.mjs     one-time refresh token mint (local only)
 ```bash
 npm run portal:dev        # Vite dev server (needs portal/.env, see portal/.env.example)
 npm run lint              # portal eslint
-npm run build             # portal vue-tsc + vite, then functions tsc
+npm run build             # portal build, site assembly into dist/, functions tsc
 npm run test:run          # portal + functions vitest
 npm run me <cmd>          # today | calendar | inbox | tasks | add | done | rm | digest  (needs $ME_TOKEN)
 npm run deploy:rules      # firestore rules + indexes
 npm run deploy:functions  # all functions (4 today, quota is fine)
-npm run deploy:portal     # build + hosting
+npm run deploy:hosting    # portal build + site build + hosting (portfolio + /app)
 ```
 
 Before any commit: `npm run lint && npm run build && npm run test:run`.

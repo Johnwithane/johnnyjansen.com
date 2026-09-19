@@ -1,27 +1,15 @@
-name: Portal (check + deploy)
+name: Site (check + deploy)
 
-# The static portfolio at the repo root is GitHub Pages and needs no build.
-# This workflow is for portal/ + functions/ + the Firebase rules: lint, build
-# and test on every push and PR; deploy to Firebase on main. Deploys are
-# skipped until the FIREBASE_SERVICE_ACCOUNT secret exists (HUMANTASKS.md).
+# One Firebase Hosting site: the static portfolio (repo root) + the portal at
+# /app, assembled into dist/ by scripts/build-site.mjs. Lint, build and test on
+# every push and PR; deploy hosting + functions + rules on main. Deploys are
+# skipped until FIREBASE_DEPLOY_ENABLED and FIREBASE_SERVICE_ACCOUNT exist
+# (HUMANTASKS.md). Until DNS moves, GitHub Pages still serves the root too.
 
 on:
   push:
     branches: [main]
-    paths:
-      - "portal/**"
-      - "functions/**"
-      - "firebase.json"
-      - "firestore.rules"
-      - "firestore.indexes.json"
-      - ".github/workflows/portal.yml"
   pull_request:
-    paths:
-      - "portal/**"
-      - "functions/**"
-      - "firebase.json"
-      - "firestore.rules"
-      - "firestore.indexes.json"
   workflow_dispatch: {}
 
 concurrency:
@@ -54,8 +42,8 @@ jobs:
         run: npm run test:run
       - uses: actions/upload-artifact@v4
         with:
-          name: portal-dist
-          path: portal/dist
+          name: site-dist
+          path: dist
           retention-days: 1
 
   deploy:
@@ -70,8 +58,8 @@ jobs:
           node-version: "20"
       - uses: actions/download-artifact@v4
         with:
-          name: portal-dist
-          path: portal/dist
+          name: site-dist
+          path: dist
       - name: Install functions deps
         run: npm ci --prefix functions
       - uses: google-github-actions/auth@v2
