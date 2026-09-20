@@ -267,7 +267,7 @@ The threat model is plain: this holds a family's money, tax slips, passports, ch
 
 ### 9.2 Identity
 - **Google sign-in only, verified email required.** No password accounts (nothing to phish or stuff). `email_verified` is checked in rules and functions.
-- **Second factor for adults.** Firebase Auth multi-factor (TOTP) required before an adult can reach Money, Taxes or the Vault; enforced by a claim `mfa: true` set by a blocking function, checked in rules on those collections. Kids never see those collections, so the child role has no MFA.
+- **Second factor for adults.** Firebase Auth multi-factor (TOTP) required before an adult can reach Money, Taxes or the Vault. Enforced from the token itself: `request.auth.token.firebase.sign_in_second_factor` in both rules files (`isMfa()`), `requireMfaAdult` in callables, `meta.mfa` in the router, and `mintMeToken` (the me token reaches Money). No blocking function and no extra claim: the field is set by Firebase Auth at sign-in and cannot be forged. Kids never see those collections, so the child role has no MFA.
 - **Invites are one-time, expiring, bound to an email.** The token is a random 32-byte value stored hashed; accepting compares hashes, checks the signed-in email matches, and burns the token. Seven-day expiry.
 - **Child accounts** are created by an adult and hold no email of their own until the adult adds one. Under-13 accounts are a legal matter for the product track (section 10.4); for this household the adults are the parents and consent is theirs.
 - **Sessions**: the app signs out after 30 days idle; the Vault re-prompts for MFA after 15 minutes.
