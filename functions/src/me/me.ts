@@ -22,9 +22,17 @@ import { MeBody } from "./schema";
 // token reaches one person's view of one household and is revocable from the
 // Household screen. A closed menu of actions (schema.ts), not a query surface.
 
-async function signShots(paths: string[]): Promise<string[]> {
+/**
+ * Signed read URLs for a report's screenshots. The admin SDK ignores
+ * storage.rules, so a path is signed only if it sits inside this household's
+ * feedback folder; the rules enforce the same shape on write, this is the
+ * second lock.
+ */
+async function signShots(hid: string, paths: unknown): Promise<string[]> {
   const out: string[] = [];
-  for (const p of paths.slice(0, 3)) {
+  const list = Array.isArray(paths) ? paths : [];
+  for (const p of list.slice(0, 3)) {
+    if (typeof p !== "string" || !p.startsWith(`households/${hid}/feedback/`) || p.includes("..")) continue;
     try {
       const [url] = await storage.bucket().file(p).getSignedUrl({ action: "read", expires: Date.now() + 3600_000 });
       out.push(url);
@@ -172,7 +180,7 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       const reports = [];
       for (const d of snap.docs) {
         const data = d.data() as Record<string, unknown>;
-        reports.push(reportOut(d.id, data, await signShots((data.screenshotPaths as string[]) ?? [])));
+        reports.push(reportOut(d.id, data, await signShots(p.hid, data.screenshotPaths)));
       }
       return { reports };
     }
@@ -180,7 +188,7 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       const snap = await db.collection("households").doc(p.hid).collection("feedback").doc(body.id).get();
       if (!snap.exists) return { error: "not_found", id: body.id };
       const data = snap.data() as Record<string, unknown>;
-      return { report: reportOut(snap.id, data, await signShots((data.screenshotPaths as string[]) ?? [])) };
+      return { report: reportOut(snap.id, data, await signShots(p.hid, data.screenshotPaths)) };
     }
     case "feedback.triage": {
       const ref = db.collection("households").doc(p.hid).collection("feedback").doc(body.id);

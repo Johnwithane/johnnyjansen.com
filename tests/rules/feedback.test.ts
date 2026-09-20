@@ -11,13 +11,14 @@ beforeEach(async () => {
   await env.clearStorage();
   await seed(env);
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await ctx.firestore().doc(`households/${HID_A}/feedback/r1`).set(report({ reporterUid: ADULT_A2 }));
-    await ctx.firestore().doc(`households/${HID_B}/feedback/rb`).set(report({ reporterUid: "adult-b" }));
+    await ctx.firestore().doc(`households/${HID_A}/feedback/r1`).set(report({ reportId: "r1", reporterUid: ADULT_A2 }));
+    await ctx.firestore().doc(`households/${HID_B}/feedback/rb`).set(report({ reportId: "rb", reporterUid: "adult-b" }));
   });
 });
 
 function report(over: Partial<Record<string, unknown>> = {}) {
   return {
+    reportId: "r2",
     type: "bug",
     description: "Grocery swipe drops items",
     route: "/tasks",
@@ -41,12 +42,22 @@ describe("feedback", () => {
     await assertSucceeds(childA(env).firestore().doc(path("r1")).get());
     await assertFails(adultB(env).firestore().doc(path("r1")).get());
   });
-  it("a member files a report as themselves, status open", async () => {
+  it("a member files a report as themselves, status open, reportId = doc id", async () => {
     await assertSucceeds(childA(env).firestore().doc(path("r2")).set(report({ reporterUid: CHILD_A })));
-    await assertFails(childA(env).firestore().doc(path("r3")).set(report({ reporterUid: ADULT_A })));
-    await assertFails(adultA(env).firestore().doc(path("r3")).set(report({ status: "shipped" })));
-    await assertFails(adultA(env).firestore().doc(path("r3")).set(report({ type: "rant" })));
-    await assertFails(adultB(env).firestore().doc(path("r3")).set(report({ reporterUid: "adult-b" })));
+    await assertFails(childA(env).firestore().doc(path("r3")).set(report({ reporterUid: ADULT_A, reportId: "r3" })));
+    await assertFails(adultA(env).firestore().doc(path("r3")).set(report({ status: "shipped", reportId: "r3" })));
+    await assertFails(adultA(env).firestore().doc(path("r3")).set(report({ type: "rant", reportId: "r3" })));
+    await assertFails(adultB(env).firestore().doc(path("r3")).set(report({ reporterUid: "adult-b", reportId: "r3" })));
+    // reportId must equal the document id, or CI could be pointed at another household's report.
+    await assertFails(adultA(env).firestore().doc(path("r3")).set(report({ reportId: "rb" })));
+  });
+  it("screenshot paths must sit in this household and this reporter's folder", async () => {
+    const mine = `households/${HID_A}/feedback/${ADULT_A}/1-shot.png`;
+    await assertSucceeds(adultA(env).firestore().doc(path("r4")).set(report({ reportId: "r4", screenshotPaths: [mine] })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [`households/${HID_B}/feedback/adult-b/x.png`] })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [`households/${HID_A}/feedback/${ADULT_A2}/x.png`] })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [mine, 42] })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [`households/${HID_A}/feedback/${ADULT_A}/../../x`] })));
   });
   it("adults triage status and notes; nobody sets shipped or edits the text", async () => {
     await assertSucceeds(adultA(env).firestore().doc(path("r1")).update({ status: "triaged", notes: "Reproduced" }));

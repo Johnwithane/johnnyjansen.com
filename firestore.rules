@@ -52,14 +52,23 @@ service cloud.firestore {
       // one; the whole household reads the queue; adults triage status +
       // notes; shipped is set by CI through markFeedbackShipped, never here.
       match /feedback/{reportId} {
+        // A screenshot path must sit in THIS household and THIS reporter's
+        // folder. The me endpoint signs these with the admin SDK (which
+        // ignores storage.rules), so the shape is enforced here, per element.
+        function shotOk(l, i) {
+          return l.size() <= i
+            || (l[i] is string && l[i].matches('households/' + h + '/feedback/' + uid() + '/[^/]+'));
+        }
         function validReport() {
           let d = request.resource.data;
           return d.type in ['bug', 'idea', 'improvement']
             && d.description is string && d.description.size() > 0 && d.description.size() <= 4000
             && d.status == 'open'
             && d.reporterUid == uid()
+            && d.reportId == reportId
             && d.screenshotPaths is list && d.screenshotPaths.size() <= 3
-            && d.keys().hasOnly(['type', 'description', 'route', 'url', 'environment', 'appVersion', 'screenshotPaths', 'status', 'notes', 'reporterUid', 'reporterName', 'createdAt', 'updatedAt']);
+            && shotOk(d.screenshotPaths, 0) && shotOk(d.screenshotPaths, 1) && shotOk(d.screenshotPaths, 2)
+            && d.keys().hasOnly(['reportId', 'type', 'description', 'route', 'url', 'environment', 'appVersion', 'screenshotPaths', 'status', 'notes', 'reporterUid', 'reporterName', 'createdAt', 'updatedAt']);
         }
         allow read: if inHousehold(h);
         allow create: if inHousehold(h) && validReport();
