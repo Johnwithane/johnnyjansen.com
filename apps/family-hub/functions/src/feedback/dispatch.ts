@@ -2,6 +2,7 @@ import { logger } from "firebase-functions/v2";
 import { defineSecret } from "firebase-functions/params";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
+import { FEEDBACK_REPO } from "../lib/brand";
 
 // Turn a report into a GitHub issue on this repo, labelled `claude`, so the
 // work leaves the queue and enters the place it gets done. Called from the
@@ -9,7 +10,7 @@ import { db } from "../lib/admin";
 // issues:write on the one repo; it ships as "unset" until HUMANTASKS sets it.
 
 export const GITHUB_FEEDBACK_TOKEN = defineSecret("GITHUB_FEEDBACK_TOKEN");
-export const GITHUB_REPO = process.env.GITHUB_FEEDBACK_REPO ?? "Johnwithane/johnnyjansen.com";
+export const GITHUB_REPO = process.env.GITHUB_FEEDBACK_REPO ?? FEEDBACK_REPO;
 
 export interface ReportForIssue {
   reportId: string;

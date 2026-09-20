@@ -43,8 +43,10 @@ function apps() {
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
-    if (["node_modules", "dist", "lib", ".git", "coverage"].includes(name)) continue;
+    if (["node_modules", "dist", ".git", "coverage"].includes(name)) continue;
     const p = path.join(dir, name);
+    // functions/lib is tsc output; src/lib is source and must be walked.
+    if (name === "lib" && path.basename(dir) === "functions") continue;
     if (statSync(p).isDirectory()) walk(p, out);
     else out.push(p);
   }
@@ -79,7 +81,7 @@ function check(app) {
   for (const f of walk(dir)) {
     if (!textExt.has(path.extname(f)) || brandFiles.has(f)) continue;
     const rel = path.relative(dir, f);
-    if (/\.test\.(ts|js|mjs)$/.test(rel) || rel.endsWith("package-lock.json")) continue;
+    if (/\.test\.(ts|js|mjs)$/.test(rel) || rel.endsWith("package-lock.json") || rel.endsWith(".md")) continue;
     const text = readFileSync(f, "utf8");
     if (/johnnyjansen\.com/.test(text)) problems.push(`hardcoded domain in ${rel} (only brand files may name it)`);
     // Imports that escape the app folder.
@@ -129,6 +131,7 @@ function cmdNew(args) {
   const mount = flag(args, "--mount") ?? `/${slug}`;
   const project = flag(args, "--project") ?? `${slug.replace(/-/g, "")}-prod`;
   if (/^johnnyjansen/i.test(project)) die("the Firebase project id must be neutral: it is the product's forever");
+  const env = slug.toUpperCase().replace(/-/g, "_");
   const dir = path.join(APPS, slug);
   if (existsSync(dir)) die(`apps/${slug} exists`);
   const tpl = path.join(APPS, "_template");
@@ -137,9 +140,10 @@ function cmdNew(args) {
   cpSync(tpl, dir, { recursive: true });
   // Fill placeholders in every text file.
   for (const f of walk(dir)) {
-    if (![".ts", ".vue", ".js", ".mjs", ".json", ".html", ".css", ".yml", ".md", ".rules", ".example"].includes(path.extname(f))) continue;
+    // Dotfiles like .firebaserc have no extension; they carry placeholders too.
+    if (![".ts", ".vue", ".js", ".mjs", ".json", ".html", ".css", ".yml", ".md", ".rules", ".example", ""].includes(path.extname(f))) continue;
     let t = readFileSync(f, "utf8");
-    t = t.replaceAll("__SLUG__", slug).replaceAll("__NAME__", name).replaceAll("__MOUNT__", mount).replaceAll("__PROJECT__", project);
+    t = t.replaceAll("__SLUG__", slug).replaceAll("__NAME__", name).replaceAll("__MOUNT__", mount).replaceAll("__PROJECT__", project).replaceAll("__ENV__", env);
     writeFileSync(f, t);
   }
   writeFileSync(
@@ -153,12 +157,12 @@ function cmdNew(args) {
   rootFj.hosting.rewrites = [{ source: `${mount}/**`, destination: `${mount}/index.html` }, ...(rootFj.hosting.rewrites ?? []).filter((r) => r.source !== `${mount}/**`)];
   writeFileSync(rootFjPath, JSON.stringify(rootFj, null, 2) + "\n");
   const wfTpl = readFileSync(path.join(ROOT, ".github", "workflows", "app-_template.yml.txt"), "utf8");
-  writeFileSync(path.join(ROOT, ".github", "workflows", `app-${slug}.yml`), wfTpl.replaceAll("__SLUG__", slug).replaceAll("__PROJECT__", project).replaceAll("__NAME__", name));
+  writeFileSync(path.join(ROOT, ".github", "workflows", `app-${slug}.yml`), wfTpl.replaceAll("__SLUG__", slug).replaceAll("__PROJECT__", project).replaceAll("__NAME__", name).replaceAll("__ENV__", env));
 
   console.log(`created apps/${slug} (${name}) at ${mount} -> ${project}\n`);
   console.log("Human steps:");
   console.log(`  1. Create the Firebase project "${project}" (Blaze), enable Auth (Google), Firestore, Storage, Functions.`);
-  console.log(`  2. Register a web app; put its config in GitHub variables ${slug.toUpperCase().replace(/-/g, "_")}_FIREBASE_* (see the workflow).`);
+  console.log(`  2. Register a web app; put its config in GitHub variables ${env}_FIREBASE_* (see the workflow).`);
   console.log(`  3. cd apps/${slug} && npm install --prefix app && npm install --prefix functions && npm install`);
   console.log(`  4. node scripts/incubate.mjs check ${slug}`);
 }

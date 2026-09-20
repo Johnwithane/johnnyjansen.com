@@ -9,7 +9,7 @@ const base: DigestInput = {
   unreadTotal: 0,
   tasks: [],
   googleConnected: true,
-  portalUrl: "https://johnnyjansen.com/app",
+  portalUrl: "https://example.com/app",
 };
 
 describe("buildDigest", () => {

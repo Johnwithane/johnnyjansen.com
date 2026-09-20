@@ -1,10 +1,9 @@
-name: Site (check + deploy)
+name: Site (hosting)
 
-# One Firebase Hosting site: the static portfolio (repo root) + the portal at
-# /app, assembled into dist/ by scripts/build-site.mjs. Lint, build and test on
-# every push and PR; deploy hosting + functions + rules on main. Deploys are
-# skipped until FIREBASE_DEPLOY_ENABLED and FIREBASE_SERVICE_ACCOUNT exist
-# (HUMANTASKS.md). Until DNS moves, GitHub Pages still serves the root too.
+# The portfolio site project (johnnyjansen-site) serves the portfolio and every
+# incubated app's client at its mountPath. This builds all of them and deploys
+# hosting on main. Each app's functions and rules deploy from its own
+# app-<slug>.yml to its own project.
 
 on:
   push:
@@ -13,11 +12,11 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: portal-deploy
+  group: site-hosting
   cancel-in-progress: false
 
 jobs:
-  check:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -25,29 +24,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install root deps (emulator + rules tests)
-        run: npm ci
-      - name: Install portal deps
-        run: npm ci --prefix portal
-      - name: Install functions deps
-        run: npm ci --prefix functions
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
+      - name: Incubator invariants
+        run: node scripts/incubate.mjs check
+      - name: Install family-hub app deps
+        run: npm ci --prefix apps/family-hub/app
+      - name: Build site
+        run: node scripts/build-site.mjs
         env:
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-      - name: Test
-        run: npm run test:run
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - name: Firestore rules tests
-        run: npm run test:rules
+          VITE_FIREBASE_API_KEY: ${{ vars.FAMILY_HUB_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FAMILY_HUB_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FAMILY_HUB_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.FAMILY_HUB_FIREBASE_APP_ID }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ vars.FAMILY_HUB_RECAPTCHA_SITE_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: site-dist
@@ -55,44 +43,18 @@ jobs:
           retention-days: 1
 
   deploy:
-    needs: check
+    needs: build
     if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: actions/download-artifact@v4
         with:
           name: site-dist
           path: dist
-      - name: Install functions deps
-        run: npm ci --prefix functions
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-      - name: Deploy rules + indexes + storage
-        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes,storage --project familyhub-prod --non-interactive
-      - name: Deploy functions
-        run: npx firebase-tools@15 deploy --only functions --project familyhub-prod --non-interactive --force
+          credentials_json: ${{ secrets.FIREBASE_SA_SITE }}
       - name: Deploy hosting
-        id: deploy_hosting
-        run: npx firebase-tools@15 deploy --only hosting --project familyhub-prod --non-interactive
-
-      # Feedback loop, last step: any Feedback-Id trailer in the pushed commits
-      # marks that report shipped, which is what tells the reporter it is live.
-      - name: Mark feedback shipped
-        if: ${{ !cancelled() && steps.deploy_hosting.outcome == 'success' && github.event_name == 'push' }}
-        env:
-          CI_FEEDBACK_TOKEN: ${{ secrets.CI_FEEDBACK_TOKEN }}
-        run: |
-          if [ -z "$CI_FEEDBACK_TOKEN" ]; then echo "CI_FEEDBACK_TOKEN not set; skipping"; exit 0; fi
-          IDS=$(git log --format=%B ${{ github.event.before }}..${{ github.sha }} | grep -E '^Feedback-Id:' | sed -E 's/^Feedback-Id:[[:space:]]*//' | sort -u | tr -d '\r')
-          if [ -z "$IDS" ]; then echo "no Feedback-Id trailers"; exit 0; fi
-          BODY=$(printf '%s\n' "$IDS" | node -e 'const ids=require("fs").readFileSync(0,"utf8").split("\n").filter(Boolean);process.stdout.write(JSON.stringify({reportIds:ids,version:process.argv[1]}))' "${GITHUB_SHA::7}")
-          curl -sS -f -X POST -H "Content-Type: application/json" -H "x-ci-token: $CI_FEEDBACK_TOKEN" \
-            --data "$BODY" https://us-central1-familyhub-prod.cloudfunctions.net/markFeedbackShipped || echo "::warning::markFeedbackShipped failed; reports stay open"
+        run: npx firebase-tools@15 deploy --only hosting --project johnnyjansen-site --non-interactive

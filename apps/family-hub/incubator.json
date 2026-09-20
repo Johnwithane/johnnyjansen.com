@@ -1,0 +1,12 @@
+{
+  "slug": "family-hub",
+  "name": "Family Hub",
+  "mountPath": "/app",
+  "firebaseProject": "familyhub-prod",
+  "status": "prototype",
+  "created": "2026-09-19",
+  "brandFiles": [
+    "app/src/seo/site.ts",
+    "functions/src/lib/brand.ts"
+  ]
+}

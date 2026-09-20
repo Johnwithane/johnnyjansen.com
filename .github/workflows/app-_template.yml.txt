@@ -1,0 +1,93 @@
+name: __SLUG__ (checks + deploy)
+
+# __NAME__'s own pipeline: lint, build, unit tests, rules tests against the
+# emulators, then functions + rules + indexes + storage to __PROJECT__ on
+# main. Hosting is the site workflow's job. On eject this file becomes the new
+# repo's ci.yml with the apps/__SLUG__/ prefixes removed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/__SLUG__/**"
+      - ".github/workflows/app-__SLUG__.yml"
+  pull_request:
+    paths:
+      - "apps/__SLUG__/**"
+      - ".github/workflows/app-__SLUG__.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: app-__SLUG__
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/__SLUG__
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install deps
+        run: npm ci && npm ci --prefix app && npm ci --prefix functions
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.__ENV___FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.__ENV___FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.__ENV___FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.__ENV___FIREBASE_APP_ID }}
+      - name: Unit tests
+        run: npm run test:run
+      - name: Rules tests
+        run: npm run test:rules
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/__SLUG__
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install functions deps
+        run: npm ci --prefix functions
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SA_FAMILY_HUB }}
+      - name: Deploy rules + indexes + storage
+        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes,storage --project __PROJECT__ --non-interactive
+      - name: Deploy functions
+        run: npx firebase-tools@15 deploy --only functions --project __PROJECT__ --non-interactive --force
+
+      # Feedback loop, last step: any Feedback-Id trailer in the pushed commits
+      # marks that report shipped, which is what tells the reporter it is live.
+      - name: Mark feedback shipped
+        if: ${{ !cancelled() && github.event_name == 'push' }}
+        env:
+          CI_FEEDBACK_TOKEN: ${{ secrets.CI_FEEDBACK_TOKEN }}
+        run: |
+          if [ -z "$CI_FEEDBACK_TOKEN" ]; then echo "CI_FEEDBACK_TOKEN not set; skipping"; exit 0; fi
+          IDS=$(git log --format=%B ${{ github.event.before }}..${{ github.sha }} | grep -E '^Feedback-Id:' | sed -E 's/^Feedback-Id:[[:space:]]*//' | sort -u | tr -d '\r')
+          if [ -z "$IDS" ]; then echo "no Feedback-Id trailers"; exit 0; fi
+          BODY=$(printf '%s\n' "$IDS" | node -e 'const ids=require("fs").readFileSync(0,"utf8").split("\n").filter(Boolean);process.stdout.write(JSON.stringify({reportIds:ids,version:process.argv[1]}))' "${GITHUB_SHA::7}")
+          curl -sS -f -X POST -H "Content-Type: application/json" -H "x-ci-token: $CI_FEEDBACK_TOKEN" \
+            --data "$BODY" https://us-central1-__PROJECT__.cloudfunctions.net/markFeedbackShipped || echo "::warning::markFeedbackShipped failed; reports stay open"

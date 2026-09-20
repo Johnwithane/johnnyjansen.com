@@ -304,7 +304,7 @@ Decided 2026-09-19, later still: a setup wizard for both adults (module 4.19), f
 
 Decided 2026-09-20: security is a standing requirement (section 9) and the app is built as a multi-tenant product from Phase 1 (section 10). Johnny's household is tenant one. MFA for adults is on (authenticator app) before Money, Taxes and the Vault.
 
-Decided 2026-09-20: **prototype in this repo, migrate later.** Johnny: no time to name it, and he wants to prototype the flow first. Agreed, on three conditions that make the later move a `git subtree split` plus a DNS change rather than a rewrite:
+Decided 2026-09-20: **prototype in this repo, migrate later**, now formalised as the incubator (`docs/INCUBATOR.md`): this app lives in `apps/family-hub/`, hosting comes from the portfolio project `johnnyjansen-site`, everything else from `familyhub-prod`, and `node scripts/incubate.mjs eject family-hub` produces the product repo with history. Johnny: no time to name it, and he wants to prototype the flow first. Agreed, on three conditions that make the later move a `git subtree split` plus a DNS change rather than a rewrite:
 1. The Firebase project id is neutral (`familyhub-prod`, never `johnnyjansen-*`), because a project id cannot be renamed and it will outlive the repo.
 2. The app is only ever `portal/`, `functions/`, `scripts/`, the rules and the workflow. The portfolio never imports from them and they never import from the portfolio. Moving the app is moving those directories with their history.
 3. The brand is in two files from Phase 1 (section 10.2), so the rename is a two-line change plus DNS.

@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function uid() { return request.auth.uid; }
+
+    // Own profile only. Everything else is default deny until it gets a rule
+    // AND an allow + deny test in tests/rules/.
+    match /users/{u} {
+      allow read: if signedIn() && uid() == u;
+      allow create, delete: if false;
+      allow update: if signedIn() && uid() == u
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt']);
+    }
+  }
+}
