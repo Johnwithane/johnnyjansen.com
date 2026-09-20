@@ -80,7 +80,7 @@ The kitchen module. Three connected things, all feeding the grocery list.
 - **Transactions**: CSV statement import (every Canadian bank exports one), receipt photo capture (Gemini reads merchant, date, total, tax, suggests a category), manual entry. Each transaction: amount, date, merchant, category, account, `business?` (which side business, if any), `taxCategory?`, receipt image, notes, split.
 - **Categories**: a family list mapped to CRA tax lines where relevant (childcare, medical, donations, home office share, vehicle). The mapping is what makes taxes a report.
 - **Budgets**: monthly envelopes per category, rollover on or off. The Money screen shows the month in one line per envelope.
-- **Bills and subscriptions**: recurring items with amount, cadence, account, next due. They appear on the calendar and in the digest a few days out. A yearly "subscriptions audit" view: everything recurring, sorted by cost.
+- **Bills and subscriptions**: recurring items with amount, cadence, account, next due. They appear on the calendar and in the digest a few days out. A yearly "subscriptions audit" view: everything recurring, sorted by cost. **Creep detection**: when an imported statement shows a recurring charge whose amount went up, or one with no matching use in ninety days (no receipt, no email from the sender, no calendar event), it is flagged with a one-line cancel guide per service. People underestimate their subscription spend by about 2.5 times and forget about $204 a year per person; this is where the app pays for itself.
 - **Goals**: savings targets with a monthly contribution and a date.
 - **Net worth**: sum of accounts and any assets or debts entered by hand (home, mortgage, vehicles). One number, one sparkline, monthly.
 
@@ -186,6 +186,30 @@ The first ten minutes decide whether a family tool gets used. The wizard's job i
 
 **What "smart" means in code.** One callable, `setupScanInbox`, runs the Gemini pass (subjects, senders, dates; a Zod schema per group; a daily cap of two runs per person). One pure function, `planSetup(person, household)`, decides which steps show for whom, so the flow is testable without a browser. The wizard writes only through the normal services and the suggestions queue, so the rules gate it exactly like the rest of the app. Re-running the wizard later is allowed and only proposes what is new.
 
+### 4.20 Intake: forward it, don't type it
+The habit that makes the app daily, and the gap every family-calendar review names ("one of us is manually typing every school email into a calendar"). Two doors, one queue:
+- **A forward address per household** (`<slug>@in.<product domain>`, via Resend inbound or a Gmail alias while incubated): forward the school email, the camp confirmation, the dentist reminder, the invoice. Gemini turns it into what it contains: events (with the child it is for), forms due, money owed, things to bring, a contact, a document for the Vault. Each lands in the review queue with the original attached, the way receipts do.
+- **The inbox scan**, already in the wizard (4.19), becomes a standing option per adult: a daily pass over new subjects and senders from senders you have approved (the school, the club, the daycare), proposing the same things. Never bodies stored; never senders you did not approve.
+Both write only through the suggestions queue. The parser's vocabulary is the app's own (event, form, payment, bring, contact, document), so it can only propose things the app can hold.
+
+### 4.21 School, per child
+One screen per child that ends the ten-app problem: teacher and school contacts (4.11), the classroom apps and logins the school uses (names only, passwords stay in the person's own manager), term dates and PD days from the school calendar feed, forms due and money owed (from intake), what to bring days, report cards and immunisation records in the Vault, and a "this week at school" line on Today. The child role sees their own school screen.
+
+### 4.22 Registration radar
+Swim lessons in BC fill in minutes; parents call it the Hunger Games. A list of the activities the family wants (swim level, camp week, soccer season), where registration happens, and when it opens. The app reminds fifteen minutes before with the link and the child's details ready to paste, and again the day before. Season dates are entered once and repeat; Kelowna's are seeded first because we know them. Registration outcomes (got it, waitlisted, missed) feed the next season's plan.
+
+### 4.23 The load ledger
+Research is consistent: the mental load is cognitive, not physical (mothers carry about 71 percent of the planning), and money or time does not shift it. Making it visible does. Every recurring responsibility, not just every task, has an owner: the school forms, the bills, the dentist, the gifts, the car. The Sunday review shows the split as two short columns and asks one question: keep, or swap something. No scores, no nagging. Ownership is a field on bills, contacts, maintenance items and recurring tasks, so the ledger is a query, not a second list.
+
+### 4.24 In case: trusted access
+The emergency sheet (4.11) plus the part every "what if" binder gets wrong: who can open it when you cannot. An adult names a trusted person (a sibling, a lawyer) and a delay. The trusted person can request access; the adults are told by every channel; if nobody declines within the delay, the trusted person gets read access to the Vault and the emergency sheet, logged in the audit trail. Export-anytime is a stated promise on the security page: nothing in this app is ever locked behind a subscription, and a household export is one tap for as long as the account exists.
+
+### 4.25 Care circle
+2.5 million Canadians care for a parent while raising kids, most of them coordinating with siblings. A **care circle** is a second kind of household: the parent is the subject, the adult children are the members, with the same Vault, contacts, calendar, tasks and money, and a medications and appointments module. The multi-household membership designed in 10.1 is what lets Johnny belong to both. Nothing new in the security model; one new household kind and a "medications" list (name, dose, schedule, refill, prescriber) with reminders to whoever holds that duty in the ledger.
+
+### 4.26 Kitchen screen
+A page for an old tablet on the fridge: today's agenda with colours, tonight's dinner, the chores, the grocery list, the birthdays coming. Read-only, large type, no navigation, a display token instead of a sign-in so nobody has to unlock it. Refreshes itself. What Skylight sells as hardware, shipped as a URL.
+
 ## 5. Suggestions queue (the pattern that ties it together)
 
 `households/{hid}/suggestions/{id}`: `{ kind, source: "gemini" | "laptop" | "rule", payload, status: pending | accepted | dismissed, createdAt }`. Receipts read, slips read, photo albums proposed, duplicates found, inbox items that look like bills or bookings, expiries found on documents. One screen ("Review", reachable from Today) shows them newest first with accept and dismiss. Accepting applies the payload through the normal service, so the rules gate it like a hand-made write. Nothing automated writes real data directly.
@@ -217,13 +241,14 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 |---|---|---|
 | 0 | Single-owner portal: tasks, digest, `me`, Google pull | Done 2026-09-19, not yet deployed |
 | 1 | **Household + invite + feedback + wizard.** Household model, claims (adult, child), invite by email, per-person Google, merged family calendar, shared and private tasks, Today rebuilt for two, per-person digest, the feedback loop (report control, queue, `me feedback`, GitHub dispatch, shipped trailer), and the setup wizard's spine (sign in, people, connect Google, calendars, digest, done; the inbox scan lands with Phase 2 when there is somewhere for bills and accounts to go) | Replaces the owner-only rules. Feedback goes in first so every later phase is reported on from day one |
-| 2 | **Money.** Accounts, CSV import, receipt capture with Gemini, categories mapped to tax lines, budgets, bills and subscriptions, suggestions queue, and the wizard's "What we found" inbox scan (bills, subscriptions, accounts, bookings) | Gemini via Vertex, same as Wishbone |
+| 2 | **Intake and Money.** The forward address and the standing inbox scan (4.20) first, then accounts, CSV import, receipt capture with Gemini, categories mapped to tax lines, budgets, bills and subscriptions with creep detection, the load ledger field on recurring things, and the wizard's "What we found" | Gemini via Vertex, same as Wishbone. Intake first because it is the daily habit |
 | 3 | **Businesses.** Clients, invoices with PDF and email, mark paid, expenses and mileage, yearly summary | Invoice PDF rendered client-side |
 | 4 | **Taxes.** Year workspace, slip vault with reading, lines rollup, T2125-shaped statement, checklist, accountant package | Report over Phase 2 and 3 data |
 | 5 | **Meals, recipes and pantry.** Recipe database with URL and photo import, pantry with fridge and shelf photos, what can we make, meal plan to grocery minus pantry | Johnny's pick to come early; the module a family opens weekly |
-| 6 | **Vault with paper, contacts and occasions, home and vehicles.** Documents with expiry reading, scan-in, binders and tabs with cover sheets and the filing checklist, export packages, contacts with Places addresses and birthdays on the household calendar, maintenance | Storage rules per household; Places key referrer-restricted |
+| 6 | **Vault with paper, contacts and occasions, school per child, registration radar, in case access, home and vehicles.** Documents with expiry reading, scan-in, binders and tabs with cover sheets and the filing checklist, export packages, contacts with Places addresses and birthdays on the household calendar, maintenance | Storage rules per household; Places key referrer-restricted |
 | 7 | **Photos.** Laptop worker (index, dedupe across iCloud, Google Photos and the NAS; tags; albums), portal timeline, albums, people, duplicates queue, print picks | Needs the laptop's GPU; local vision model |
-| 8 | **Travel, health, goals and reviews.** Weekly and monthly review emails | |
+| 8 | **Travel, health, goals and reviews, kitchen screen.** Weekly and monthly review emails with the load ledger | |
+| 8b | **Care circle.** A second household kind with medications and appointments, shared with siblings | Needs multi-household membership live |
 | 9 | **Automations and the local worker.** Rules engine, inbox triage on the laptop, `me` coverage of every module, in-app assistant | |
 | later | Kids module, bank sync connector, light theme, Microsoft 365 for the work mailbox | Decisions for Johnny when they come up |
 
@@ -287,6 +312,8 @@ Section 9.1 already makes every household a tenant. The remaining product plumbi
 ### 10.3 Free and paid
 The BetterTour rule: the core is free for the whole family; what costs us money to run is Pro. Free: household, calendar, tasks, meals, vault, feedback, one adult's daily digest. Pro: AI reads (receipts, slips, documents, recipes, pantry, inbox scan), invoicing, tax package, the photo worker's cloud index, every adult's digest. Stripe Checkout and the customer portal, the BetterTour `billing/` pattern, with the paywall dormant behind an admin switch until launch. Pricing lives in Stripe, never in copy.
 
+**Never paywall a family's own data.** Export always works, history is never gated, a lapsed Pro keeps every record it created. Cozi gated calendar history behind a paywall in 2024 and its long-time users called it a bait and switch; Cake, an end-of-life planner, was acquired and its domain now redirects to a funeral directory. Families have been burned, and this is the first thing they will ask.
+
 ### 10.4 Legal and trust
 - Terms and a privacy policy in `src/legal/` with a version constant and a re-accept prompt on change (BetterTour pattern). Written for PIPEDA first; GDPR readiness (export, delete, data-processing terms) is section 9.4 already.
 - **Children.** A product with child sign-ins needs verifiable parental consent for under-13s (COPPA if any US family joins) and a clear rule that a child's data is the parents' to export and delete. The child role is designed so that a child account holds the minimum: a name, a colour, chores, allowance, their own calendar view. No email, no photos of them beyond what the parents put in the family library, no analytics on children.
@@ -303,6 +330,17 @@ The BetterTour rule: the core is free for the whole family; what costs us money 
 - Phase 2 (Money) gains: client-side field encryption and the Vault reveal flow.
 - Every phase ends with the security review pass.
 - A "Product" phase before public beta: staging project, Stripe, status page, security page, second household in testing (a friend's family), and the rename.
+
+## 8b. What families say (research, 2026-09-20)
+
+Why these modules and not others. Sources are what the numbers rest on.
+- The mental load is cognitive, and unchanged by income or less housework: mothers carry about 71 percent of planning across 30 household tasks (University of Bath / Melbourne, 3,000 US parents). Apps that store tasks do not help; taking the remembering away does. → 4.20, 4.23.
+- School communication is the daily leak: 10 to 15 apps per family, 85 percent rate it 5/10 or lower, 60 percent miss events in email (Cornerstone / Edsby 2025). → 4.20, 4.21.
+- Money stress is bills, not investing: 48 percent of Canadians within $200 of not covering the month (Spergel 2026); forgotten subscriptions about $204 a year per person and a 2.5x underestimate (CNET / C+R 2025); 45 percent of couples don't know everything about their partner's finances (Bankrate). → 4.5 creep detection, shared and private accounts.
+- 2.5 million Canadians are sandwich caregivers, 58 percent coordinating with siblings, about $3,300 a year out of pocket. → 4.25.
+- Registration for municipal swim lessons in BC fills in minutes. → 4.22.
+- Trust: Cozi's 2024 paywall on calendar history (2.1 stars on Trustpilot), Cake's acquisition and disappearance. → 10.3 data promise, 4.24 export-anytime.
+- The market in 2026 (Maple, Kinmory, Nori, Skylight, Hearth) is calendar-first with AI intake bolted on, and none holds money, documents, paper, contacts and a care circle in one household. That combination is the position.
 
 ## 8. Decisions and open questions
 
@@ -327,6 +365,8 @@ Decided 2026-09-20: **prototype in this repo, migrate later**, now formalised as
 The migration itself is its own checklist when the name lands: new repo from the subtree, custom domain on the same Firebase project, Resend domain, Stripe, and a redirect from `johnnyjansen.com/app`.
 
 Decided 2026-09-20, later: the Vault mirrors the paper filing (binders, tabs, cover sheets, filing checklist, export packages, yearly close) and People becomes Contacts with Places addresses and birthdays on the household calendar (4.9, 4.11). Google Calendar mirroring and Google Contacts import are opt-in scopes, never part of the base consent.
+
+Decided 2026-09-20, evening: eight additions from the research (4.20 to 4.26 plus creep detection and the data promise), all four groups approved by Johnny.
 
 Still open:
 - Product name (needed before Resend and the domain; not before Phase 1).
