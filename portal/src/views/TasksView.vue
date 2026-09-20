@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
-import type { Task, WithId } from "@/firebase/interfaces";
+import type { Task, Visibility, WithId } from "@/firebase/interfaces";
+import { useAuth } from "@/composables/useAuth";
 import { createTask, deleteTask, setTaskDone, subscribeTasks } from "@/firebase/services/tasksService";
 import TaskRow from "@/components/TaskRow.vue";
 
+const { hid, uid } = useAuth();
+const h = hid.value ?? "";
+const me = uid.value ?? "";
 const open = ref<WithId<Task>[]>([]);
 const done = ref<WithId<Task>[]>([]);
 const showDone = ref(false);
 const title = ref("");
 const due = ref("");
+const visibility = ref<Visibility>("household");
 const note = ref("");
 const stops: (() => void)[] = [];
 
 onMounted(() => {
-  stops.push(subscribeTasks(false, (items) => (open.value = items)));
-  stops.push(subscribeTasks(true, (items) => (done.value = items)));
+  stops.push(subscribeTasks(h, me, false, (items) => (open.value = items)));
+  stops.push(subscribeTasks(h, me, true, (items) => (done.value = items)));
 });
 onUnmounted(() => stops.forEach((s) => s()));
 
@@ -26,17 +31,17 @@ function add() {
   const t = title.value.trim();
   if (!t) return;
   // Not awaited: offline, the ack never comes but the list already shows it.
-  createTask({ title: t, due: due.value || null }).catch(fail);
+  createTask(h, me, { title: t, visibility: visibility.value, due: due.value || null }).catch(fail);
   title.value = "";
   due.value = "";
 }
 
 function toggle(id: string, isDone: boolean) {
-  setTaskDone(id, isDone).catch(fail);
+  setTaskDone(h, id, isDone).catch(fail);
 }
 
 function remove(id: string) {
-  deleteTask(id).catch(fail);
+  deleteTask(h, id).catch(fail);
 }
 </script>
 
@@ -53,6 +58,14 @@ function remove(id: string) {
         class="w-full rounded-lg border border-line bg-panel px-3 py-2 outline-none focus:border-accent"
       />
       <div class="flex gap-2">
+        <button
+          type="button"
+          class="rounded-lg border border-line px-3 text-sm"
+          :class="visibility === 'private' ? 'text-accent' : 'text-muted'"
+          @click="visibility = visibility === 'private' ? 'household' : 'private'"
+        >
+          {{ visibility === "private" ? "Private" : "Shared" }}
+        </button>
         <input
           v-model="due"
           type="date"

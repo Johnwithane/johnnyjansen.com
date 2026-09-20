@@ -6,7 +6,6 @@
   "description": "johnnyjansen.com: the static portfolio at the root plus the personal management portal (portal/ + functions/), one Firebase Hosting site.",
   "scripts": {
     "me": "node scripts/me.mjs",
-    "google:auth": "node scripts/google-oauth.mjs",
     "portal:dev": "npm --prefix portal run dev",
     "portal:build": "npm --prefix portal run build",
     "portal:lint": "npm --prefix portal run lint",
@@ -19,9 +18,18 @@
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "firebase deploy --only functions",
     "site:build": "node scripts/build-site.mjs",
-    "deploy:hosting": "npm run portal:build && npm run site:build && firebase deploy --only hosting"
+    "deploy:hosting": "npm run portal:build && npm run site:build && firebase deploy --only hosting",
+    "test:rules": "firebase --project demo-familyhub-rules emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
+    "emulators": "firebase --project demo-familyhub emulators:start"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.1.0",
+    "firebase-tools": "^15.18.0",
+    "typescript": "~5.7.2",
+    "vitest": "^3.0.5"
   }
 }

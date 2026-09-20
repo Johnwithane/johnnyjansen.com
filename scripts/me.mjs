@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // The portal from a terminal, or from a Claude Code session on any machine.
 //
-// Talks to the `me` Cloud Function over HTTPS with ONE shared secret. No
-// Google credentials, no firebase-admin, no gcloud. Set $ME_TOKEN (same value
-// as the ME_TOKEN secret on the functions project) and go:
+// Talks to the `me` Cloud Function over HTTPS with YOUR personal token. No
+// Google credentials, no firebase-admin, no gcloud. Mint the token once on the
+// Household screen (Claude Code access), set it as $ME_TOKEN, and go:
 //
 //   npm run me today                    calendar + unread + open tasks, fresh from Google
 //   npm run me calendar [days]          events for the next N days (default 7)
 //   npm run me inbox [max]              newest unread threads (default 15)
 //   npm run me tasks [done]             open tasks (or done ones)
-//   npm run me add "Call the bank" [--due 2026-09-20] [--notes "..."]
+//   npm run me add "Call the bank" [--due 2026-09-20] [--notes "..."] [--private]
 //   npm run me done <id> | reopen <id> | rm <id>
 //   npm run me digest [day]             the stored digest (newest, or YYYY-MM-DD)
 //   npm run me digest run               build + store + email today's digest now
@@ -27,7 +27,7 @@ function die(msg) {
 }
 
 async function call(body) {
-  if (!TOKEN) die("ME_TOKEN is not set. Export it (same value as the ME_TOKEN functions secret).");
+  if (!TOKEN) die("ME_TOKEN is not set. Mint one on the Household screen and export it.");
   let res;
   try {
     res = await fetch(ENDPOINT, {
@@ -45,7 +45,7 @@ async function call(body) {
   } catch {
     die(`Non-JSON response (${res.status}): ${text.slice(0, 300)}`);
   }
-  if (res.status === 401) die("Unauthorized: ME_TOKEN does not match the deployed secret.");
+  if (res.status === 401) die("Unauthorized: this token was revoked or never minted. Mint a new one on the Household screen.");
   if (!res.ok) die(`${res.status}: ${JSON.stringify(json)}`);
   return json;
 }
@@ -84,7 +84,7 @@ function printMail(items, total) {
 
 function printTasks(tasks) {
   if (!tasks.length) return console.log("  No tasks.");
-  for (const t of tasks) console.log(`  [${t.id}] ${t.title}${t.due ? ` (due ${t.due})` : ""}`);
+  for (const t of tasks) console.log(`  [${t.id}] ${t.title}${t.due ? ` (due ${t.due})` : ""}${t.visibility === "private" ? "  (private)" : ""}`);
 }
 
 async function main() {
@@ -110,9 +110,11 @@ async function main() {
     case "add": {
       const due = flag(rest, "--due");
       const notes = flag(rest, "--notes");
+      const priv = rest.includes("--private");
+      if (priv) rest.splice(rest.indexOf("--private"), 1);
       const title = rest.join(" ").trim();
-      if (!title) die('Usage: me add "title" [--due YYYY-MM-DD] [--notes "..."]');
-      body = { action: "tasks.add", title, ...(due ? { due } : {}), ...(notes ? { notes } : {}) };
+      if (!title) die('Usage: me add "title" [--due YYYY-MM-DD] [--notes "..."] [--private]');
+      body = { action: "tasks.add", title, visibility: priv ? "private" : "household", ...(due ? { due } : {}), ...(notes ? { notes } : {}) };
       break;
     }
     case "done":

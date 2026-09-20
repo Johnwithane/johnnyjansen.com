@@ -21,3 +21,13 @@ describe("format", () => {
     expect(ago(null, now)).toBe("");
   });
 });
+
+import { ageOn } from "./format";
+
+describe("ageOn", () => {
+  it("counts whole years, birthday not yet reached this year", () => {
+    expect(ageOn("2017-02-06", new Date("2026-09-20T12:00:00"))).toBe(9);
+    expect(ageOn("2020-05-17", new Date("2026-05-16T12:00:00"))).toBe(5);
+    expect(ageOn("2020-05-17", new Date("2026-05-17T12:00:00"))).toBe(6);
+  });
+});

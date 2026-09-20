@@ -2,13 +2,16 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import type { Digest, WithId } from "@/firebase/interfaces";
 import { subscribeDigests } from "@/firebase/services/digestsService";
+import { useAuth } from "@/composables/useAuth";
 
+const { uid } = useAuth();
 const digests = ref<WithId<Digest>[]>([]);
 const openId = ref<string | null>(null);
 let stop: (() => void) | null = null;
 
 onMounted(() => {
-  stop = subscribeDigests((items) => {
+  if (!uid.value) return;
+  stop = subscribeDigests(uid.value, (items) => {
     digests.value = items;
     if (!openId.value && items[0]) openId.value = items[0].id;
   });

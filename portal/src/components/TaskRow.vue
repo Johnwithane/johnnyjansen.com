@@ -23,7 +23,9 @@ const emit = defineEmits<{
     </button>
     <div class="min-w-0 flex-1">
       <p class="break-words" :class="task.done ? 'text-muted line-through' : ''">{{ task.title }}</p>
-      <p v-if="task.due || task.notes" class="mt-0.5 text-xs text-muted">
+      <p v-if="task.due || task.notes || task.visibility === 'private'" class="mt-0.5 text-xs text-muted">
+        <span v-if="task.visibility === 'private'">Private</span>
+        <span v-if="task.visibility === 'private' && (task.due || task.notes)"> · </span>
         <span v-if="task.due">Due {{ dueLabel(task.due) }}</span>
         <span v-if="task.due && task.notes"> · </span>
         <span v-if="task.notes">{{ task.notes }}</span>

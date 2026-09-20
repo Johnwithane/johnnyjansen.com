@@ -3,14 +3,16 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import type { Snapshot } from "@/firebase/interfaces";
 import { refreshToday, subscribeToday } from "@/firebase/services/snapshotService";
 import { ago, senderName, timeOf } from "@/utils/format";
+import { useAuth } from "@/composables/useAuth";
 
+const { uid } = useAuth();
 const snap = ref<Snapshot | null>(null);
 const refreshing = ref(false);
 const note = ref("");
 let stop: (() => void) | null = null;
 
 onMounted(() => {
-  stop = subscribeToday((s) => (snap.value = s));
+  if (uid.value) stop = subscribeToday(uid.value, (s) => (snap.value = s));
 });
 onUnmounted(() => stop?.());
 
@@ -94,7 +96,7 @@ async function refresh() {
         <p v-if="snap.tasks.length === 0" class="text-muted">No open tasks.</p>
         <ul v-else>
           <li v-for="t in snap.tasks" :key="t.id" class="border-b border-line py-2 text-sm">
-            {{ t.title }}<span v-if="t.due" class="text-muted"> · due {{ t.due }}</span>
+            {{ t.title }}<span v-if="t.due" class="text-muted"> · due {{ t.due }}</span><span v-if="t.visibility === 'private'" class="text-muted"> · private</span>
           </li>
         </ul>
         <RouterLink to="/tasks" class="mt-3 inline-block text-sm text-accent">Manage tasks</RouterLink>

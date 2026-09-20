@@ -1,54 +1,81 @@
 import { db } from "@/firebase/config";
-import type { Task, WithId } from "@/firebase/interfaces";
+import type { Task, Visibility, WithId } from "@/firebase/interfaces";
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
 
-const tasks = () => collection(db, "tasks");
+const tasks = (hid: string) => collection(db, "households", hid, "tasks");
 
 /**
- * Live open (or done) tasks. Offline, Firestore serves the cache and applies
- * local writes to it immediately, so the list updates without a server ack.
+ * Live tasks this person can see: the household's shared ones and their own
+ * private ones. Two listeners, merged, because the rules split them the same
+ * way and Firestore has no OR across fields. Sorted here, oldest first when
+ * open, newest first when done.
  */
-export function subscribeTasks(done: boolean, cb: (items: WithId<Task>[]) => void): () => void {
-  const q = query(tasks(), where("done", "==", done), orderBy("createdAt", done ? "desc" : "asc"));
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Task) }))));
+export function subscribeTasks(hid: string, uid: string, done: boolean, cb: (items: WithId<Task>[]) => void): () => void {
+  let shared: WithId<Task>[] = [];
+  let mine: WithId<Task>[] = [];
+  const emit = () => {
+    const all = [...shared, ...mine];
+    const key = (t: WithId<Task>) => (done ? -(t.doneAt?.toMillis?.() ?? 0) : (t.createdAt?.toMillis?.() ?? Number.MAX_SAFE_INTEGER));
+    cb(all.sort((a, b) => key(a) - key(b)));
+  };
+  const s1 = onSnapshot(query(tasks(hid), where("done", "==", done), where("visibility", "==", "household")), (snap) => {
+    shared = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Task) }));
+    emit();
+  });
+  const s2 = onSnapshot(
+    query(tasks(hid), where("done", "==", done), where("visibility", "==", "private"), where("ownerUid", "==", uid)),
+    (snap) => {
+      mine = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Task) }));
+      emit();
+    },
+  );
+  return () => {
+    s1();
+    s2();
+  };
 }
 
-// Writes are NOT awaited by callers. A queued offline write resolves only on
-// server ack, which never comes with no signal; the onSnapshot above already
-// reflects it locally. Errors are surfaced through the returned promise.
+// Writes are NOT awaited by callers: offline, the ack never comes, but the
+// listeners above already show the change. Errors surface via the promise.
 
-export function createTask(input: { title: string; due?: string | null; notes?: string }): Promise<unknown> {
-  return addDoc(tasks(), {
+export function createTask(
+  hid: string,
+  uid: string,
+  input: { title: string; visibility: Visibility; due?: string | null; notes?: string; assigneeUid?: string | null },
+): Promise<unknown> {
+  return addDoc(tasks(hid), {
     title: input.title,
     done: false,
     doneAt: null,
     due: input.due ?? null,
     notes: input.notes ?? "",
+    visibility: input.visibility,
+    ownerUid: uid,
+    assigneeUid: input.assigneeUid ?? null,
     source: "portal",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 }
 
-export function setTaskDone(id: string, done: boolean): Promise<void> {
-  return updateDoc(doc(db, "tasks", id), {
+export function setTaskDone(hid: string, id: string, done: boolean): Promise<void> {
+  return updateDoc(doc(db, "households", hid, "tasks", id), {
     done,
     doneAt: done ? serverTimestamp() : null,
     updatedAt: serverTimestamp(),
   });
 }
 
-export function deleteTask(id: string): Promise<void> {
-  return deleteDoc(doc(db, "tasks", id));
+export function deleteTask(hid: string, id: string): Promise<void> {
+  return deleteDoc(doc(db, "households", hid, "tasks", id));
 }

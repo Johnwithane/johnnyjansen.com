@@ -30,3 +30,12 @@ export function ago(date: Date | null | undefined, now = new Date()): string {
   if (h < 24) return `${h} h ago`;
   return `${Math.round(h / 24)} d ago`;
 }
+
+/** Whole years between a YYYY-MM-DD birth date and `now`. */
+export function ageOn(birthDate: string, now = new Date()): number {
+  const [y, m, d] = birthDate.split("-").map(Number);
+  let age = now.getFullYear() - y;
+  const beforeBirthday = now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d);
+  if (beforeBirthday) age--;
+  return Math.max(0, age);
+}

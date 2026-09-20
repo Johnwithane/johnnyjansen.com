@@ -21,6 +21,7 @@ describe("MeBody", () => {
       action: "tasks.add",
       title: "Call bank",
       due: "2026-09-20",
+      visibility: "household",
     });
   });
 

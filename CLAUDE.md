@@ -7,7 +7,7 @@
 Two things share one repo and one domain:
 
 1. **The portfolio** at the repo root (`index.html`, `resume.html`, `PocketJams.html`, `css/`, `js/`, `static/`, `videos/`). Plain static files, no build step. Leave it alone unless the task is about the portfolio.
-2. **The personal management portal**: `portal/` (Vue 3 + Vite + Tailwind, one user, served at `/app`), `functions/` (Cloud Functions: daily digest, Google calendar + Gmail pull, the `me` endpoint), `scripts/me.mjs` (the CLI a Claude Code session uses), `firestore.rules`.
+2. **The family portal**: `portal/` (Vue 3 + Vite + Tailwind, served at `/app`), `functions/` (Cloud Functions: households and invites, per-person daily digest, Google calendar + Gmail pull, the `me` endpoint), `scripts/me.mjs` (the CLI a Claude Code session uses), `firestore.rules` + `tests/rules/`.
 
 Both ship as ONE Firebase Hosting site (project `familyhub-prod`): `scripts/build-site.mjs` copies the root static files into `dist/` and the portal build into `dist/app/`. GitHub Pages still serves the root until DNS moves (HUMANTASKS.md); the portfolio files stay at the root so that cutover is DNS only. Anything new at the repo root that is not site content must be added to the skip lists in `build-site.mjs`.
 
@@ -27,7 +27,7 @@ Same as bettertour and Wishbone, shortened:
 - Consistency over cleverness. Match the existing pattern.
 - Strict TS, no `any`. Zod at every boundary (`functions/src/me/schema.ts` is the model).
 - Mobile first, 375px. Johnny uses this on his phone.
-- Default deny in `firestore.rules`. Phase 0: the only role is `owner` (a custom claim set by `onUserCreated`). Phase 1 replaces it with household claims `{ hid, role, mfa }` (FAMILY_PLAN.md section 3). Never add a doc-lookup rule.
+- Default deny in `firestore.rules`. Household claims `{ hid, role }` are set only by `createHousehold` / `acceptInvite`; rules check the claim first, then role, then ownership. `isMfa()` reads `sign_in_second_factor` for Phase 2 collections. Never add a doc-lookup rule. Every collection has allow, deny and cross-tenant deny tests in `tests/rules/` (`npm run test:rules`, emulator).
 - Security is a requirement (FAMILY_PLAN.md section 9). Every document path starts with `households/{hid}/`; every rule checks the `hid` claim first; every collection has an allow, a deny and a cross-tenant deny test; Google tokens are KMS-encrypted; sensitive fields are encrypted client-side; App Check on; a security review pass before a phase ships.
 - This is a product with one tenant so far (FAMILY_PLAN.md section 10). Nothing hardcodes the Jansens, the brand lives in two files, and system mail comes from the product domain, never a personal Gmail.
 - Machines propose, people confirm. Anything AI or the laptop worker produces lands in the suggestions queue; a person accepts it through the normal service. Never write real data from an automation directly.
@@ -40,23 +40,26 @@ Same as bettertour and Wishbone, shortened:
 
 ```
 portal/src/
+  seo/site.ts                brand (mirror of functions/src/lib/brand.ts)
   firebase/config.ts         Firebase init (persistent cache on)
   firebase/interfaces.ts     doc types (mirror of functions/src/types.ts, keep in step)
-  firebase/services/         pure async functions per collection
-  composables/useAuth.ts     Google sign-in + owner claim wait
-  views/                     Today, Tasks, Digests, Login
+  firebase/services/         pure async functions per collection + callable wrappers
+  composables/useAuth.ts     Google sign-in + { hid, role } claims, refreshClaims()
+  views/                     Login, Onboarding (found a household), Invite (accept), Today, Tasks, Digests, Household
 functions/src/
-  lib/params.ts              OWNER_EMAIL, TIMEZONE, all secrets
+  lib/brand.ts               BRAND_NAME, BRAND_DOMAIN, APP_BASE_URL
+  lib/tenant.ts              requireSignedIn / requireMember / requireAdult (household from the TOKEN)
+  lib/claims.ts, audit.ts    claim stamping; server-written audit trail
+  lib/tokens.ts              random token + sha256 hash + constant-time compare
   lib/dates.ts               zone-aware day math (tested)
-  google/                    OAuth client, calendar, gmail (read + send)
-  sync/collect.ts            one pull of today → snapshots/today
-  digest/buildDigest.ts      pure digest builder (tested)
-  digest/runDigest.ts        collect → build → store → email
-  digest/dailyDigest.ts      06:30 schedule
-  me/                        token endpoint + schema (tested)
-  auth/onUserCreated.ts      owner claim, deletes anyone else
-scripts/me.mjs               CLI over the me endpoint
-scripts/google-oauth.mjs     one-time refresh token mint (local only)
+  household/                 createHousehold, createInvite, acceptInvite, addChild, mintMeToken/revokeMeToken, schema (tested)
+  google/                    per-person clients (1c fills in KMS), calendar, gmail (read + send)
+  sync/collect.ts, people.ts one pull of today per person → users/{uid}/snapshots/today
+  digest/                    pure builder (tested), runDigestFor(person), 06:30 schedule over every adult
+  me/                        personal-token endpoint + schema (tested)
+  auth/onUserCreated.ts      profile doc only; no claims until a household
+tests/rules/                 Firestore rules tests (households, tasks, users), two households seeded
+scripts/me.mjs               CLI over the me endpoint (token minted on the Household screen)
 ```
 
 ## Commands
@@ -66,13 +69,14 @@ npm run portal:dev        # Vite dev server (needs portal/.env, see portal/.env.
 npm run lint              # portal eslint
 npm run build             # portal build, site assembly into dist/, functions tsc
 npm run test:run          # portal + functions vitest
-npm run me <cmd>          # today | calendar | inbox | tasks | add | done | rm | digest  (needs $ME_TOKEN)
+npm run test:rules        # Firestore rules under the emulator (needs Java)
+npm run me <cmd>          # today | calendar | inbox | tasks | add [--private] | done | rm | digest  (needs $ME_TOKEN)
 npm run deploy:rules      # firestore rules + indexes
-npm run deploy:functions  # all functions (4 today, quota is fine)
+npm run deploy:functions  # all functions (10 today, quota is fine)
 npm run deploy:hosting    # portal build + site build + hosting (portfolio + /app)
 ```
 
-Before any commit: `npm run lint && npm run build && npm run test:run`.
+Before any commit: `npm run lint && npm run build && npm run test:run`, plus `npm run test:rules` when the rules or a service changed.
 
 ## Working with Johnny
 

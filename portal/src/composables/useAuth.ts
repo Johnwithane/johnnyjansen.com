@@ -1,35 +1,36 @@
 import { computed, ref } from "vue";
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase/config";
+import type { Role } from "@/firebase/interfaces";
 
-// One user. Sign in with Google; the onUserCreated function then either stamps
-// the `owner` claim (it's Johnny) or deletes the account (it isn't). The claim
-// is not on the first token, so after sign-in we refresh the token for a few
-// seconds until it appears. If the account was deleted the refresh fails and
-// we land on "not you".
+// Sign in with Google. The household and role ride on the ID token as
+// custom claims ({ hid, role }), stamped by createHousehold / acceptInvite.
+// After either of those the token must be refreshed to see them, which is
+// what refreshClaims() is for. Cached claims are read first so a phone with
+// no signal still opens straight into the household.
+
+interface Claims {
+  hid: string | null;
+  role: Role | null;
+  mfa: boolean;
+}
 
 const user = ref<User | null>(null);
-const isOwner = ref(false);
+const claims = ref<Claims>({ hid: null, role: null, mfa: false });
 const ready = ref(false);
 const error = ref<string | null>(null);
 const busy = ref(false);
 let started = false;
 
-async function readClaim(u: User, force: boolean): Promise<boolean> {
+async function readClaims(u: User, force: boolean): Promise<Claims> {
   const t = await u.getIdTokenResult(force);
-  return t.claims.owner === true;
-}
-
-async function waitForClaim(u: User): Promise<boolean> {
-  for (let i = 0; i < 10; i++) {
-    try {
-      if (await readClaim(u, i > 0)) return true;
-    } catch {
-      return false; // token refresh failed: the account was deleted
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  return false;
+  const c = t.claims as Record<string, unknown>;
+  const fb = c.firebase as { sign_in_second_factor?: string } | undefined;
+  return {
+    hid: typeof c.hid === "string" ? c.hid : null,
+    role: c.role === "adult" || c.role === "child" ? c.role : null,
+    mfa: !!fb?.sign_in_second_factor,
+  };
 }
 
 function start() {
@@ -37,8 +38,7 @@ function start() {
   started = true;
   onAuthStateChanged(auth, async (u) => {
     user.value = u;
-    // Cached claim first (works offline), only then the network.
-    isOwner.value = u ? await readClaim(u, false).catch(() => false) : false;
+    claims.value = u ? await readClaims(u, false).catch(() => ({ hid: null, role: null, mfa: false })) : { hid: null, role: null, mfa: false };
     ready.value = true;
   });
 }
@@ -51,13 +51,7 @@ export function useAuth() {
     busy.value = true;
     try {
       const cred = await signInWithPopup(auth, googleProvider);
-      const ok = await waitForClaim(cred.user);
-      if (!ok) {
-        await signOut(auth).catch(() => undefined);
-        error.value = "This portal is for one account. That was not it.";
-        return;
-      }
-      isOwner.value = true;
+      claims.value = await readClaims(cred.user, true);
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Sign in failed";
     } finally {
@@ -65,18 +59,30 @@ export function useAuth() {
     }
   }
 
+  /** Force a token refresh, e.g. right after createHousehold or acceptInvite. */
+  async function refreshClaims(): Promise<Claims> {
+    if (!user.value) return claims.value;
+    claims.value = await readClaims(user.value, true);
+    return claims.value;
+  }
+
   async function logOut() {
     await signOut(auth);
-    isOwner.value = false;
+    claims.value = { hid: null, role: null, mfa: false };
   }
 
   return {
     user: computed(() => user.value),
-    isOwner: computed(() => isOwner.value),
+    uid: computed(() => user.value?.uid ?? null),
+    hid: computed(() => claims.value.hid),
+    role: computed(() => claims.value.role),
+    isMember: computed(() => !!claims.value.hid),
+    isAdult: computed(() => claims.value.role === "adult"),
     ready: computed(() => ready.value),
     error: computed(() => error.value),
     busy: computed(() => busy.value),
     signIn,
+    refreshClaims,
     logOut,
   };
 }

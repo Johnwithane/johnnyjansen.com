@@ -2,3 +2,8 @@ export { me } from "./me/me";
 export { dailyDigest } from "./digest/dailyDigest";
 export { refreshToday } from "./sync/refreshToday";
 export { onUserCreated } from "./auth/onUserCreated";
+export { createHousehold } from "./household/createHousehold";
+export { createInvite } from "./household/createInvite";
+export { acceptInvite } from "./household/acceptInvite";
+export { addChild } from "./household/addChild";
+export { mintMeToken, revokeMeToken } from "./household/meToken";

@@ -19,6 +19,7 @@ export const MeBody = z.discriminatedUnion("action", [
     title: z.string().trim().min(1).max(500),
     due: day.optional(),
     notes: z.string().max(4000).optional(),
+    visibility: z.enum(["household", "private"]).default("household"),
   }),
   z.object({ action: z.literal("tasks.done"), id: z.string().min(1).max(128) }),
   z.object({ action: z.literal("tasks.reopen"), id: z.string().min(1).max(128) }),

@@ -1,35 +1,34 @@
 import { onRequest, type Request } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
-import { timingSafeEqual } from "node:crypto";
 import type { Response } from "express";
 import { db } from "../lib/admin";
 import { dayBounds, dayKey } from "../lib/dates";
-import { GOOGLE_SECRETS, ME_TOKEN, TIMEZONE } from "../lib/params";
-import { googleClients } from "../google/client";
+import { hashToken } from "../lib/tokens";
+import { googleClientsFor } from "../google/client";
 import { listEvents } from "../google/calendar";
 import { listUnread } from "../google/gmail";
-import { collectToday, storeSnapshot } from "../sync/collect";
-import { runDigest } from "../digest/runDigest";
+import { collectToday, storeSnapshot, type Person } from "../sync/collect";
+import { personFor } from "../sync/people";
+import { runDigestFor } from "../digest/runDigest";
 import type { TaskDoc } from "../types";
 import { MeBody } from "./schema";
 
-// The door a Claude Code session (or a terminal) uses to reach the portal's
-// data from anywhere with ONE shared secret: no Google credentials on the
-// session, no admin SDK. Same shape as bettertour's feedbackQueue.
-//
-// It is deliberately a small, closed menu of actions (see schema.ts), not a
-// general query surface. Anything it can do, the portal can do by hand.
+// The door a Claude Code session uses. One personal token per adult
+// (mintMeToken), stored as a hash at meTokens/{hash} -> { uid, hid }. A leaked
+// token reaches one person's view of one household and is revocable from the
+// Household screen. A closed menu of actions (schema.ts), not a query surface.
 
-const TOKEN_UNSET = "unset";
-
-function tokenOk(req: Request): boolean {
-  const expected = ME_TOKEN.value();
-  if (!expected || expected === TOKEN_UNSET) return false;
-  const got = req.get("x-me-token") ?? "";
-  const a = Buffer.from(got);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+async function resolveCaller(req: Request): Promise<(Person & { email: string }) | null> {
+  const raw = req.get("x-me-token") ?? "";
+  if (!raw || raw.length > 200) return null;
+  const snap = await db.collection("meTokens").doc(hashToken(raw)).get();
+  const uid = snap.data()?.uid as string | undefined;
+  if (!uid) return null;
+  const p = await personFor(uid);
+  if (!p) return null;
+  const email = ((await db.collection("users").doc(uid).get()).data()?.email as string | undefined) ?? "";
+  return { ...p, email };
 }
 
 function taskOut(id: string, t: TaskDoc) {
@@ -39,50 +38,60 @@ function taskOut(id: string, t: TaskDoc) {
     done: t.done,
     due: t.due ?? null,
     notes: t.notes ?? "",
+    visibility: t.visibility,
+    ownerUid: t.ownerUid,
+    assigneeUid: t.assigneeUid ?? null,
     source: t.source,
     createdAt: t.createdAt?.toDate?.().toISOString() ?? null,
     doneAt: t.doneAt?.toDate?.().toISOString() ?? null,
   };
 }
 
-async function handle(body: MeBody): Promise<unknown> {
-  const tz = TIMEZONE.value();
+/** A task this person may see: shared, or their own private one. */
+function canSee(p: Person, t: TaskDoc): boolean {
+  return t.visibility === "household" || t.ownerUid === p.uid;
+}
+
+async function handle(p: Person & { email: string }, body: MeBody): Promise<unknown> {
   const now = new Date();
+  const tasks = db.collection("households").doc(p.hid).collection("tasks");
 
   switch (body.action) {
     case "today": {
-      const c = await collectToday(now, tz);
-      await storeSnapshot(c);
+      const c = await collectToday(p, now);
+      await storeSnapshot(p, c);
       return c;
     }
     case "calendar": {
-      const g = googleClients();
+      const g = await googleClientsFor(p.uid);
       if (!g) return { error: "google_unconfigured", events: [] };
-      const { start } = dayBounds(now, tz);
+      const { start } = dayBounds(now, p.timeZone);
       const end = new Date(start.getTime() + body.days * 86400000);
-      return { from: dayKey(start, tz), days: body.days, events: await listEvents(g.calendar, start, end) };
+      return { from: dayKey(start, p.timeZone), days: body.days, events: await listEvents(g.calendar, start, end) };
     }
     case "inbox": {
-      const g = googleClients();
+      const g = await googleClientsFor(p.uid);
       if (!g) return { error: "google_unconfigured", items: [], total: 0 };
       return listUnread(g.gmail, body.max);
     }
     case "tasks.list": {
-      const snap = await db
-        .collection("tasks")
-        .where("done", "==", body.done)
-        .orderBy("createdAt", body.done ? "desc" : "asc")
-        .limit(200)
-        .get();
-      return { tasks: snap.docs.map((d) => taskOut(d.id, d.data() as TaskDoc)) };
+      const snap = await tasks.where("done", "==", body.done).limit(300).get();
+      const out = snap.docs
+        .filter((d) => canSee(p, d.data() as TaskDoc))
+        .map((d) => taskOut(d.id, d.data() as TaskDoc))
+        .sort((a, b) => (body.done ? (b.doneAt ?? "").localeCompare(a.doneAt ?? "") : (a.createdAt ?? "").localeCompare(b.createdAt ?? "")));
+      return { tasks: out };
     }
     case "tasks.add": {
-      const ref = await db.collection("tasks").add({
+      const ref = await tasks.add({
         title: body.title,
         done: false,
         doneAt: null,
         due: body.due ?? null,
         notes: body.notes ?? "",
+        visibility: body.visibility,
+        ownerUid: p.uid,
+        assigneeUid: null,
         source: "cli",
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
@@ -92,61 +101,46 @@ async function handle(body: MeBody): Promise<unknown> {
     }
     case "tasks.done":
     case "tasks.reopen": {
-      const ref = db.collection("tasks").doc(body.id);
+      const ref = tasks.doc(body.id);
       const snap = await ref.get();
-      if (!snap.exists) return { error: "not_found", id: body.id };
+      if (!snap.exists || !canSee(p, snap.data() as TaskDoc)) return { error: "not_found", id: body.id };
       const done = body.action === "tasks.done";
-      await ref.update({
-        done,
-        doneAt: done ? FieldValue.serverTimestamp() : null,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      await ref.update({ done, doneAt: done ? FieldValue.serverTimestamp() : null, updatedAt: FieldValue.serverTimestamp() });
       const after = await ref.get();
       return { task: taskOut(ref.id, after.data() as TaskDoc) };
     }
     case "tasks.delete": {
-      const ref = db.collection("tasks").doc(body.id);
+      const ref = tasks.doc(body.id);
       const snap = await ref.get();
-      if (!snap.exists) return { error: "not_found", id: body.id };
+      const t = snap.data() as TaskDoc | undefined;
+      if (!snap.exists || !t || !canSee(p, t)) return { error: "not_found", id: body.id };
+      if (t.ownerUid !== p.uid && t.visibility === "private") return { error: "not_found", id: body.id };
       await ref.delete();
       return { deleted: body.id };
     }
     case "digest.get": {
-      const snap = body.day
-        ? await db.collection("digests").doc(body.day).get()
-        : (await db.collection("digests").orderBy("dayKey", "desc").limit(1).get()).docs[0];
+      const col = db.collection("users").doc(p.uid).collection("digests");
+      const snap = body.day ? await col.doc(body.day).get() : (await col.orderBy("dayKey", "desc").limit(1).get()).docs[0];
       if (!snap || !snap.exists) return { error: "not_found" };
       const d = snap.data() as Record<string, unknown>;
-      return {
-        dayKey: d.dayKey,
-        subject: d.subject,
-        text: d.text,
-        counts: d.counts,
-        emailed: d.emailed,
-        emailError: d.emailError ?? null,
-      };
+      return { dayKey: d.dayKey, subject: d.subject, text: d.text, counts: d.counts, emailed: d.emailed, emailError: d.emailError ?? null };
     }
     case "digest.run": {
-      const r = await runDigest(now);
+      const r = await runDigestFor(p, now);
       return { dayKey: r.dayKey, subject: r.subject, text: r.text, counts: r.counts, emailed: r.emailed, emailError: r.emailError ?? null };
     }
   }
 }
 
 export const me = onRequest(
-  {
-    region: "us-central1",
-    secrets: [ME_TOKEN, ...GOOGLE_SECRETS],
-    timeoutSeconds: 120,
-    memory: "256MiB",
-    cors: false,
-  },
+  { region: "us-central1", timeoutSeconds: 120, memory: "256MiB", cors: false },
   async (req: Request, res: Response) => {
     if (req.method !== "POST") {
       res.status(405).json({ error: "POST only" });
       return;
     }
-    if (!tokenOk(req)) {
+    const caller = await resolveCaller(req);
+    if (!caller) {
       res.status(401).json({ error: "unauthorized" });
       return;
     }
@@ -155,9 +149,9 @@ export const me = onRequest(
       res.status(400).json({ error: "bad_request", issues: parsed.error.issues });
       return;
     }
-    const ctx = { fn: "me", action: parsed.data.action };
+    const ctx = { fn: "me", uid: caller.uid, hid: caller.hid, action: parsed.data.action };
     try {
-      const out = await handle(parsed.data);
+      const out = await handle(caller, parsed.data);
       logger.info("me: ok", ctx);
       res.json({ ok: true, ...(out as object) });
     } catch (err) {

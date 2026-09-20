@@ -16,9 +16,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const out = path.join(root, "dist");
 
-const SKIP_DIRS = new Set(["portal", "functions", "scripts", "node_modules", "dist", ".git", ".github", ".firebase"]);
-const SKIP_FILES = new Set(["CNAME", ".gitignore", ".firebaserc", "firebase.json", "firestore.rules", "firestore.indexes.json", "package.json", "package-lock.json"]);
-const SKIP_EXT = new Set([".md"]);
+const SKIP_DIRS = new Set(["portal", "functions", "scripts", "tests", "node_modules", "dist", ".git", ".github", ".firebase"]);
+const SKIP_FILES = new Set(["CNAME", ".gitignore", ".firebaserc", "firebase.json", "firestore.rules", "firestore.indexes.json", "package.json", "package-lock.json", "vitest.rules.config.ts"]);
+const SKIP_EXT = new Set([".md", ".log"]);
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });

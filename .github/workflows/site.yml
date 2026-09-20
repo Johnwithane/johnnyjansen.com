@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Install root deps (emulator + rules tests)
+        run: npm ci
       - name: Install portal deps
         run: npm ci --prefix portal
       - name: Install functions deps
@@ -40,6 +42,12 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
       - name: Test
         run: npm run test:run
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Firestore rules tests
+        run: npm run test:rules
       - uses: actions/upload-artifact@v4
         with:
           name: site-dist

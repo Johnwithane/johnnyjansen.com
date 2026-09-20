@@ -1,14 +1,12 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { db } from "../lib/admin";
+import { APP_BASE_URL } from "../lib/brand";
 import { dayLabel } from "../lib/dates";
-import { OWNER_EMAIL, TIMEZONE } from "../lib/params";
-import { googleClients } from "../google/client";
+import { googleClientsFor } from "../google/client";
 import { sendEmail } from "../google/gmail";
-import { collectToday, storeSnapshot } from "../sync/collect";
+import { collectToday, storeSnapshot, type Person } from "../sync/collect";
 import { buildDigest, type Digest } from "./buildDigest";
-
-export const PORTAL_URL = "https://johnnyjansen.com/app";
 
 export interface DigestRun extends Digest {
   dayKey: string;
@@ -17,46 +15,44 @@ export interface DigestRun extends Digest {
 }
 
 /**
- * Collect today, build the digest, store it at digests/{dayKey}, refresh the
- * portal snapshot, and email it to the owner from their own Gmail. Shared by
- * the 6:30am schedule and the `me digest run` action so both produce the same
- * document. A send failure is recorded on the doc, never thrown: the digest is
- * still readable in the portal, and a red scheduled job with nothing to show
- * is worse.
+ * One person's digest: collect their day, build it, store it under their
+ * own uid, refresh their snapshot, and send it from their own Gmail to
+ * themselves. A send failure is recorded, never thrown: the digest is still
+ * readable in the portal.
  */
-export async function runDigest(now = new Date()): Promise<DigestRun> {
-  const tz = TIMEZONE.value();
-  const collected = await collectToday(now, tz);
-  await storeSnapshot(collected);
+export async function runDigestFor(p: Person & { email: string }, now = new Date()): Promise<DigestRun> {
+  const collected = await collectToday(p, now);
+  await storeSnapshot(p, collected);
 
   const digest = buildDigest({
-    dayLabel: dayLabel(now, tz),
-    timeZone: tz,
+    dayLabel: dayLabel(now, p.timeZone),
+    timeZone: p.timeZone,
     events: collected.events,
     unread: collected.unread,
     unreadTotal: collected.unreadTotal,
     tasks: collected.tasks,
     googleConnected: collected.sources.google === "ok",
-    portalUrl: PORTAL_URL,
+    portalUrl: APP_BASE_URL,
   });
 
   let emailed = false;
   let emailError: string | undefined;
-  const clients = googleClients();
-  const to = OWNER_EMAIL.value();
-  if (clients && to) {
+  const clients = await googleClientsFor(p.uid);
+  if (clients) {
     try {
-      await sendEmail(clients.gmail, { to, subject: digest.subject, text: digest.text, html: digest.html });
+      await sendEmail(clients.gmail, { to: p.email, subject: digest.subject, text: digest.text, html: digest.html });
       emailed = true;
     } catch (err) {
       emailError = err instanceof Error ? err.message : String(err);
-      logger.error("digest: send failed", { err });
+      logger.error("digest: send failed", { uid: p.uid, err });
     }
   } else {
-    emailError = clients ? "OWNER_EMAIL not set" : "Google not connected";
+    emailError = "Google not connected";
   }
 
   await db
+    .collection("users")
+    .doc(p.uid)
     .collection("digests")
     .doc(collected.dayKey)
     .set({
@@ -70,6 +66,6 @@ export async function runDigest(now = new Date()): Promise<DigestRun> {
       generatedAt: FieldValue.serverTimestamp(),
     });
 
-  logger.info("digest: done", { dayKey: collected.dayKey, emailed, counts: digest.counts });
+  logger.info("digest: done", { uid: p.uid, dayKey: collected.dayKey, emailed, counts: digest.counts });
   return { ...digest, dayKey: collected.dayKey, emailed, ...(emailError ? { emailError } : {}) };
 }

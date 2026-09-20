@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuth } from "@/composables/useAuth";
+import { BRAND_NAME } from "@/seo/site";
 
 const { logOut } = useAuth();
 
@@ -7,13 +8,14 @@ const tabs = [
   { to: "/", label: "Today" },
   { to: "/tasks", label: "Tasks" },
   { to: "/digests", label: "Digests" },
+  { to: "/household", label: "Household" },
 ];
 </script>
 
 <template>
   <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-4">
     <header class="flex items-center justify-between py-4">
-      <RouterLink to="/" class="text-sm font-medium tracking-wide text-accent">johnnyjansen.com</RouterLink>
+      <RouterLink to="/" class="text-sm font-medium tracking-wide text-accent">{{ BRAND_NAME }}</RouterLink>
       <button type="button" class="text-sm text-muted" @click="logOut">Sign out</button>
     </header>
 

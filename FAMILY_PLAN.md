@@ -193,6 +193,8 @@ All image and document reading runs on **Vertex AI (Gemini 2.5 Flash)** inside C
 
 ## 7. Phases
 
+Phase 1 progress (2026-09-20): **1a shipped** (household model, `{ hid, role }` claims, one-time hashed invites, child records, per-person me tokens, audit log, brand files, per-person digests and snapshots, rules with 27 emulator tests incl. cross-tenant denies, portal onboarding / invite / Household screens, shared + private tasks). Next: 1b polish (wizard spine, Today for two), 1c per-person Google with KMS, 1d feedback, 1e App Check + MFA + legal.
+
 Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, `me` actions, digest section) before the next starts.
 
 | Phase | Ships | Notes |

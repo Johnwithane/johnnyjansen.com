@@ -2,45 +2,98 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ONE user. The owner claim is set by functions/src/auth/onUserCreated.ts
-    // when the signing-in Google account matches OWNER_EMAIL; every other
-    // account that signs in is deleted by the same trigger. So "owner" is the
-    // only role and there is no doc lookup anywhere in these rules.
-    function isOwner() {
-      return request.auth != null && request.auth.token.owner == true;
+    // ---------------------------------------------------------------------
+    // Tenant isolation, by construction (FAMILY_PLAN.md section 9.1).
+    //
+    // Every tenant document lives under households/{hid}. The signed-in
+    // person's household and role ride on the ID token as custom claims,
+    // set only by the household functions (createHousehold, acceptInvite).
+    // Every rule below checks the claim FIRST, then the role, then
+    // ownership for private items. There are no doc lookups.
+    // ---------------------------------------------------------------------
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function uid() { return request.auth.uid; }
+    function inHousehold(h) { return signedIn() && request.auth.token.hid == h; }
+    function isAdult(h) { return inHousehold(h) && request.auth.token.role == 'adult'; }
+    // A session that passed a second factor. Money, Taxes and the Vault
+    // (Phase 2+) require this on top of the household claim.
+    function isMfa() {
+      return request.auth.token.firebase.sign_in_second_factor != null;
     }
 
-    // Tasks are written from the portal (browser) and from the `me` endpoint
-    // (admin SDK, bypasses rules). Shape is kept honest at the boundary too:
-    // a title, a done flag, and the fields the portal knows about, nothing else.
-    match /tasks/{taskId} {
-      function validTask() {
-        let d = request.resource.data;
-        return d.title is string && d.title.size() > 0 && d.title.size() <= 500
-          && d.done is bool
-          && d.keys().hasOnly(['title', 'done', 'doneAt', 'due', 'notes', 'source', 'createdAt', 'updatedAt']);
+    match /households/{h} {
+      // The household doc (name, members, settings) is readable by every
+      // member. Only functions write it: membership and claims change
+      // together or not at all.
+      allow read: if inHousehold(h);
+      allow create, update, delete: if false;
+
+      match /invites/{inviteId} {
+        allow read: if isAdult(h);
+        allow create, update, delete: if false;
       }
-      allow read: if isOwner();
-      allow create: if isOwner() && validTask() && request.resource.data.source == 'portal';
-      allow update: if isOwner() && validTask();
-      allow delete: if isOwner();
+
+      match /audit/{entryId} {
+        allow read: if isAdult(h);
+        allow create, update, delete: if false;
+      }
+
+      match /tasks/{taskId} {
+        function visibleToMe() {
+          return resource.data.visibility == 'household' || resource.data.ownerUid == uid();
+        }
+        function validTask() {
+          let d = request.resource.data;
+          return d.title is string && d.title.size() > 0 && d.title.size() <= 500
+            && d.done is bool
+            && d.visibility in ['household', 'private']
+            && d.ownerUid is string
+            && d.keys().hasOnly(['title', 'done', 'doneAt', 'due', 'notes', 'visibility', 'ownerUid', 'assigneeUid', 'source', 'createdAt', 'updatedAt']);
+        }
+        allow read: if inHousehold(h) && visibleToMe();
+        allow create: if inHousehold(h) && validTask()
+          && request.resource.data.ownerUid == uid()
+          && request.resource.data.source == 'portal';
+        // Anyone in the household can edit a shared task; only the owner can
+        // touch a private one. Ownership never changes hands.
+        allow update: if inHousehold(h) && visibleToMe() && validTask()
+          && request.resource.data.ownerUid == resource.data.ownerUid;
+        allow delete: if inHousehold(h)
+          && (resource.data.ownerUid == uid() || (isAdult(h) && resource.data.visibility == 'household'));
+      }
     }
 
-    // Written only by Cloud Functions (the daily digest job and `me`).
-    match /digests/{digestId} {
-      allow read: if isOwner();
-      allow create, update, delete: if false;
+    match /users/{u} {
+      // Own profile only. hid and role live here as a mirror of the claims
+      // and are function-written; the person may edit display fields.
+      allow read: if signedIn() && uid() == u;
+      allow create, delete: if false;
+      allow update: if signedIn() && uid() == u
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'colour', 'digest', 'timeZone', 'updatedAt']);
+
+      // Google grant (KMS-encrypted), me token hash: functions only.
+      match /private/{doc} {
+        allow read, write: if false;
+      }
+      // Personal inbox + calendar pull and the daily digest, written by
+      // functions, readable by exactly one uid.
+      match /snapshots/{doc} {
+        allow read: if signedIn() && uid() == u;
+        allow write: if false;
+      }
+      match /digests/{doc} {
+        allow read: if signedIn() && uid() == u;
+        allow write: if false;
+      }
     }
 
-    // The latest calendar + inbox pull, written by the sync job for the
-    // portal's Today view. Never written from the browser.
-    match /snapshots/{snapshotId} {
-      allow read: if isOwner();
-      allow create, update, delete: if false;
-    }
-
-    match /settings/{settingId} {
-      allow read, write: if isOwner();
+    // me endpoint tokens: hash -> { uid, hid }. Function-only both ways.
+    match /meTokens/{hash} {
+      allow read, write: if false;
     }
   }
 }
