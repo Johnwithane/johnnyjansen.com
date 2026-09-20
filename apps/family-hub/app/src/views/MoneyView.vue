@@ -2,7 +2,9 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/data/categories";
-import type { Account, Budget, Transaction, WithId } from "@/firebase/interfaces";
+import type { Account, Bill, Budget, Transaction, WithId } from "@/firebase/interfaces";
+import { subscribeBills } from "@/firebase/services/billsService";
+import { dueLabel } from "@/utils/bills";
 import { deleteTransaction, saveBudget, subscribeAccounts, subscribeBudget, subscribeTransactions } from "@/firebase/services/moneyService";
 import { addDays, dayKeyOf } from "@/utils/localTime";
 import { money, monthLabel, monthOf, spendByCategory, totalSpend } from "@/utils/money";
@@ -16,8 +18,10 @@ const ym = monthOf(today);
 const txs = ref<WithId<Transaction>[]>([]);
 const accounts = ref<WithId<Account>[]>([]);
 const budget = ref<Budget | null>(null);
+const bills = ref<WithId<Bill>[]>([]);
 const stops: (() => void)[] = [];
 onMounted(() => {
+  stops.push(subscribeBills(h, me, (b) => (bills.value = b)));
   stops.push(subscribeTransactions(h, me, addDays(today, -62), (t) => (txs.value = t)));
   stops.push(subscribeAccounts(h, me, (a) => (accounts.value = a)));
   stops.push(subscribeBudget(h, (b) => (budget.value = b)));
@@ -37,6 +41,7 @@ const rows = computed(() =>
     .sort((a, b) => b.spent - a.spent),
 );
 const recent = computed(() => txs.value.slice(0, 8));
+const dueSoon = computed(() => bills.value.filter((b) => b.nextDue <= addDays(today, 7)).sort((a, b) => a.nextDue.localeCompare(b.nextDue)).slice(0, 5));
 const accountName = (id: string | null) => accounts.value.find((a) => a.id === id)?.name ?? "";
 
 // Envelope editing
@@ -73,6 +78,22 @@ function remove(id: string) {
       <template v-else>spent, {{ dayOfMonth }} days in. No budget set.</template>
     </p>
     <div v-if="budgetTotal" class="mb-6 mt-2 h-0.5 rounded bg-line"><div class="h-0.5 rounded bg-accent" :style="{ width: `${Math.min(100, (spent / budgetTotal) * 100)}%` }"></div></div>
+
+    <nav class="mb-6 flex gap-4 text-sm">
+      <RouterLink to="/money/bills">Bills</RouterLink>
+      <RouterLink to="/money/import">Import</RouterLink>
+      <RouterLink to="/money/accounts">Accounts</RouterLink>
+    </nav>
+
+    <section v-if="dueSoon.length" class="mb-8">
+      <h2 class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Due this week</h2>
+      <ul>
+        <li v-for="b in dueSoon" :key="b.id" class="flex items-center justify-between gap-3 border-b border-line py-2.5 text-sm">
+          <span>{{ b.name }}<span class="text-muted"> · {{ dueLabel(b.nextDue, today) }}</span></span>
+          <span class="tabular-nums">{{ money(b.amount) }}</span>
+        </li>
+      </ul>
+    </section>
 
     <section class="mb-8">
       <div class="mb-2 flex items-baseline justify-between">

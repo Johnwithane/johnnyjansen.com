@@ -5,11 +5,13 @@ import { dayBounds, dayKey } from "../lib/dates";
 import { googleClientsFor } from "../google/client";
 import { listEvents } from "../google/calendar";
 import { listUnread } from "../google/gmail";
-import type { EventDoc, EventItem, MailItem, SnapshotDoc, TaskDoc, TaskItem } from "../types";
+import { billsDueWithin, type BillLine } from "../money/bills";
+import type { EventDoc, EventItem, MailItem, Role, SnapshotDoc, TaskDoc, TaskItem } from "../types";
 
 export interface Person {
   uid: string;
   hid: string;
+  role: Role;
   timeZone: string;
   calendarIds: string[];
   familyCalendarIds: string[];
@@ -34,6 +36,8 @@ export interface Collected {
   events: EventItem[];
   /** The household's own calendar for the day (bills, birthdays, intake events). */
   household: HouseholdEventItem[];
+  /** Bills due in the next week (adults only; a child's snapshot has none). */
+  bills: BillLine[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -88,7 +92,7 @@ export async function householdEventsOn(hid: string, key: string): Promise<House
 export async function collectToday(p: Person, now: Date): Promise<Collected> {
   const key = dayKey(now, p.timeZone);
   const { start, end } = dayBounds(now, p.timeZone);
-  const [tasks, household] = await Promise.all([openTasksFor(p), householdEventsOn(p.hid, key)]);
+  const [tasks, household, bills] = await Promise.all([openTasksFor(p), householdEventsOn(p.hid, key), p.role === "adult" ? billsDueWithin(p.hid, key, 7) : Promise.resolve([])]);
 
   let events: EventItem[] = [];
   let unread: MailItem[] = [];
@@ -109,7 +113,7 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
     }
   }
 
-  return { dayKey: key, timeZone: p.timeZone, events, household, unread, unreadTotal, tasks, sources: { google } };
+  return { dayKey: key, timeZone: p.timeZone, events, household, bills, unread, unreadTotal, tasks, sources: { google } };
 }
 
 /**

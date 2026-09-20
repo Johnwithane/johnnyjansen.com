@@ -55,6 +55,21 @@ export const MeBody = z.discriminatedUnion("action", [
   /** Pending suggestions this person can see. */
   z.object({ action: z.literal("suggestions.list") }),
   z.object({ action: z.literal("suggestions.dismiss"), id: z.string().min(1).max(128) }),
+  /** Bills and subscriptions. Adults only; the token itself is minted from a second-factor session (mintMeToken). */
+  z.object({ action: z.literal("bills.list") }),
+  z.object({
+    action: z.literal("bills.add"),
+    name: z.string().trim().min(1).max(120),
+    amount: z.number().positive().max(10000000),
+    nextDue: day,
+    cadence: z.enum(["weekly", "monthly", "quarterly", "yearly", "once"]).default("monthly"),
+    responsibleUid: z.string().max(128).optional(),
+    notes: z.string().max(1000).optional(),
+  }),
+  z.object({ action: z.literal("bills.delete"), id: z.string().min(1).max(128) }),
+  /** Intake: run the approved-sender inbox scan now, or read / replace the approved list. */
+  z.object({ action: z.literal("intake.scan") }),
+  z.object({ action: z.literal("intake.senders"), set: z.array(z.string().trim().min(3).max(120)).max(30).optional() }),
 ]);
 
 export type MeBody = z.infer<typeof MeBody>;

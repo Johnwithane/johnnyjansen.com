@@ -27,6 +27,11 @@ describe("users/{uid}", () => {
     await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ setup: { done: true } }));
     await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ legal: { version: 1 } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ google: { connected: true } }));
+    // Intake senders are the person's own; the scan timestamp is not.
+    await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: ["school@example.org", "kelownaswim.ca"] } }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: "school@example.org" } }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: [], lastScanAt: new Date() } }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: Array.from({ length: 31 }, (_, i) => `s${i}@x.co`) } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ hid: "hh-b" }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ role: "child" }));
     await assertFails(adultA2(env).firestore().doc(`users/${ADULT_A}`).update({ name: "hacked" }));

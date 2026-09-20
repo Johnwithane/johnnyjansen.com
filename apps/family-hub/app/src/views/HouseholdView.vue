@@ -202,7 +202,8 @@ async function copyToken() {
     <p class="mb-6 text-xs text-muted">{{ household?.timeZone }}</p>
     <p v-if="note" class="mb-4 text-sm text-muted">{{ note }}</p>
 
-    <RouterLink to="/money/accounts" class="block border-b border-line py-3 text-sm">Accounts <span class="text-accent">→</span></RouterLink>
+    <RouterLink v-if="isAdult" to="/intake" class="block border-b border-line py-3 text-sm">Intake, approved senders <span class="text-accent">→</span></RouterLink>
+    <RouterLink v-if="isAdult" to="/money/accounts" class="block border-b border-line py-3 text-sm">Accounts <span class="text-accent">→</span></RouterLink>
     <RouterLink to="/digests" class="block border-b border-line py-3 text-sm">Digests <span class="text-accent">→</span></RouterLink>
     <RouterLink to="/security" class="block border-b border-line py-3 text-sm">Security, second factor <span class="text-accent">→</span></RouterLink>
     <RouterLink to="/feedback" class="mb-6 block border-b border-line py-3 text-sm">Feedback queue <span class="text-accent">→</span></RouterLink>

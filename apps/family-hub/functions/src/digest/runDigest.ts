@@ -3,6 +3,7 @@ import { logger } from "firebase-functions/v2";
 import { db } from "../lib/admin";
 import { APP_BASE_URL } from "../lib/brand";
 import { dayLabel } from "../lib/dates";
+import { pendingCount } from "../sync/review";
 import { googleClientsFor } from "../google/client";
 import { sendEmail } from "../google/gmail";
 import { collectToday, storeSnapshot, type Person } from "../sync/collect";
@@ -23,12 +24,16 @@ export interface DigestRun extends Digest {
 export async function runDigestFor(p: Person & { email: string }, now = new Date()): Promise<DigestRun> {
   const collected = await collectToday(p, now);
   await storeSnapshot(p, collected);
+  const reviewCount = await pendingCount(p);
 
   const digest = buildDigest({
     dayLabel: dayLabel(now, p.timeZone),
     timeZone: p.timeZone,
     events: collected.events,
     family: collected.household.map((h) => ({ title: h.title, start: h.start, allDay: h.allDay, kind: h.kind })),
+    money: collected.bills.map((b) => ({ name: b.name, amount: b.amount, nextDue: b.nextDue, who: b.who })),
+    reviewCount,
+    today: collected.dayKey,
     unread: collected.unread,
     unreadTotal: collected.unreadTotal,
     tasks: collected.tasks,

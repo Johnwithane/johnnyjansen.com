@@ -11,6 +11,7 @@ export async function personFor(uid: string): Promise<Person | null> {
   return {
     uid,
     hid: u.hid,
+    role: u.role === "child" ? "child" : "adult",
     timeZone: u.timeZone || DEFAULT_TIMEZONE.value(),
     calendarIds: u.google?.calendarIds ?? [],
     familyCalendarIds: u.google?.familyCalendarIds ?? [],
@@ -29,6 +30,7 @@ export async function digestRecipients(): Promise<(Person & { email: string })[]
     out.push({
       uid: d.id,
       hid: u.hid,
+      role: "adult",
       timeZone: u.timeZone || DEFAULT_TIMEZONE.value(),
       calendarIds: u.google?.calendarIds ?? [],
       familyCalendarIds: u.google?.familyCalendarIds ?? [],

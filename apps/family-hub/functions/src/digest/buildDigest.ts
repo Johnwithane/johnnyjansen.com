@@ -13,12 +13,26 @@ export interface FamilyLine {
   kind: string;
 }
 
+export interface MoneyLine {
+  name: string;
+  amount: number;
+  /** YYYY-MM-DD */
+  nextDue: string;
+  who: string;
+}
+
 export interface DigestInput {
   dayLabel: string;
   timeZone: string;
   events: EventItem[];
   /** The household calendar for the day; empty array when nothing is on. */
   family?: FamilyLine[];
+  /** Bills due in the next week; empty when nothing is due. */
+  money?: MoneyLine[];
+  /** Suggestions waiting on Review. */
+  reviewCount?: number;
+  /** YYYY-MM-DD in the person's zone, to label a due day as today or overdue. */
+  today?: string;
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -31,7 +45,7 @@ export interface Digest {
   subject: string;
   text: string;
   html: string;
-  counts: { events: number; unread: number; tasks: number };
+  counts: { events: number; unread: number; tasks: number; bills: number; review: number };
 }
 
 function esc(s: string): string {
@@ -61,6 +75,8 @@ export function subjectFor(input: DigestInput): string {
     `${counts.events} event${counts.events === 1 ? "" : "s"}`,
     `${counts.unread} unread`,
     `${counts.tasks} task${counts.tasks === 1 ? "" : "s"}`,
+    ...(counts.bills ? [`${counts.bills} bill${counts.bills === 1 ? "" : "s"} due`] : []),
+    ...(counts.review ? [`${counts.review} to review`] : []),
   ];
   return `${input.dayLabel}: ${bits.join(", ")}`;
 }
@@ -71,8 +87,15 @@ function countsFor(input: DigestInput): { counts: Digest["counts"] } {
       events: input.events.length,
       unread: input.unreadTotal || input.unread.length,
       tasks: input.tasks.length,
+      bills: (input.money ?? []).length,
+      review: input.reviewCount ?? 0,
     },
   };
+}
+
+function moneyLine(m: MoneyLine, today: string): string {
+  const when = m.nextDue < today ? "overdue" : m.nextDue === today ? "today" : m.nextDue.slice(5).replace("-", "/");
+  return `${when}: ${m.name} $${m.amount.toFixed(2)}${m.who ? ` (${m.who})` : ""}`;
 }
 
 export function buildDigest(input: DigestInput): Digest {
@@ -109,6 +132,21 @@ export function buildDigest(input: DigestInput): Digest {
     for (const f of family) textSections.push(`- ${f.allDay ? "All day" : clockLabel(f.start)}: ${f.title}${f.kind !== "event" ? ` (${f.kind})` : ""}`);
     textSections.push("");
     htmlSections.push(`<h2>Family</h2><ul>${family.map((f) => `<li>${esc(f.allDay ? "All day" : clockLabel(f.start))}: ${esc(f.title)}${f.kind !== "event" ? ` <span class="muted">${esc(f.kind)}</span>` : ""}</li>`).join("")}</ul>`);
+  }
+
+  // Money (bills due this week) and Review (what machines proposed)
+  const money = input.money ?? [];
+  const today = input.today ?? "";
+  if (money.length) {
+    textSections.push("MONEY (due this week)");
+    for (const m of money) textSections.push(`- ${moneyLine(m, today)}`);
+    textSections.push("");
+    htmlSections.push(`<h2>Money, due this week</h2><ul>${money.map((m) => `<li>${esc(moneyLine(m, today))}</li>`).join("")}</ul>`);
+  }
+  if (counts.review) {
+    textSections.push(`REVIEW: ${counts.review} waiting at ${input.portalUrl}/review`);
+    textSections.push("");
+    htmlSections.push(`<h2>Review</h2><p>${counts.review} thing${counts.review === 1 ? "" : "s"} proposed. <a href="${esc(input.portalUrl)}/review">Accept or dismiss</a>.</p>`);
   }
 
   // Inbox

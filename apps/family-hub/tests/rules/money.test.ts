@@ -20,6 +20,9 @@ beforeEach(async () => {
     await db.doc(`households/${HID_A}/transactions/t2`).set(tx({ visibility: "private" }));
     await db.doc(`households/${HID_B}/transactions/tb`).set(tx({ ownerUid: "adult-b" }));
     await db.doc(`households/${HID_A}/settings/budget`).set({ envelopes: { groceries: 900 } });
+    await db.doc(`households/${HID_A}/bills/rent`).set(bill());
+    await db.doc(`households/${HID_A}/bills/mine`).set(bill({ visibility: "private", name: "Gym" }));
+    await db.doc(`households/${HID_B}/bills/rb`).set(bill({ ownerUid: "adult-b" }));
     await db.doc(`rateLimits/ai_${HID_A}_2026-09-20`).set({ count: 3 });
   });
 });
@@ -47,6 +50,10 @@ function tx(over: Partial<Record<string, unknown>> = {}) {
     ...over,
   };
 }
+function bill(over: Partial<Record<string, unknown>> = {}) {
+  return { name: "Rent", amount: 1850, currency: "CAD", cadence: "monthly", nextDue: "2026-10-01", accountId: "chq", category: "home", responsibleUid: ADULT_A, autopay: false, notes: "", visibility: "household", ownerUid: ADULT_A, source: "portal", createdAt: new Date(), updatedAt: new Date(), ...over };
+}
+const bl = (id: string) => `households/${HID_A}/bills/${id}`;
 const acc = (id: string) => `households/${HID_A}/accounts/${id}`;
 const txp = (id: string) => `households/${HID_A}/transactions/${id}`;
 
@@ -108,6 +115,31 @@ describe("transactions", () => {
     await assertFails(mfaA2(env).firestore().doc(txp("t1")).update({ ownerUid: ADULT_A2 }));
     await assertFails(mfaChildA(env).firestore().doc(txp("t1")).delete());
     await assertSucceeds(mfaA2(env).firestore().doc(txp("t1")).delete());
+  });
+});
+
+describe("bills", () => {
+  it("MFA adults read shared bills and their own private ones; no MFA, a child, another household: denied", async () => {
+    await assertSucceeds(mfaA2(env).firestore().doc(bl("rent")).get());
+    await assertSucceeds(mfaA(env).firestore().doc(bl("mine")).get());
+    await assertFails(mfaA2(env).firestore().doc(bl("mine")).get());
+    await assertFails(adultA(env).firestore().doc(bl("rent")).get());
+    await assertFails(mfaChildA(env).firestore().doc(bl("rent")).get());
+    await assertFails(mfaB(env).firestore().doc(bl("rent")).get());
+  });
+  it("shape enforced; the responsible person must be a member; owner never changes", async () => {
+    await assertSucceeds(mfaA2(env).firestore().doc(bl("hydro")).set(bill({ ownerUid: ADULT_A2, name: "Hydro", cadence: "monthly", responsibleUid: ADULT_A2 })));
+    await assertSucceeds(mfaA(env).firestore().doc(bl("fee")).set(bill({ name: "Swim fee", cadence: "once", responsibleUid: null, source: "intake" })));
+    await assertFails(mfaA(env).firestore().doc(bl("bad")).set(bill({ cadence: "sometimes" })));
+    await assertFails(mfaA(env).firestore().doc(bl("bad")).set(bill({ nextDue: "Oct 1" })));
+    await assertFails(mfaA(env).firestore().doc(bl("bad")).set(bill({ responsibleUid: "adult-b" })));
+    await assertFails(mfaA(env).firestore().doc(bl("bad")).set(bill({ ownerUid: ADULT_A2 })));
+    await assertFails(mfaA(env).firestore().doc(bl("bad")).set({ ...bill(), extra: 1 }));
+    await assertFails(adultA(env).firestore().doc(bl("bad")).set(bill()));
+    await assertSucceeds(mfaA2(env).firestore().doc(bl("rent")).update({ amount: 1900, nextDue: "2026-11-01" }));
+    await assertFails(mfaA2(env).firestore().doc(bl("rent")).update({ ownerUid: ADULT_A2 }));
+    await assertFails(mfaChildA(env).firestore().doc(bl("rent")).delete());
+    await assertSucceeds(mfaA2(env).firestore().doc(bl("rent")).delete());
   });
 });
 

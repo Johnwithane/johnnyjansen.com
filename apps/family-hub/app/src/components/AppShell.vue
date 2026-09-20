@@ -19,9 +19,9 @@ const tabs = computed(() =>
   [
     { to: "/", label: "Today", match: ["today"] },
     { to: "/calendar", label: "Plan", match: ["calendar", "tasks"] },
-    { to: "/money", label: "Money", match: ["money", "receipt", "money-add", "accounts"], adult: true },
+    { to: "/money", label: "Money", match: ["money", "receipt", "money-add", "accounts", "bills", "import"], adult: true },
     { to: "/review", label: "Review", match: ["review"] },
-    { to: "/household", label: "More", match: ["household", "digests", "feedback", "security", "setup"] },
+    { to: "/household", label: "More", match: ["household", "digests", "feedback", "security", "setup", "intake"] },
   ].filter((t) => !t.adult || isAdult.value),
 );
 </script>

@@ -1,6 +1,8 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import { GOOGLE_SECRETS } from "../lib/params";
+import { rollBills } from "../money/bills";
+import { dayKey } from "../lib/dates";
 import { digestRecipients } from "../sync/people";
 import { runDigestFor } from "./runDigest";
 
@@ -19,6 +21,12 @@ export const dailyDigest = onSchedule(
   },
   async () => {
     const people = await digestRecipients();
+    // Bills whose due day passed move to the next one, once per household,
+    // before anyone's email reads them.
+    for (const hid of new Set(people.map((p) => p.hid))) {
+      const tz = people.find((p) => p.hid === hid)?.timeZone ?? "America/Vancouver";
+      await rollBills(hid, dayKey(new Date(), tz)).catch((err) => logger.error("dailyDigest: roll failed", { hid, err }));
+    }
     let failed = 0;
     for (const p of people) {
       try {

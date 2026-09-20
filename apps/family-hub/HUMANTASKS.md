@@ -22,7 +22,9 @@ Things only Johnny can do. Tick them off in order; each phase's code assumes the
 
 - [ ] **Vertex AI (2b).** Google Cloud console → APIs & Services → enable *Vertex AI API* on `familyhub-prod`, and grant the functions' service account the *Vertex AI User* role. `VERTEX_MODEL` / `VERTEX_LOCATION` in `functions/.env` default to `gemini-2.5-flash` in `us-central1`. Until this is on, Snap a receipt says "Could not read it" and the manual form still works.
 - [ ] **Indexes.** `npm run deploy:rules` also ships the two new `transactions` composite indexes (`firestore.indexes.json`); Money's lists stay empty with a console error until they finish building (a few minutes).
-- [ ] **Turn on your second factor before opening Money** (Household → Security), then sign in again. The router sends you there if you forget. Carly too.
+- [ ] **Turn on your second factor before opening Money** (Household → Security), then sign in again. The router sends you there if you forget. Carly too. Minting a Claude Code token (2c on) also needs it, so re-mint after enrolling if you minted earlier.
+- [ ] **Approve senders for intake (2c).** More → Intake: add the school, the daycare, the swim club, the dentist (an address or a whole domain). Tap Scan now once to see it work; after that it runs at 6am. The scan reads only new mail from those senders and stores none of it.
+- [ ] **Enter the bills once** (Money → Bills): rent, utilities, subscriptions, each with who carries it. Or import a statement (Money → Import) and add the recurring ones from what you see.
 
 ## Phase 1
 

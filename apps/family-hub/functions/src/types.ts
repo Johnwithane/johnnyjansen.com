@@ -44,6 +44,8 @@ export interface UserDoc {
   digest?: { enabled: boolean; hour: number; minute: number };
   google?: { connected: boolean; email?: string | null; calendarIds: string[]; familyCalendarIds: string[] };
   setup?: { done: boolean };
+  /** Intake (PLAN.md 4.20): senders this person approved for the inbox scan. Addresses or domains. */
+  intake?: { senders: string[]; lastScanAt?: Timestamp | null };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -111,6 +113,7 @@ export interface SnapshotDoc {
   timeZone: string;
   events: EventItem[];
   household: { id: string; title: string; start: string; end: string; allDay: boolean; kind: EventKind; memberIds: string[]; location?: string }[];
+  bills?: { id: string; name: string; amount: number; currency: string; nextDue: string; cadence: BillCadence; who: string }[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -124,7 +127,7 @@ export interface DigestDoc {
   subject: string;
   text: string;
   html: string;
-  counts: { events: number; unread: number; tasks: number };
+  counts: { events: number; unread: number; tasks: number; bills?: number; review?: number };
   emailed: boolean;
   emailError?: string;
   generatedAt: Timestamp;
@@ -237,5 +240,31 @@ export interface TransactionDoc {
 export interface BudgetDoc {
   /** category -> monthly amount */
   envelopes: Record<string, number>;
+  updatedAt: Timestamp;
+}
+
+export type BillCadence = "weekly" | "monthly" | "quarterly" | "yearly" | "once";
+
+/**
+ * households/{hid}/bills/{id}: recurring money out, subscriptions included
+ * (PLAN.md 4.5). `responsibleUid` is the load ledger (4.23): which adult
+ * carries it. `nextDue` rolls forward by cadence once it has passed.
+ */
+export interface BillDoc {
+  name: string;
+  amount: number;
+  currency: string;
+  cadence: BillCadence;
+  /** YYYY-MM-DD */
+  nextDue: string;
+  accountId: string | null;
+  category: string;
+  responsibleUid: string | null;
+  autopay: boolean;
+  notes: string;
+  visibility: Visibility;
+  ownerUid: string;
+  source: "portal" | "cli" | "intake";
+  createdAt: Timestamp;
   updatedAt: Timestamp;
 }

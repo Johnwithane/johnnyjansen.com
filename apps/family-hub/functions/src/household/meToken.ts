@@ -4,16 +4,18 @@ import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
 import { writeAudit } from "../lib/audit";
-import { requireAdult } from "../lib/tenant";
+import { requireAdult, requireMfaAdult } from "../lib/tenant";
 import { hashToken, randomToken } from "../lib/tokens";
 
 /**
  * A personal token for the `me` endpoint (the Claude Code door). One per
  * adult, shown once, stored as a hash at meTokens/{hash} -> { uid, hid }.
  * Minting again replaces the old one; revoking deletes it. Both audited.
+ * Since 2c the token reaches bills, so minting one takes a second-factor
+ * session, the same bar Money itself sets. Revoking never needs it.
  */
 export const mintMeToken = onCall(callOpts(), async (request) => {
-  const caller = requireAdult(request);
+  const caller = requireMfaAdult(request);
   const ctx = { fn: "mintMeToken", uid: caller.uid, hid: caller.hid };
   try {
     const token = randomToken();

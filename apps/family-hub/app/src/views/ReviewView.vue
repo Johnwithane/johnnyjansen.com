@@ -2,17 +2,20 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import type { Suggestion, WithId } from "@/firebase/interfaces";
+import { createBill } from "@/firebase/services/billsService";
 import { createEvent } from "@/firebase/services/eventsService";
+import { createTransaction } from "@/firebase/services/moneyService";
 import { resolveSuggestion, subscribePending } from "@/firebase/services/suggestionsService";
 import { createTask } from "@/firebase/services/tasksService";
 import { ago } from "@/utils/format";
+import { dayKeyOf } from "@/utils/localTime";
 
 // The suggestions queue (PLAN.md section 5). Accept applies the payload
 // through the SAME service a hand-made write uses, so the rules gate it
 // exactly the same way; then the suggestion is marked accepted. Kinds this
 // phase cannot hold yet can only be dismissed, and say so.
 
-const { hid, uid } = useAuth();
+const { hid, uid, isMfa } = useAuth();
 const h = hid.value ?? "";
 const me = uid.value ?? "";
 const items = ref<WithId<Suggestion>[]>([]);
@@ -37,10 +40,38 @@ const APPLIERS: Partial<Record<Suggestion["kind"], (p: Record<string, unknown>) 
       source: "intake",
     }),
   task: (p) => createTask(h, me, { title: String(p.title ?? "Task"), visibility: p.visibility === "private" ? "private" : "household", due: p.due ? String(p.due) : null, notes: p.notes ? String(p.notes) : undefined }),
+  bill: (p) =>
+    createBill(h, me, {
+      name: String(p.name ?? p.title ?? "Bill"),
+      amount: Number(p.amount ?? 0),
+      cadence: (["weekly", "monthly", "quarterly", "yearly", "once"].includes(String(p.cadence)) ? String(p.cadence) : "once") as "once",
+      nextDue: /^\d{4}-\d{2}-\d{2}$/.test(String(p.nextDue ?? "")) ? String(p.nextDue) : dayKeyOf(new Date()),
+      category: p.category ? String(p.category) : "kids",
+      notes: p.notes ? String(p.notes) : undefined,
+      source: "intake",
+    }),
+  transaction: (p) =>
+    createTransaction(h, me, {
+      amount: Number(p.amount ?? 0),
+      direction: p.direction === "income" ? "income" : "expense",
+      date: /^\d{4}-\d{2}-\d{2}$/.test(String(p.date ?? "")) ? String(p.date) : dayKeyOf(new Date()),
+      merchant: String(p.merchant ?? "Unknown"),
+      category: String(p.category ?? "other"),
+      taxCategory: p.taxCategory ? String(p.taxCategory) : undefined,
+      notes: p.notes ? String(p.notes) : undefined,
+      source: "import",
+    }),
 };
 
+// Money kinds need the second factor, like the Money screens; without it the
+// rules would deny the write anyway, so say so instead of failing.
+const MONEY_KINDS: Suggestion["kind"][] = ["bill", "transaction"];
 function canApply(s: Suggestion): boolean {
-  return !!APPLIERS[s.kind];
+  return !!APPLIERS[s.kind] && (!MONEY_KINDS.includes(s.kind) || isMfa.value);
+}
+function whyNot(s: Suggestion): string {
+  if (!APPLIERS[s.kind]) return "Lands in a later phase";
+  return "Needs your second factor (Security)";
 }
 
 function accept(s: WithId<Suggestion>) {
@@ -70,7 +101,7 @@ const SOURCE: Record<Suggestion["source"], string> = { gemini: "Gemini", laptop:
         <span class="text-xs text-muted">{{ s.kind }}<span v-if="s.visibility === 'private'"> · only you</span> · {{ ago(s.createdAt?.toDate?.()) }}</span>
         <div class="flex gap-2">
           <button v-if="canApply(s)" type="button" class="h-10 rounded-full bg-accent px-4 text-sm font-medium text-ink" @click="accept(s)">Accept</button>
-          <span v-else class="self-center text-xs text-muted">Lands in a later phase</span>
+          <span v-else class="self-center text-xs text-muted">{{ whyNot(s) }}</span>
           <button type="button" class="h-10 rounded-full border border-line px-4 text-sm" @click="dismiss(s)">Dismiss</button>
         </div>
       </li>

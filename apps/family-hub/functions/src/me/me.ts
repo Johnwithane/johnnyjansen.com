@@ -14,7 +14,8 @@ import { personFor } from "../sync/people";
 import { runDigestFor } from "../digest/runDigest";
 import { dispatchToGitHub, GITHUB_FEEDBACK_TOKEN } from "../feedback/dispatch";
 import { storage } from "../lib/admin";
-import type { EventDoc, SuggestionDoc, TaskDoc } from "../types";
+import { scanIntakeFor } from "../intake/scan";
+import type { BillDoc, EventDoc, SuggestionDoc, TaskDoc, UserDoc } from "../types";
 import { MeBody } from "./schema";
 
 // The door a Claude Code session uses. One personal token per adult
@@ -257,6 +258,60 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       } catch (err) {
         return { error: err instanceof Error ? err.message : "dispatch_failed", id: body.id };
       }
+    }
+    case "bills.list": {
+      if (p.role !== "adult") return { error: "adults_only", bills: [] };
+      const snap = await db.collection("households").doc(p.hid).collection("bills").orderBy("nextDue").limit(300).get();
+      const bills = snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as BillDoc) }))
+        .filter((b) => b.visibility === "household" || b.ownerUid === p.uid)
+        .map((b) => ({ id: b.id, name: b.name, amount: b.amount, currency: b.currency, cadence: b.cadence, nextDue: b.nextDue, responsibleUid: b.responsibleUid, autopay: b.autopay, visibility: b.visibility, notes: b.notes }));
+      return { bills };
+    }
+    case "bills.add": {
+      if (p.role !== "adult") return { error: "adults_only" };
+      const ref = await db.collection("households").doc(p.hid).collection("bills").add({
+        name: body.name,
+        amount: Math.round(body.amount * 100) / 100,
+        currency: "CAD",
+        cadence: body.cadence,
+        nextDue: body.nextDue,
+        accountId: null,
+        category: "subscriptions",
+        responsibleUid: body.responsibleUid ?? null,
+        autopay: false,
+        notes: body.notes ?? "",
+        visibility: "household",
+        ownerUid: p.uid,
+        source: "cli",
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { bill: { id: ref.id, name: body.name, amount: body.amount, cadence: body.cadence, nextDue: body.nextDue } };
+    }
+    case "bills.delete": {
+      if (p.role !== "adult") return { error: "adults_only" };
+      const ref = db.collection("households").doc(p.hid).collection("bills").doc(body.id);
+      const snap = await ref.get();
+      const b = snap.data() as BillDoc | undefined;
+      if (!snap.exists || !b || (b.visibility === "private" && b.ownerUid !== p.uid)) return { error: "not_found", id: body.id };
+      await ref.delete();
+      return { deleted: body.id };
+    }
+    case "intake.scan": {
+      if (p.role !== "adult") return { error: "adults_only" };
+      return scanIntakeFor(p, now);
+    }
+    case "intake.senders": {
+      if (p.role !== "adult") return { error: "adults_only" };
+      const ref = db.collection("users").doc(p.uid);
+      if (body.set) {
+        const senders = [...new Set(body.set.map((s) => s.toLowerCase()))];
+        await ref.set({ intake: { senders }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        return { senders };
+      }
+      const u = (await ref.get()).data() as UserDoc | undefined;
+      return { senders: u?.intake?.senders ?? [], lastScanAt: u?.intake?.lastScanAt?.toDate?.().toISOString() ?? null };
     }
   }
 }

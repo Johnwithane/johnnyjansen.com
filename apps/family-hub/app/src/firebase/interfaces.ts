@@ -44,6 +44,8 @@ export interface UserProfile {
   google?: { connected: boolean; email?: string | null; calendarIds: string[]; familyCalendarIds: string[] };
   setup?: { done: boolean };
   legal?: { version: number; acceptedAt?: Timestamp };
+  /** Approved senders for the inbox scan (addresses or domains). lastScanAt is function-written. */
+  intake?: { senders: string[]; lastScanAt?: Timestamp | null };
 }
 
 export interface Task {
@@ -94,6 +96,7 @@ export interface Snapshot {
   timeZone: string;
   events: EventItem[];
   household?: { id: string; title: string; start: string; end: string; allDay: boolean; kind: EventKind; memberIds: string[]; location?: string }[];
+  bills?: { id: string; name: string; amount: number; currency: string; nextDue: string; cadence: BillCadence; who: string }[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -115,7 +118,7 @@ export interface Digest {
   subject: string;
   text: string;
   html: string;
-  counts: { events: number; unread: number; tasks: number };
+  counts: { events: number; unread: number; tasks: number; bills?: number; review?: number };
   emailed: boolean;
   emailError?: string;
   generatedAt: Timestamp;
@@ -211,5 +214,26 @@ export interface Transaction {
 
 export interface Budget {
   envelopes: Record<string, number>;
+  updatedAt: Timestamp;
+}
+
+export type BillCadence = "weekly" | "monthly" | "quarterly" | "yearly" | "once";
+
+/** households/{hid}/bills. responsibleUid is the load ledger: which adult carries it. */
+export interface Bill {
+  name: string;
+  amount: number;
+  currency: string;
+  cadence: BillCadence;
+  nextDue: string;
+  accountId: string | null;
+  category: string;
+  responsibleUid: string | null;
+  autopay: boolean;
+  notes: string;
+  visibility: Visibility;
+  ownerUid: string;
+  source: "portal" | "cli" | "intake";
+  createdAt: Timestamp;
   updatedAt: Timestamp;
 }

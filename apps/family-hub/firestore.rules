@@ -18,6 +18,12 @@ service cloud.firestore {
     function uid() { return request.auth.uid; }
     function inHousehold(h) { return signedIn() && request.auth.token.hid == h; }
     function isAdult(h) { return inHousehold(h) && request.auth.token.role == 'adult'; }
+    // The household's member uids, for fields that must name a member
+    // (a bill's responsible adult). One read of the household doc itself,
+    // which is the document these rules already trust for membership.
+    function resource_household_uids(h) {
+      return get(/databases/$(database)/documents/households/$(h)).data.memberUids;
+    }
     // A session that passed a second factor. Money, Taxes and the Vault
     // (Phase 2+) require this on top of the household claim.
     function isMfa() {
@@ -163,6 +169,33 @@ service cloud.firestore {
         allow delete: if isAdult(h) && isMfa() && visibleTx();
       }
 
+      // Bills and subscriptions (PLAN.md 4.5), the load ledger's first home
+      // (4.23: responsibleUid). Same gate as accounts: adults with a second
+      // factor, shared or private.
+      match /bills/{billId} {
+        function visibleBill() { return resource.data.visibility == 'household' || resource.data.ownerUid == uid(); }
+        function validBill() {
+          let d = request.resource.data;
+          return d.name is string && d.name.size() > 0 && d.name.size() <= 120
+            && d.amount is number && d.amount >= 0 && d.amount < 10000000
+            && d.currency is string && d.currency.size() == 3
+            && d.cadence in ['weekly', 'monthly', 'quarterly', 'yearly', 'once']
+            && d.nextDue is string && d.nextDue.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && d.category is string && d.category.size() <= 40
+            && (d.responsibleUid == null || (d.responsibleUid is string && d.responsibleUid in resource_household_uids(h)))
+            && d.autopay is bool
+            && d.notes is string && d.notes.size() <= 1000
+            && d.visibility in ['household', 'private']
+            && d.ownerUid is string
+            && d.source in ['portal', 'cli', 'intake']
+            && d.keys().hasOnly(['name', 'amount', 'currency', 'cadence', 'nextDue', 'accountId', 'category', 'responsibleUid', 'autopay', 'notes', 'visibility', 'ownerUid', 'source', 'createdAt', 'updatedAt']);
+        }
+        allow read: if isAdult(h) && isMfa() && visibleBill();
+        allow create: if isAdult(h) && isMfa() && validBill() && request.resource.data.ownerUid == uid();
+        allow update: if isAdult(h) && isMfa() && visibleBill() && validBill() && request.resource.data.ownerUid == resource.data.ownerUid;
+        allow delete: if isAdult(h) && isMfa() && visibleBill();
+      }
+
       // Household settings docs (budget envelopes, later digest and paper
       // config). Adults write; everyone reads.
       match /settings/{settingId} {
@@ -203,7 +236,12 @@ service cloud.firestore {
       allow create, delete: if false;
       allow update: if signedIn() && uid() == u
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['name', 'colour', 'digest', 'timeZone', 'setup', 'legal', 'updatedAt']);
+             .hasOnly(['name', 'colour', 'digest', 'timeZone', 'setup', 'legal', 'intake', 'updatedAt'])
+        // Intake: at most 30 approved senders, each a short string. lastScanAt is function-written and read-only here.
+        && (!('intake' in request.resource.data.diff(resource.data).affectedKeys())
+            || (request.resource.data.intake.senders is list && request.resource.data.intake.senders.size() <= 30
+                && request.resource.data.intake.keys().hasOnly(['senders', 'lastScanAt'])
+                && (!('lastScanAt' in request.resource.data.intake) || ('intake' in resource.data && request.resource.data.intake.lastScanAt == resource.data.intake.lastScanAt))));
 
       // Google grant (KMS-encrypted), me token hash: functions only.
       match /private/{doc} {

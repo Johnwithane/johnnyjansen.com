@@ -21,6 +21,11 @@
 //   npm run me feedback show <id>       one report in full
 //   npm run me feedback triage <id> <open|triaged|in_progress|wontfix> [notes...]
 //   npm run me feedback dispatch <id>   open a GitHub issue for it (label: claude)
+//   npm run me bills                    bills and subscriptions, soonest due first
+//   npm run me bill "Netflix" 16.49 2026-10-01 [--every monthly|yearly|weekly|quarterly|once] [--who <uid>]
+//   npm run me bill rm <id>
+//   npm run me scan                     run the approved-sender inbox scan now (proposals land on Review)
+//   npm run me senders [add x | rm x]   your approved senders for the scan (addresses or domains)
 //   npm run me raw '{"action":"..."}'   any action, verbatim JSON
 //
 // Every command prints a readable digest to stdout; add --json for the raw
@@ -199,6 +204,37 @@ async function main() {
       if ((sub === "show" || sub === "triage" || sub === "dispatch") && !rest[1]) die(`Usage: me feedback ${sub} <id> ...`);
       break;
     }
+    case "bills":
+      body = { action: "bills.list" };
+      break;
+    case "bill": {
+      if (rest[0] === "rm") {
+        if (!rest[1]) die("Usage: me bill rm <id>");
+        body = { action: "bills.delete", id: rest[1] };
+        break;
+      }
+      const every = flag(rest, "--every");
+      const who = flag(rest, "--who");
+      const nextDue = rest.pop();
+      const amount = Number(rest.pop());
+      const name = rest.join(" ").trim();
+      if (!name || !(amount > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(nextDue || "")) die('Usage: me bill "Name" amount YYYY-MM-DD [--every monthly] [--who <uid>]');
+      body = { action: "bills.add", name, amount, nextDue, ...(every ? { cadence: every } : {}), ...(who ? { responsibleUid: who } : {}) };
+      break;
+    }
+    case "scan":
+      body = { action: "intake.scan" };
+      break;
+    case "senders": {
+      if (rest[0] === "add" || rest[0] === "rm") {
+        if (!rest[1]) die(`Usage: me senders ${rest[0]} <address or domain>`);
+        const cur = (await call({ action: "intake.senders" })).senders || [];
+        const v = rest[1].toLowerCase();
+        const next = rest[0] === "add" ? [...new Set([...cur, v])] : cur.filter((x) => x !== v);
+        body = { action: "intake.senders", set: next };
+      } else body = { action: "intake.senders" };
+      break;
+    }
     case "raw":
       try {
         body = JSON.parse(rest.join(" "));
@@ -207,7 +243,7 @@ async function main() {
       }
       break;
     default:
-      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | events [days] | event | review | dismiss | digest [day|run] | feedback [status|show|triage|dispatch] | raw");
+      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | events [days] | event | review | dismiss | digest [day|run] | feedback [status|show|triage|dispatch] | bills | bill | scan | senders | raw");
   }
 
   const out = await call(body);
@@ -219,6 +255,11 @@ async function main() {
       if (out.household && out.household.length) {
         console.log("FAMILY");
         for (const e of out.household) console.log(`  ${e.allDay ? "All day" : e.start.slice(11)}  ${e.title}${e.kind !== "event" ? ` (${e.kind})` : ""}`);
+        console.log("");
+      }
+      if (out.bills && out.bills.length) {
+        console.log("MONEY (due this week)");
+        for (const b of out.bills) console.log(`  ${b.nextDue}  ${b.name}  $${b.amount.toFixed(2)}${b.who ? ` (${b.who})` : ""}`);
         console.log("");
       }
       console.log("CALENDAR");
@@ -286,6 +327,27 @@ async function main() {
       break;
     case "feedback.dispatch":
       console.log(out.error ? `${out.error}: ${out.id}` : `issue #${out.issue.number} ${out.issue.url}`);
+      break;
+    case "bills.list":
+      if (out.error) return console.log(out.error);
+      if (!out.bills.length) console.log("No bills yet.");
+      for (const b of out.bills) console.log(`  [${b.id}] ${b.nextDue}  ${b.name}  $${b.amount.toFixed(2)} ${b.cadence}${b.responsibleUid ? `  who=${b.responsibleUid}` : ""}${b.visibility === "private" ? "  (private)" : ""}`);
+      break;
+    case "bills.add":
+      if (out.error) return console.log(out.error);
+      console.log(`[${out.bill.id}] ${out.bill.nextDue}  ${out.bill.name}  $${out.bill.amount.toFixed(2)} ${out.bill.cadence}`);
+      break;
+    case "bills.delete":
+      console.log(out.error ? `${out.error}: ${out.id}` : `deleted ${out.deleted}`);
+      break;
+    case "intake.scan":
+      if (out.error) return console.log(out.error);
+      console.log(out.skipped ? `skipped: ${out.skipped}` : `read ${out.scanned}, proposed ${out.proposed}${out.proposed ? " (see: me review)" : ""}`);
+      break;
+    case "intake.senders":
+      if (out.error) return console.log(out.error);
+      console.log(out.senders.length ? out.senders.map((x) => `  ${x}`).join("\n") : "No approved senders.");
+      if (out.lastScanAt) console.log(`  last scan ${out.lastScanAt}`);
       break;
     default:
       console.log(JSON.stringify(out, null, 2));

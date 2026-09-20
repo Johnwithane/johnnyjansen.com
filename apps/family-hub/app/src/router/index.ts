@@ -18,6 +18,9 @@ export const router = createRouter({
     { path: "/money/receipt", name: "receipt", component: () => import("@/views/ReceiptView.vue"), meta: { mfa: true } },
     { path: "/money/add", name: "money-add", component: () => import("@/views/ReceiptView.vue"), meta: { mfa: true } },
     { path: "/money/accounts", name: "accounts", component: () => import("@/views/AccountsView.vue"), meta: { mfa: true } },
+    { path: "/money/bills", name: "bills", component: () => import("@/views/BillsView.vue"), meta: { mfa: true } },
+    { path: "/money/import", name: "import", component: () => import("@/views/ImportView.vue"), meta: { mfa: true } },
+    { path: "/intake", name: "intake", component: () => import("@/views/IntakeView.vue"), meta: { adult: true } },
     { path: "/digests", name: "digests", component: () => import("@/views/DigestsView.vue") },
     { path: "/household", name: "household", component: () => import("@/views/HouseholdView.vue") },
     { path: "/setup", name: "setup", component: () => import("@/views/SetupView.vue") },
@@ -51,5 +54,6 @@ router.beforeEach(async (to) => {
     if (!isAdult.value) return { name: "today" };
     if (!isMfa.value) return { name: "security", query: { next: to.fullPath } };
   }
+  if (to.meta.adult && !isAdult.value) return { name: "today" };
   return true;
 });
