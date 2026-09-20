@@ -106,14 +106,30 @@ The laptop is the sorter; the portal is the index.
 - **Portal**: timeline by month, albums, favourites, people (names you gave), "on this day", the duplicates queue (keep or delete, applied by the worker on its next run), a "print picks" list for a yearbook. Originals open through whatever hosts them (a Google Photos link, or a local path shown for the laptop).
 - Sharing an album is a link to a read-only page, expiring.
 
-### 4.9 Vault
-Documents that families lose: passports and IDs (with expiry reminders), insurance policies, mortgage and property tax, vehicle registration and insurance, warranties and receipts for big purchases, medical records and immunisations, wills and emergency info, school records. Each item: type, people, expiry, files, notes. Gemini reads the expiry and the type from the upload; you confirm. Expiries become calendar events 90 and 30 days out. Encrypted at rest in Storage with household-only rules; sensitive fields (numbers) shown masked with tap to reveal.
+### 4.9 Vault, and the paper it mirrors
+Documents that families lose: passports and IDs (with expiry reminders), insurance policies, mortgage and property tax, vehicle registration and insurance, warranties and receipts for big purchases, medical records and immunisations, wills and emergency info, school records. Each item: type, people, expiry, files, notes, and its **paper location**. Gemini reads the expiry and the type from the upload; you confirm. Expiries become calendar events 90 and 30 days out. Sensitive fields (numbers) are encrypted on the device before write and shown masked with tap to reveal behind the second factor.
+
+**Paper.** Some documents have to exist on paper (the will, the mortgage, tax returns, the deed, warranties with receipts), and the digital copy is worth nothing when the paper cannot be found. So the Vault is also the index of the physical filing, and the physical filing mirrors the Vault. Johnny's brief (2026-09-20): mirror important documents so we can scan or download them, keep planning and upkeep simple.
+
+- **Binders, tabs, and a location.** The household defines its paper system once: binders (Home, Money, People, Taxes 2025…), each with tabs. A Vault item can be marked *paper too* with a binder and tab. That is the whole model; no shelf diagrams.
+- **Scan in.** From the item, the phone camera takes one or many pages; the app makes a PDF (client-side, no upload until the pages are done), Gemini reads type and expiry, the item gets its file. The scanner is also the fastest way to add anything: scan first, file later from the review queue.
+- **Print out.** Every item and every binder tab has a one-tap **cover sheet**: title, people, dates, the binder and tab, a QR that opens the item in the app, and a short list of what should be behind it. Print it, put it in the tab, and the paper folder is self-describing. A binder has a **table of contents** print with the same QR per row.
+- **The filing checklist.** For each item marked paper too: is the paper filed (a tick with a date), and is the copy in the app current (file newer than the tick shows "re-file"). The Vault screen leads with what is missing from paper and what is missing from the app, so upkeep is a short list, not an audit.
+- **Export packages.** One tap builds a bundle: the item's files, or a whole tab or binder, or a year, as a ZIP of PDFs with a printed index, named the way an accountant, a lawyer or a bank asks (`Taxes 2025 - Jansen.zip`). Reports export the same way: monthly money, the tax package (section 4.7), the business year. Exports are built in the browser from the household's files (the BetterTour spec-sheet approach), so nothing new touches the server.
+- **The yearly close.** In January the app proposes: archive last year's binders (a ZIP per binder), start Taxes <year>, list the paper to shred (expired policies, superseded statements) and the paper to keep (the minimums CRA and the bank expect, stated per document type). Confirm, and the checklist for the year is set.
 
 ### 4.10 Home and vehicles
 Maintenance schedules (furnace filter, gutters, tires, oil), each a repeating task with a history. Warranty and service records link to the Vault. A "who to call" list: plumber, electrician, mechanic, vet, sitter, doctors.
 
-### 4.11 People and occasions
-Family and friends with birthdays and anniversaries, gift ideas, gift budget per occasion, thank-you tracking. Occasions land on the calendar and in the digest a couple of weeks out.
+### 4.11 Contacts and occasions
+The household's address book, kept where the family plans. Family, friends, school, doctors, the plumber, the sitter. Johnny's brief (2026-09-20): important contacts with birthdays and phone numbers that sync with the calendar, and addresses through the Places API like BetterTour.
+
+- **A contact** is a person or a business: name, relationship (family, friend, school, health, home, work, other), phones, emails, an address, birthday and anniversary, notes, and the household members they relate to (Forest's teacher, Emery's doctor). Cards show the two things you tap most: call and directions.
+- **Addresses come from Google Places.** The address field is Places Autocomplete through the same loader BetterTour uses (`@googlemaps/js-api-loader`, `importLibrary("places")`, a referrer-restricted browser key), storing the formatted address, place id and coordinates. Directions opens Google or Apple Maps with the coordinates. The Places session token pattern keeps it to one billable request per address typed.
+- **Birthdays and anniversaries land on the family calendar** as all-day events with a "tap to plan a gift" line, a week out and on the day, and in the digest a fortnight out. They live in the household calendar (households/{hid}/events, the app's own calendar), the same source that carries bills, renewals and trips, so they show on everyone's Today without touching anyone's Google. **Mirroring the household calendar into a Google Calendar** is an opt-in per adult, because it needs the `calendar.events` scope on top of the read-only one we hold today: when switched on, the app creates a "Family Hub" calendar in that person's Google and keeps it in sync one way, so the family's dates show in every Google Calendar client they already use.
+- **Import, do not retype.** Google Contacts (`contacts.readonly`, opt-in) offers the person's contacts as suggestions to add; each one is a tick. The wizard's inbox scan (Phase 2) proposes the doctor, the school and the sitter from senders. A photo of a business card is read by Gemini.
+- **Occasions and gifts.** Per contact: gift ideas, a gift budget, and a log of what was given, so no repeat sweaters. A yearly "who to card" list in November.
+- **Emergency sheet.** One printable page: household members with dates, blood types if entered, doctors, the sitter, neighbours, the vet, insurance policy numbers masked to the last four. Lives in the Vault under People, cover sheet and all.
 
 ### 4.12 Travel
 Trips with dates, people, bookings (paste a confirmation email, Gemini extracts), packing list (templates), documents pulled from the Vault, a per-trip budget. BetterTour DNA, family size.
@@ -205,7 +221,7 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 | 3 | **Businesses.** Clients, invoices with PDF and email, mark paid, expenses and mileage, yearly summary | Invoice PDF rendered client-side |
 | 4 | **Taxes.** Year workspace, slip vault with reading, lines rollup, T2125-shaped statement, checklist, accountant package | Report over Phase 2 and 3 data |
 | 5 | **Meals, recipes and pantry.** Recipe database with URL and photo import, pantry with fridge and shelf photos, what can we make, meal plan to grocery minus pantry | Johnny's pick to come early; the module a family opens weekly |
-| 6 | **Vault, home and vehicles, people and occasions.** Documents with expiry reading, maintenance, contacts, birthdays and gifts | Storage rules per household |
+| 6 | **Vault with paper, contacts and occasions, home and vehicles.** Documents with expiry reading, scan-in, binders and tabs with cover sheets and the filing checklist, export packages, contacts with Places addresses and birthdays on the household calendar, maintenance | Storage rules per household; Places key referrer-restricted |
 | 7 | **Photos.** Laptop worker (index, dedupe across iCloud, Google Photos and the NAS; tags; albums), portal timeline, albums, people, duplicates queue, print picks | Needs the laptop's GPU; local vision model |
 | 8 | **Travel, health, goals and reviews.** Weekly and monthly review emails | |
 | 9 | **Automations and the local worker.** Rules engine, inbox triage on the laptop, `me` coverage of every module, in-app assistant | |
@@ -309,6 +325,8 @@ Decided 2026-09-20: **prototype in this repo, migrate later**, now formalised as
 2. The app is only ever `portal/`, `functions/`, `scripts/`, the rules and the workflow. The portfolio never imports from them and they never import from the portfolio. Moving the app is moving those directories with their history.
 3. The brand is in two files from Phase 1 (section 10.2), so the rename is a two-line change plus DNS.
 The migration itself is its own checklist when the name lands: new repo from the subtree, custom domain on the same Firebase project, Resend domain, Stripe, and a redirect from `johnnyjansen.com/app`.
+
+Decided 2026-09-20, later: the Vault mirrors the paper filing (binders, tabs, cover sheets, filing checklist, export packages, yearly close) and People becomes Contacts with Places addresses and birthdays on the household calendar (4.9, 4.11). Google Calendar mirroring and Google Contacts import are opt-in scopes, never part of the base consent.
 
 Still open:
 - Product name (needed before Resend and the domain; not before Phase 1).
