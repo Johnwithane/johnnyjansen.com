@@ -41,7 +41,7 @@ export interface UserProfile {
   email: string;
   timeZone?: string;
   digest?: { enabled: boolean; hour: number; minute: number };
-  google?: { connected: boolean; calendarIds: string[] };
+  google?: { connected: boolean; email?: string | null; calendarIds: string[] };
 }
 
 export interface Task {

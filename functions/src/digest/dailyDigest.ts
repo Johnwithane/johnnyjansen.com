@@ -1,5 +1,6 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
+import { GOOGLE_SECRETS } from "../lib/params";
 import { digestRecipients } from "../sync/people";
 import { runDigestFor } from "./runDigest";
 
@@ -12,6 +13,7 @@ export const dailyDigest = onSchedule(
     schedule: "30 6 * * *",
     timeZone: "America/Vancouver",
     region: "us-central1",
+    secrets: GOOGLE_SECRETS,
     timeoutSeconds: 300,
     memory: "256MiB",
   },

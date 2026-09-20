@@ -1,11 +1,12 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
+import { GOOGLE_SECRETS } from "../lib/params";
 import { requireMember } from "../lib/tenant";
 import { collectToday, storeSnapshot } from "../sync/collect";
 import { personFor } from "../sync/people";
 
 /** The portal's "Refresh" button: re-pull this person's Google + tasks. */
-export const refreshToday = onCall({ region: "us-central1", timeoutSeconds: 60 }, async (request) => {
+export const refreshToday = onCall({ region: "us-central1", secrets: GOOGLE_SECRETS, timeoutSeconds: 60 }, async (request) => {
   const caller = requireMember(request);
   const ctx = { fn: "refreshToday", uid: caller.uid };
   try {

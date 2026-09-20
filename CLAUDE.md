@@ -53,7 +53,8 @@ functions/src/
   lib/tokens.ts              random token + sha256 hash + constant-time compare
   lib/dates.ts               zone-aware day math (tested)
   household/                 createHousehold, createInvite, acceptInvite, addChild, mintMeToken/revokeMeToken, schema (tested)
-  google/                    per-person clients (1c fills in KMS), calendar, gmail (read + send)
+  lib/kms.ts                 seal/open a string with Cloud KMS (injectable, tested)
+  google/                    oauth.ts (scopes, consent URL), connect.ts (start, callback, disconnect, calendars), per-person clients from the sealed grant, calendar, gmail (read + send)
   sync/collect.ts, people.ts one pull of today per person → users/{uid}/snapshots/today
   digest/                    pure builder (tested), runDigestFor(person), 06:30 schedule over every adult
   me/                        personal-token endpoint + schema (tested)

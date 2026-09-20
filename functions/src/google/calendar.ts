@@ -10,9 +10,14 @@ export async function listEvents(
   calendar: calendar_v3.Calendar,
   timeMin: Date,
   timeMax: Date,
+  calendarIds: string[] = [],
 ): Promise<EventItem[]> {
   const list = await calendar.calendarList.list({ minAccessRole: "reader" });
-  const calendars = (list.data.items ?? []).filter((c) => c.selected !== false && c.id);
+  // The person's pick from setCalendars wins; with no pick, whatever they
+  // have ticked in Google Calendar itself.
+  const calendars = (list.data.items ?? []).filter((c) =>
+    c.id && (calendarIds.length ? calendarIds.includes(c.id) : c.selected !== false),
+  );
   const out: EventItem[] = [];
   for (const cal of calendars) {
     const res = await calendar.events.list({

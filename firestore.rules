@@ -95,5 +95,10 @@ service cloud.firestore {
     match /meTokens/{hash} {
       allow read, write: if false;
     }
+
+    // Google OAuth state nonces (ten minutes, burned on use). Function-only.
+    match /oauthStates/{hash} {
+      allow read, write: if false;
+    }
   }
 }

@@ -11,6 +11,7 @@ export interface Person {
   uid: string;
   hid: string;
   timeZone: string;
+  calendarIds: string[];
 }
 
 export interface Collected {
@@ -63,7 +64,7 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
   const clients = await googleClientsFor(p.uid);
   if (clients) {
     try {
-      events = await listEvents(clients.calendar, start, end);
+      events = await listEvents(clients.calendar, start, end, p.calendarIds);
       const mail = await listUnread(clients.gmail, 15);
       unread = mail.items;
       unreadTotal = mail.total;

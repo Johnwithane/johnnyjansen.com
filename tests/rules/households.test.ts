@@ -72,3 +72,13 @@ describe("meTokens", () => {
     await assertFails(adultA(env).firestore().doc(`meTokens/def`).set({ uid: ADULT_A, hid: HID_A }));
   });
 });
+
+describe("oauthStates", () => {
+  it("is invisible to every client", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`oauthStates/abc`).set({ uid: ADULT_A, hid: HID_A });
+    });
+    await assertFails(adultA(env).firestore().doc(`oauthStates/abc`).get());
+    await assertFails(adultA(env).firestore().doc(`oauthStates/def`).set({ uid: ADULT_A, hid: HID_A }));
+  });
+});

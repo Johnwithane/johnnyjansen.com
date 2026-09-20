@@ -48,3 +48,33 @@ export async function revokeMeToken(): Promise<void> {
   const fn = httpsCallable<void, { ok: true }>(functions, "revokeMeToken");
   await fn();
 }
+
+// Google, per person (Phase 1c). Connect leaves the app for Google's consent
+// screen and comes back to /household?google=<outcome>.
+
+export async function googleConnectStart(): Promise<{ url: string }> {
+  const fn = httpsCallable<void, { url: string }>(functions, "googleConnectStart");
+  return (await fn()).data;
+}
+
+export async function googleDisconnect(): Promise<void> {
+  const fn = httpsCallable<void, { ok: true }>(functions, "googleDisconnect");
+  await fn();
+}
+
+export interface CalendarChoice {
+  id: string;
+  name: string;
+  primary: boolean;
+  selected: boolean;
+}
+
+export async function googleCalendars(): Promise<CalendarChoice[]> {
+  const fn = httpsCallable<void, { calendars: CalendarChoice[] }>(functions, "googleCalendars");
+  return (await fn()).data.calendars;
+}
+
+export async function setCalendars(calendarIds: string[]): Promise<void> {
+  const fn = httpsCallable<{ calendarIds: string[] }, { ok: true }>(functions, "setCalendars");
+  await fn({ calendarIds });
+}

@@ -2,17 +2,96 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import type { Household, PersonColour } from "@/firebase/interfaces";
-import { addChild, createInvite, mintMeToken, revokeMeToken, subscribeHousehold } from "@/firebase/services/householdService";
+import { useRoute } from "vue-router";
+import type { UserProfile } from "@/firebase/interfaces";
+import {
+  addChild,
+  createInvite,
+  googleCalendars,
+  googleConnectStart,
+  googleDisconnect,
+  mintMeToken,
+  revokeMeToken,
+  setCalendars,
+  subscribeHousehold,
+  subscribeProfile,
+  type CalendarChoice,
+} from "@/firebase/services/householdService";
 import { ageOn } from "@/utils/format";
 import ColourPicker from "@/components/ColourPicker.vue";
 
 const { hid, uid, isAdult } = useAuth();
+const route = useRoute();
 const household = ref<Household | null>(null);
-let stop: (() => void) | null = null;
+const profile = ref<UserProfile | null>(null);
+const stops: (() => void)[] = [];
 onMounted(() => {
-  if (hid.value) stop = subscribeHousehold(hid.value, (h) => (household.value = h));
+  if (hid.value) stops.push(subscribeHousehold(hid.value, (h) => (household.value = h)));
+  if (uid.value) stops.push(subscribeProfile(uid.value, (p) => (profile.value = p)));
+  const outcome = route.query.google;
+  if (outcome === "connected") note.value = "Google connected.";
+  else if (outcome === "denied") note.value = "Google connect was cancelled.";
+  else if (outcome === "mismatch") note.value = "That was a different Google account. Connect the one you signed in with.";
+  else if (outcome === "error") note.value = "Google connect failed. Try again.";
 });
-onUnmounted(() => stop?.());
+onUnmounted(() => stops.forEach((s) => s()));
+
+// Google
+const googleBusy = ref(false);
+const calendars = ref<CalendarChoice[] | null>(null);
+const picked = ref<string[]>([]);
+async function connectGoogle() {
+  if (!navigator.onLine) return (note.value = "You need a connection for this.");
+  googleBusy.value = true;
+  try {
+    const { url } = await googleConnectStart();
+    window.location.assign(url);
+  } catch (e) {
+    note.value = e instanceof Error ? e.message.replace(/^.*?:\s*/, "") : "Could not start Google connect";
+    googleBusy.value = false;
+  }
+}
+async function disconnectGoogle() {
+  if (!navigator.onLine) return (note.value = "You need a connection for this.");
+  googleBusy.value = true;
+  try {
+    await googleDisconnect();
+    calendars.value = null;
+    note.value = "Google disconnected.";
+  } catch {
+    note.value = "Could not disconnect.";
+  } finally {
+    googleBusy.value = false;
+  }
+}
+async function loadCalendars() {
+  if (!navigator.onLine) return (note.value = "You need a connection for this.");
+  googleBusy.value = true;
+  try {
+    calendars.value = await googleCalendars();
+    const chosen = profile.value?.google?.calendarIds ?? [];
+    picked.value = chosen.length ? chosen : calendars.value.filter((c) => c.selected).map((c) => c.id);
+  } catch {
+    note.value = "Could not list calendars.";
+  } finally {
+    googleBusy.value = false;
+  }
+}
+function togglePick(id: string) {
+  picked.value = picked.value.includes(id) ? picked.value.filter((x) => x !== id) : [...picked.value, id];
+}
+async function saveCalendars() {
+  googleBusy.value = true;
+  try {
+    await setCalendars(picked.value);
+    note.value = "Calendars saved.";
+    calendars.value = null;
+  } catch {
+    note.value = "Could not save calendars.";
+  } finally {
+    googleBusy.value = false;
+  }
+}
 
 const members = computed(() => {
   const m = household.value?.members ?? {};
@@ -131,6 +210,30 @@ async function copyToken() {
     </section>
 
     <template v-if="isAdult">
+      <section class="mb-8">
+        <h2 class="mb-2 text-xs font-medium uppercase tracking-widest text-accent">Your Google</h2>
+        <template v-if="profile?.google?.connected">
+          <p class="mb-3 text-sm text-muted">Connected as {{ profile.google.email }}. Calendar and inbox feed your Today and digest.</p>
+          <div class="flex gap-2">
+            <button type="button" class="h-11 flex-1 rounded-full border border-line text-sm disabled:opacity-50" :disabled="googleBusy" @click="loadCalendars">Choose calendars</button>
+            <button type="button" class="h-11 flex-1 rounded-full border border-line text-sm text-muted disabled:opacity-50" :disabled="googleBusy" @click="disconnectGoogle">Disconnect</button>
+          </div>
+          <div v-if="calendars" class="mt-3">
+            <ul>
+              <li v-for="c in calendars" :key="c.id" class="flex items-center gap-3 border-b border-line py-2.5">
+                <input :id="`cal-${c.id}`" type="checkbox" class="h-5 w-5 accent-accent" :checked="picked.includes(c.id)" @change="togglePick(c.id)" />
+                <label :for="`cal-${c.id}`" class="flex-1 text-sm">{{ c.name }}<span v-if="c.primary" class="text-muted"> · primary</span></label>
+              </li>
+            </ul>
+            <button type="button" class="mt-3 h-11 w-full rounded-full bg-accent text-sm font-medium text-ink disabled:opacity-50" :disabled="googleBusy" @click="saveCalendars">Save</button>
+          </div>
+        </template>
+        <template v-else>
+          <p class="mb-3 text-sm text-muted">Calendar read, mail read, and send. Your grant is encrypted and only you can disconnect it.</p>
+          <button type="button" class="h-11 w-full rounded-full bg-accent text-sm font-medium text-ink disabled:opacity-50" :disabled="googleBusy" @click="connectGoogle">Connect Google</button>
+        </template>
+      </section>
+
       <section class="mb-8">
         <h2 class="mb-2 text-xs font-medium uppercase tracking-widest text-accent">Invite an adult</h2>
         <form class="flex flex-col gap-2" @submit.prevent="invite">

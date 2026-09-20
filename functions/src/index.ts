@@ -7,3 +7,4 @@ export { createInvite } from "./household/createInvite";
 export { acceptInvite } from "./household/acceptInvite";
 export { addChild } from "./household/addChild";
 export { mintMeToken, revokeMeToken } from "./household/meToken";
+export { googleConnectStart, googleOAuthCallback, googleDisconnect, googleCalendars, setCalendars } from "./google/connect";

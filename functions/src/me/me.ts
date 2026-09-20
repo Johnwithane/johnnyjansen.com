@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { Response } from "express";
 import { db } from "../lib/admin";
 import { dayBounds, dayKey } from "../lib/dates";
+import { GOOGLE_SECRETS } from "../lib/params";
 import { hashToken } from "../lib/tokens";
 import { googleClientsFor } from "../google/client";
 import { listEvents } from "../google/calendar";
@@ -67,7 +68,7 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       if (!g) return { error: "google_unconfigured", events: [] };
       const { start } = dayBounds(now, p.timeZone);
       const end = new Date(start.getTime() + body.days * 86400000);
-      return { from: dayKey(start, p.timeZone), days: body.days, events: await listEvents(g.calendar, start, end) };
+      return { from: dayKey(start, p.timeZone), days: body.days, events: await listEvents(g.calendar, start, end, p.calendarIds) };
     }
     case "inbox": {
       const g = await googleClientsFor(p.uid);
@@ -133,7 +134,7 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
 }
 
 export const me = onRequest(
-  { region: "us-central1", timeoutSeconds: 120, memory: "256MiB", cors: false },
+  { region: "us-central1", secrets: GOOGLE_SECRETS, timeoutSeconds: 120, memory: "256MiB", cors: false },
   async (req: Request, res: Response) => {
     if (req.method !== "POST") {
       res.status(405).json({ error: "POST only" });

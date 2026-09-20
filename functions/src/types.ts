@@ -42,7 +42,7 @@ export interface UserDoc {
   email: string;
   timeZone?: string;
   digest?: { enabled: boolean; hour: number; minute: number };
-  google?: { connected: boolean; calendarIds: string[] };
+  google?: { connected: boolean; email?: string | null; calendarIds: string[] };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
