@@ -14,7 +14,7 @@ import { personFor } from "../sync/people";
 import { runDigestFor } from "../digest/runDigest";
 import { dispatchToGitHub, GITHUB_FEEDBACK_TOKEN } from "../feedback/dispatch";
 import { storage } from "../lib/admin";
-import type { TaskDoc } from "../types";
+import type { EventDoc, SuggestionDoc, TaskDoc } from "../types";
 import { MeBody } from "./schema";
 
 // The door a Claude Code session uses. One personal token per adult
@@ -197,6 +197,59 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       if (snap.data()?.status === "shipped") return { error: "already_shipped", id: body.id };
       await ref.update({ status: body.status, ...(body.notes !== undefined ? { notes: body.notes } : {}), updatedAt: FieldValue.serverTimestamp() });
       return { id: body.id, status: body.status };
+    }
+    case "events.list": {
+      const { start } = dayBounds(now, p.timeZone);
+      const from = dayKey(start, p.timeZone);
+      const toKey = dayKey(new Date(start.getTime() + body.days * 86400000), p.timeZone);
+      const snap = await db.collection("households").doc(p.hid).collection("events").where("start", ">=", from).where("start", "<", toKey).orderBy("start").limit(300).get();
+      return { from, days: body.days, events: snap.docs.map((d) => ({ id: d.id, ...(d.data() as EventDoc), createdAt: undefined, updatedAt: undefined })) };
+    }
+    case "events.add": {
+      const allDay = !body.start.includes("T");
+      const ref = await db.collection("households").doc(p.hid).collection("events").add({
+        title: body.title,
+        start: body.start,
+        end: body.end ?? body.start,
+        allDay,
+        kind: body.kind,
+        memberIds: [],
+        location: body.location ?? "",
+        notes: body.notes ?? "",
+        source: "cli",
+        ownerUid: p.uid,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { event: { id: ref.id, title: body.title, start: body.start, allDay, kind: body.kind } };
+    }
+    case "events.delete": {
+      const ref = db.collection("households").doc(p.hid).collection("events").doc(body.id);
+      const snap = await ref.get();
+      if (!snap.exists) return { error: "not_found", id: body.id };
+      await ref.delete();
+      return { deleted: body.id };
+    }
+    case "suggestions.list": {
+      const col = db.collection("households").doc(p.hid).collection("suggestions");
+      const [shared, mine] = await Promise.all([
+        col.where("status", "==", "pending").where("visibility", "==", "household").limit(100).get(),
+        col.where("status", "==", "pending").where("visibility", "==", "private").where("ownerUid", "==", p.uid).limit(100).get(),
+      ]);
+      const list = [...shared.docs, ...mine.docs].map((d) => {
+        const s = d.data() as SuggestionDoc;
+        return { id: d.id, kind: s.kind, source: s.source, summary: s.summary, payload: s.payload, visibility: s.visibility, createdAt: s.createdAt?.toDate?.().toISOString() ?? null };
+      });
+      return { suggestions: list.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")) };
+    }
+    case "suggestions.dismiss": {
+      const ref = db.collection("households").doc(p.hid).collection("suggestions").doc(body.id);
+      const snap = await ref.get();
+      const s = snap.data() as SuggestionDoc | undefined;
+      if (!snap.exists || !s || (s.visibility === "private" && s.ownerUid !== p.uid)) return { error: "not_found", id: body.id };
+      if (s.status !== "pending") return { error: "already_resolved", id: body.id };
+      await ref.update({ status: "dismissed", resolvedAt: FieldValue.serverTimestamp(), resolvedBy: p.uid });
+      return { id: body.id, status: "dismissed" };
     }
     case "feedback.dispatch": {
       try {

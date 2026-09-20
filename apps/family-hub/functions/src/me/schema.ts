@@ -39,6 +39,22 @@ export const MeBody = z.discriminatedUnion("action", [
   }),
   /** Open a GitHub issue for a report (adults). */
   z.object({ action: z.literal("feedback.dispatch"), id: z.string().min(1).max(128) }),
+  /** The household calendar for the next N days (default 7). */
+  z.object({ action: z.literal("events.list"), days: z.number().int().min(1).max(60).default(7) }),
+  z.object({
+    action: z.literal("events.add"),
+    title: z.string().trim().min(1).max(200),
+    /** YYYY-MM-DD, or YYYY-MM-DDTHH:mm in the household's wall clock. */
+    start: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/),
+    end: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/).optional(),
+    kind: z.enum(["event", "bill", "birthday", "renewal", "trip", "school"]).default("event"),
+    location: z.string().max(300).optional(),
+    notes: z.string().max(2000).optional(),
+  }),
+  z.object({ action: z.literal("events.delete"), id: z.string().min(1).max(128) }),
+  /** Pending suggestions this person can see. */
+  z.object({ action: z.literal("suggestions.list") }),
+  z.object({ action: z.literal("suggestions.dismiss"), id: z.string().min(1).max(128) }),
 ]);
 
 export type MeBody = z.infer<typeof MeBody>;

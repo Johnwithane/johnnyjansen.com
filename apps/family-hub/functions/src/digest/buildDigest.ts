@@ -1,14 +1,24 @@
-import { timeLabel } from "../lib/dates";
+import { clockLabel, timeLabel } from "../lib/dates";
 import type { EventItem, MailItem, TaskItem } from "../types";
 
 // The daily digest, as pure functions over plain data. Nothing here reads
 // Firestore or Google, which is what makes it testable and what keeps the
 // email honest: it can only describe what the collector handed it.
 
+export interface FamilyLine {
+  title: string;
+  /** YYYY-MM-DD or YYYY-MM-DDTHH:mm, household wall clock. */
+  start: string;
+  allDay: boolean;
+  kind: string;
+}
+
 export interface DigestInput {
   dayLabel: string;
   timeZone: string;
   events: EventItem[];
+  /** The household calendar for the day; empty array when nothing is on. */
+  family?: FamilyLine[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -91,6 +101,15 @@ export function buildDigest(input: DigestInput): Digest {
         })
         .join("")}</ul>`,
     );
+
+  // Family (the household's own calendar)
+  const family = input.family ?? [];
+  if (family.length) {
+    textSections.push("FAMILY");
+    for (const f of family) textSections.push(`- ${f.allDay ? "All day" : clockLabel(f.start)}: ${f.title}${f.kind !== "event" ? ` (${f.kind})` : ""}`);
+    textSections.push("");
+    htmlSections.push(`<h2>Family</h2><ul>${family.map((f) => `<li>${esc(f.allDay ? "All day" : clockLabel(f.start))}: ${esc(f.title)}${f.kind !== "event" ? ` <span class="muted">${esc(f.kind)}</span>` : ""}</li>`).join("")}</ul>`);
+  }
 
   // Inbox
   const shown = input.unread.length;

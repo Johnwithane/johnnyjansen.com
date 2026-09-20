@@ -110,6 +110,7 @@ export interface SnapshotDoc {
   dayKey: string;
   timeZone: string;
   events: EventItem[];
+  household: { id: string; title: string; start: string; end: string; allDay: boolean; kind: EventKind; memberIds: string[]; location?: string }[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -153,4 +154,46 @@ export interface FeedbackDoc {
   dispatchedAt?: Timestamp | null;
   shippedAt?: Timestamp | null;
   shippedVersion?: string | null;
+}
+
+export type EventKind = "event" | "bill" | "birthday" | "renewal" | "trip" | "school";
+
+/**
+ * households/{hid}/events/{id}: the household's own calendar. `start`/`end`
+ * are YYYY-MM-DD for all-day, else YYYY-MM-DDTHH:mm in the HOUSEHOLD's zone
+ * with no offset, so a lexical range on the day key works and the family
+ * reads one wall clock.
+ */
+export interface EventDoc {
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  kind: EventKind;
+  memberIds: string[];
+  location?: string;
+  notes?: string;
+  source: "portal" | "cli" | "intake" | "rule";
+  ownerUid: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "contact" | "document" | "recipe" | "pantry";
+export type SuggestionSource = "gemini" | "laptop" | "rule" | "scan" | "forward";
+
+/** households/{hid}/suggestions/{id}: machines propose, people confirm. */
+export interface SuggestionDoc {
+  kind: SuggestionKind;
+  source: SuggestionSource;
+  /** One line for the Review screen. */
+  summary: string;
+  /** Kind-specific; the client applies it through the normal service on accept. */
+  payload: Record<string, unknown>;
+  status: "pending" | "accepted" | "dismissed";
+  visibility: Visibility;
+  ownerUid: string;
+  createdAt: Timestamp;
+  resolvedAt: Timestamp | null;
+  resolvedBy: string | null;
 }

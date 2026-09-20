@@ -8,6 +8,7 @@ describe("MeBody", () => {
     expect(ME_ACTIONS).toContain("tasks.add");
     expect(ME_ACTIONS).toContain("digest.run");
     expect(ME_ACTIONS).toContain("feedback.triage");
+    expect(ME_ACTIONS).toContain("events.add");
   });
 
   it("fills defaults", () => {
@@ -28,5 +29,14 @@ describe("MeBody", () => {
 
   it("rejects unknown actions", () => {
     expect(() => MeBody.parse({ action: "rm -rf" })).toThrow();
+  });
+});
+
+describe("events.add", () => {
+  it("accepts a day or a wall-clock time and nothing else", () => {
+    expect(MeBody.parse({ action: "events.add", title: "Rent", start: "2026-09-22" }).kind).toBe("event");
+    expect(MeBody.parse({ action: "events.add", title: "Dentist", start: "2026-10-03T14:30", kind: "school" }).kind).toBe("school");
+    expect(() => MeBody.parse({ action: "events.add", title: "x", start: "2026-10-03T14:30:00Z" })).toThrow();
+    expect(() => MeBody.parse({ action: "events.add", title: "x", start: "next tuesday" })).toThrow();
   });
 });

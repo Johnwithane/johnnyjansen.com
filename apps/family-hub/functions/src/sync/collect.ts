@@ -5,7 +5,7 @@ import { dayBounds, dayKey } from "../lib/dates";
 import { googleClientsFor } from "../google/client";
 import { listEvents } from "../google/calendar";
 import { listUnread } from "../google/gmail";
-import type { EventItem, MailItem, SnapshotDoc, TaskDoc, TaskItem } from "../types";
+import type { EventDoc, EventItem, MailItem, SnapshotDoc, TaskDoc, TaskItem } from "../types";
 
 export interface Person {
   uid: string;
@@ -17,10 +17,23 @@ export interface Person {
   colour: string;
 }
 
+export interface HouseholdEventItem {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  kind: EventDoc["kind"];
+  memberIds: string[];
+  location?: string;
+}
+
 export interface Collected {
   dayKey: string;
   timeZone: string;
   events: EventItem[];
+  /** The household's own calendar for the day (bills, birthdays, intake events). */
+  household: HouseholdEventItem[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -53,11 +66,29 @@ export async function openTasksFor(p: Person): Promise<TaskItem[]> {
   return items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/** Household events whose start falls on `key` (lexical on the day prefix). */
+export async function householdEventsOn(hid: string, key: string): Promise<HouseholdEventItem[]> {
+  const snap = await db
+    .collection("households")
+    .doc(hid)
+    .collection("events")
+    .where("start", ">=", key)
+    .where("start", "<", `${key}~`)
+    .limit(100)
+    .get();
+  return snap.docs
+    .map((d) => {
+      const e = d.data() as EventDoc;
+      return { id: d.id, title: e.title, start: e.start, end: e.end, allDay: e.allDay, kind: e.kind, memberIds: e.memberIds ?? [], ...(e.location ? { location: e.location } : {}) };
+    })
+    .sort((a, b) => (a.allDay !== b.allDay ? (a.allDay ? -1 : 1) : a.start.localeCompare(b.start)));
+}
+
 /** One pull of everything "today" is made of for one person. */
 export async function collectToday(p: Person, now: Date): Promise<Collected> {
   const key = dayKey(now, p.timeZone);
   const { start, end } = dayBounds(now, p.timeZone);
-  const tasks = await openTasksFor(p);
+  const [tasks, household] = await Promise.all([openTasksFor(p), householdEventsOn(p.hid, key)]);
 
   let events: EventItem[] = [];
   let unread: MailItem[] = [];
@@ -78,7 +109,7 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
     }
   }
 
-  return { dayKey: key, timeZone: p.timeZone, events, unread, unreadTotal, tasks, sources: { google } };
+  return { dayKey: key, timeZone: p.timeZone, events, household, unread, unreadTotal, tasks, sources: { google } };
 }
 
 /**

@@ -5,6 +5,10 @@ import { subscribeAgenda, subscribeHousehold, subscribeProfile } from "@/firebas
 import { birthdayLine, upcomingBirthdays } from "@/utils/birthdays";
 import type { Feedback, WithId } from "@/firebase/interfaces";
 import { subscribeFeedback } from "@/firebase/services/feedbackService";
+import { subscribeEvents } from "@/firebase/services/eventsService";
+import { subscribePending } from "@/firebase/services/suggestionsService";
+import type { HouseholdEvent, Suggestion } from "@/firebase/interfaces";
+import { addDays, clockOf, dayKeyOf } from "@/utils/localTime";
 import { refreshToday, subscribeToday } from "@/firebase/services/snapshotService";
 import { ago, senderName, timeOf } from "@/utils/format";
 import { useAuth } from "@/composables/useAuth";
@@ -15,6 +19,9 @@ const agenda = ref<Agenda[]>([]);
 const household = ref<Household | null>(null);
 const profile = ref<UserProfile | null>(null);
 const feedback = ref<WithId<Feedback>[]>([]);
+const todayKey = dayKeyOf(new Date());
+const ownEvents = ref<WithId<HouseholdEvent>[]>([]);
+const pending = ref<WithId<Suggestion>[]>([]);
 const stops: (() => void)[] = [];
 const refreshing = ref(false);
 const note = ref("");
@@ -27,6 +34,8 @@ onMounted(() => {
     stops.push(subscribeAgenda(hid.value, (a) => (agenda.value = a)));
     stops.push(subscribeHousehold(hid.value, (h) => (household.value = h)));
     stops.push(subscribeFeedback(hid.value, (f) => (feedback.value = f), 50));
+    stops.push(subscribeEvents(hid.value, todayKey, addDays(todayKey, 1), (e) => (ownEvents.value = e)));
+    if (uid.value) stops.push(subscribePending(hid.value, uid.value, (s) => (pending.value = s)));
   }
 });
 onUnmounted(() => {
@@ -98,9 +107,17 @@ async function refresh() {
       </p>
     </section>
 
-    <section v-if="familyEvents.length" class="mb-8">
+    <RouterLink v-if="pending.length" to="/review" class="mb-6 block border-b border-line py-3 text-sm">
+      {{ pending.length }} to review <span class="text-accent">→</span>
+    </RouterLink>
+
+    <section v-if="familyEvents.length || ownEvents.length" class="mb-8">
       <h2 class="mb-2 text-xs font-medium uppercase tracking-widest text-accent">Family</h2>
       <ul>
+        <li v-for="e in ownEvents" :key="e.id" class="flex gap-3 border-b border-line py-2">
+          <span class="w-24 shrink-0 text-sm text-muted">{{ e.allDay ? "All day" : clockOf(e.start) }}</span>
+          <span class="min-w-0"><span v-if="household?.members[e.memberIds[0] ?? '']" class="mr-2 inline-block h-2 w-2 rounded-full align-middle" :style="{ background: household!.members[e.memberIds[0]!].colour }"></span>{{ e.title }}<span class="block text-xs text-muted">{{ e.kind !== "event" ? e.kind : "Household" }}<span v-if="e.location"> · {{ e.location }}</span></span></span>
+        </li>
         <li v-for="e in familyEvents" :key="e.who + e.id" class="flex gap-3 border-b border-line py-2">
           <span class="w-24 shrink-0 text-sm text-muted">{{ e.allDay ? "All day" : timeOf(e.start) }}</span>
           <span class="min-w-0"><span class="mr-2 inline-block h-2 w-2 rounded-full align-middle" :style="{ background: e.colour }"></span>{{ e.title }}<span class="block text-xs text-muted">{{ e.who }}<span v-if="e.location"> · {{ e.location }}</span></span></span>

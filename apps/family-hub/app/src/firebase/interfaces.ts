@@ -93,6 +93,7 @@ export interface Snapshot {
   dayKey: string;
   timeZone: string;
   events: EventItem[];
+  household?: { id: string; title: string; start: string; end: string; allDay: boolean; kind: EventKind; memberIds: string[]; location?: string }[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];
@@ -142,4 +143,37 @@ export interface Feedback {
   githubIssueUrl?: string | null;
   shippedAt?: Timestamp | null;
   shippedVersion?: string | null;
+}
+
+export type EventKind = "event" | "bill" | "birthday" | "renewal" | "trip" | "school";
+
+/** households/{hid}/events. start/end are wall-clock strings: YYYY-MM-DD or YYYY-MM-DDTHH:mm. */
+export interface HouseholdEvent {
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  kind: EventKind;
+  memberIds: string[];
+  location?: string;
+  notes?: string;
+  source: "portal" | "cli" | "intake" | "rule";
+  ownerUid: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "contact" | "document" | "recipe" | "pantry";
+
+export interface Suggestion {
+  kind: SuggestionKind;
+  source: "gemini" | "laptop" | "rule" | "scan" | "forward";
+  summary: string;
+  payload: Record<string, unknown>;
+  status: "pending" | "accepted" | "dismissed";
+  visibility: Visibility;
+  ownerUid: string;
+  createdAt: Timestamp;
+  resolvedAt: Timestamp | null;
+  resolvedBy: string | null;
 }

@@ -78,6 +78,44 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // The household's own calendar: bills, birthdays, renewals, trips,
+      // and events intake proposed. Google events never live here; they
+      // stay in each person's snapshot and agenda slice.
+      match /events/{eventId} {
+        function validEvent() {
+          let d = request.resource.data;
+          return d.title is string && d.title.size() > 0 && d.title.size() <= 200
+            && d.start is string && d.start.size() >= 10 && d.start.size() <= 30
+            && d.end is string && d.end.size() >= 10 && d.end.size() <= 30
+            && d.allDay is bool
+            && d.kind in ['event', 'bill', 'birthday', 'renewal', 'trip', 'school']
+            && d.memberIds is list && d.memberIds.size() <= 12
+            && d.ownerUid is string
+            && d.keys().hasOnly(['title', 'start', 'end', 'allDay', 'kind', 'memberIds', 'location', 'notes', 'source', 'ownerUid', 'createdAt', 'updatedAt']);
+        }
+        allow read: if inHousehold(h);
+        allow create: if inHousehold(h) && validEvent() && request.resource.data.ownerUid == uid();
+        allow update: if inHousehold(h) && validEvent() && request.resource.data.ownerUid == resource.data.ownerUid;
+        allow delete: if inHousehold(h) && (resource.data.ownerUid == uid() || isAdult(h));
+      }
+
+      // Machines propose, people confirm (PLAN.md section 5). Functions and
+      // the laptop worker create suggestions; a member may only resolve one
+      // (accept or dismiss), never create, edit or delete it. A private
+      // suggestion (from someone's own inbox) is visible to that person only.
+      match /suggestions/{suggestionId} {
+        function visibleToMe() {
+          return resource.data.visibility == 'household' || resource.data.ownerUid == uid();
+        }
+        allow read: if inHousehold(h) && visibleToMe();
+        allow create, delete: if false;
+        allow update: if inHousehold(h) && visibleToMe()
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt', 'resolvedBy'])
+          && request.resource.data.status in ['accepted', 'dismissed']
+          && request.resource.data.resolvedBy == uid();
+      }
+
       match /tasks/{taskId} {
         function visibleToMe() {
           return resource.data.visibility == 'household' || resource.data.ownerUid == uid();

@@ -28,6 +28,7 @@ export async function runDigestFor(p: Person & { email: string }, now = new Date
     dayLabel: dayLabel(now, p.timeZone),
     timeZone: p.timeZone,
     events: collected.events,
+    family: collected.household.map((h) => ({ title: h.title, start: h.start, allDay: h.allDay, kind: h.kind })),
     unread: collected.unread,
     unreadTotal: collected.unreadTotal,
     tasks: collected.tasks,

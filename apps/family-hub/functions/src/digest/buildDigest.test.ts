@@ -85,3 +85,21 @@ describe("senderName", () => {
     expect(senderName("jane@example.com")).toBe("jane@example.com");
   });
 });
+
+describe("family section", () => {
+  it("lists household events with wall-clock times and kinds", () => {
+    const d = buildDigest({
+      ...base,
+      family: [
+        { title: "Rent", start: "2026-09-22", allDay: true, kind: "bill" },
+        { title: "Dentist, Forest", start: "2026-09-22T14:30", allDay: false, kind: "event" },
+      ],
+    });
+    expect(d.text).toContain("FAMILY");
+    expect(d.text).toContain("- All day: Rent (bill)");
+    expect(d.text).toContain("- 2:30 p.m.: Dentist, Forest");
+  });
+  it("omits the section when nothing is on", () => {
+    expect(buildDigest({ ...base, family: [] }).text).not.toContain("FAMILY");
+  });
+});

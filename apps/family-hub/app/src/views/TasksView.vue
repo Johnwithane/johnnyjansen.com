@@ -4,6 +4,7 @@ import type { Task, Visibility, WithId } from "@/firebase/interfaces";
 import { useAuth } from "@/composables/useAuth";
 import { createTask, deleteTask, setTaskDone, subscribeTasks } from "@/firebase/services/tasksService";
 import TaskRow from "@/components/TaskRow.vue";
+import PlanTabs from "@/components/PlanTabs.vue";
 
 const { hid, uid } = useAuth();
 const h = hid.value ?? "";
@@ -47,7 +48,7 @@ function remove(id: string) {
 
 <template>
   <div>
-    <h1 class="mb-4 text-xl font-medium">Tasks</h1>
+    <PlanTabs active="tasks" />
 
     <form class="mb-6 flex flex-col gap-2" @submit.prevent="add">
       <input

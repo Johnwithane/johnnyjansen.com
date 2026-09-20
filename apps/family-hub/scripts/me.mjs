@@ -13,6 +13,10 @@
 //   npm run me done <id> | reopen <id> | rm <id>
 //   npm run me digest [day]             the stored digest (newest, or YYYY-MM-DD)
 //   npm run me digest run               build + store + email today's digest now
+//   npm run me events [days]            the household calendar for the next N days (default 7)
+//   npm run me event "Rent" 2026-10-01 [--kind bill] [--at 14:30]
+//   npm run me review                   pending suggestions you can see
+//   npm run me dismiss <id>             dismiss a suggestion (accepting happens in the app)
 //   npm run me feedback [status|all]    the household's bug / idea queue (default open), screenshots downloaded
 //   npm run me feedback show <id>       one report in full
 //   npm run me feedback triage <id> <open|triaged|in_progress|wontfix> [notes...]
@@ -167,6 +171,25 @@ async function main() {
     case "digest":
       body = rest[0] === "run" ? { action: "digest.run" } : { action: "digest.get", ...(rest[0] ? { day: rest[0] } : {}) };
       break;
+    case "events":
+      body = { action: "events.list", days: rest[0] ? Number(rest[0]) : 7 };
+      break;
+    case "event": {
+      const kind = flag(rest, "--kind");
+      const at = flag(rest, "--at");
+      const day = rest.pop();
+      const title = rest.join(" ").trim();
+      if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(day || "")) die('Usage: me event "title" YYYY-MM-DD [--kind bill] [--at HH:MM]');
+      body = { action: "events.add", title, start: at ? `${day}T${at}` : day, ...(kind ? { kind } : {}) };
+      break;
+    }
+    case "review":
+      body = { action: "suggestions.list" };
+      break;
+    case "dismiss":
+      if (!rest[0]) die("Usage: me dismiss <id>");
+      body = { action: "suggestions.dismiss", id: rest[0] };
+      break;
     case "feedback": {
       const sub = rest[0];
       if (sub === "show") body = { action: "feedback.get", id: rest[1] };
@@ -184,7 +207,7 @@ async function main() {
       }
       break;
     default:
-      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | digest [day|run] | feedback [status|show|triage|dispatch] | raw");
+      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | events [days] | event | review | dismiss | digest [day|run] | feedback [status|show|triage|dispatch] | raw");
   }
 
   const out = await call(body);
@@ -193,6 +216,11 @@ async function main() {
   switch (body.action) {
     case "today": {
       console.log(`${out.dayKey} (${out.timeZone})  google: ${out.sources.google}\n`);
+      if (out.household && out.household.length) {
+        console.log("FAMILY");
+        for (const e of out.household) console.log(`  ${e.allDay ? "All day" : e.start.slice(11)}  ${e.title}${e.kind !== "event" ? ` (${e.kind})` : ""}`);
+        console.log("");
+      }
       console.log("CALENDAR");
       printEvents(out.events, out.timeZone);
       console.log("\nINBOX");
@@ -226,6 +254,24 @@ async function main() {
     case "digest.run":
       if (out.error) return console.log(out.error);
       console.log(`${out.subject}\nemailed: ${out.emailed}${out.emailError ? ` (${out.emailError})` : ""}\n\n${out.text}`);
+      break;
+    case "events.list":
+      console.log(`${out.days} days from ${out.from}`);
+      if (!out.events.length) console.log("  Nothing on the household calendar.");
+      for (const e of out.events) console.log(`  [${e.id}] ${e.start.replace("T", " ")}  ${e.title}${e.kind !== "event" ? ` (${e.kind})` : ""}`);
+      break;
+    case "events.add":
+      console.log(`[${out.event.id}] ${out.event.start.replace("T", " ")}  ${out.event.title}`);
+      break;
+    case "events.delete":
+      console.log(out.error ? `${out.error}: ${out.id}` : `deleted ${out.deleted}`);
+      break;
+    case "suggestions.list":
+      if (!out.suggestions.length) console.log("Nothing waiting.");
+      for (const s of out.suggestions) console.log(`  [${s.id}] ${s.kind} · ${s.source}${s.visibility === "private" ? " · only you" : ""}\n      ${s.summary}`);
+      break;
+    case "suggestions.dismiss":
+      console.log(out.error ? `${out.error}: ${out.id}` : `${out.id} dismissed`);
       break;
     case "feedback.list":
       console.log(`${out.reports.length} report(s)`);
