@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, shallowRef } from "vue";
+import { useRoute } from "vue-router";
 import { multiFactor, TotpMultiFactorGenerator, type TotpSecret } from "firebase/auth";
 import { useAuth } from "@/composables/useAuth";
 import { BRAND_NAME } from "@/seo/site";
@@ -9,7 +10,10 @@ import { BRAND_NAME } from "@/seo/site";
 // secret is shown as a key to type, and as an otpauth link for phones that
 // open it directly. No SMS, by design (FAMILY_PLAN.md 9.2).
 
-const { user, isAdult } = useAuth();
+const { user, isAdult, isMfa, logOut } = useAuth();
+const route = useRoute();
+// Sent here by the router from a screen that needs the second factor.
+const sentFrom = typeof route.query.next === "string" ? route.query.next : "";
 const enrolled = ref<{ id: string; name: string }[]>([]);
 const secret = shallowRef<TotpSecret | null>(null);
 const otpauth = ref("");
@@ -51,7 +55,7 @@ async function finish() {
     await multiFactor(u).enroll(assertion, "Authenticator app");
     secret.value = null;
     code.value = "";
-    note.value = "Second factor on. You will be asked for a code on new devices.";
+    note.value = "Second factor on. Sign in again to use it in this session.";
     refresh();
   } catch (e) {
     note.value = e instanceof Error ? e.message.replace(/^.*?:\s*/, "") : "That code did not match";
@@ -81,6 +85,11 @@ async function remove(id: string) {
     <h1 class="mb-1 text-xl font-medium">Security</h1>
     <p class="mb-6 text-xs text-muted">Sign-in is Google only. A second factor protects money, taxes and the vault.</p>
     <p v-if="note" class="mb-4 text-sm text-muted">{{ note }}</p>
+    <p v-if="sentFrom && !enrolled.length" class="mb-4 rounded-xl border border-line bg-panel p-3 text-sm">Money needs a second factor. Turn it on below, then sign in again.</p>
+    <div v-else-if="sentFrom && enrolled.length && !isMfa" class="mb-4 rounded-xl border border-line bg-panel p-3 text-sm">
+      <p class="mb-2">Your second factor is on. Sign in again and Money opens.</p>
+      <button type="button" class="h-10 rounded-full bg-accent px-4 text-sm font-medium text-ink" @click="logOut">Sign out</button>
+    </div>
 
     <section class="mb-8">
       <h2 class="mb-2 text-xs font-medium uppercase tracking-widest text-accent">Second factor</h2>

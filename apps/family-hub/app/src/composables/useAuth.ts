@@ -112,6 +112,10 @@ export function useAuth() {
     role: computed(() => claims.value.role),
     isMember: computed(() => !!claims.value.hid),
     isAdult: computed(() => claims.value.role === "adult"),
+    // This session passed the second factor. Money, Taxes and the Vault need it
+    // (rules check the same token field); enrolling does not upgrade the
+    // current session, a fresh sign-in does.
+    isMfa: computed(() => claims.value.mfa),
     ready: computed(() => ready.value),
     error: computed(() => error.value),
     busy: computed(() => busy.value),

@@ -14,6 +14,10 @@ export const router = createRouter({
     { path: "/calendar", name: "calendar", component: () => import("@/views/CalendarView.vue") },
     { path: "/tasks", name: "tasks", component: () => import("@/views/TasksView.vue") },
     { path: "/review", name: "review", component: () => import("@/views/ReviewView.vue") },
+    { path: "/money", name: "money", component: () => import("@/views/MoneyView.vue"), meta: { mfa: true } },
+    { path: "/money/receipt", name: "receipt", component: () => import("@/views/ReceiptView.vue"), meta: { mfa: true } },
+    { path: "/money/add", name: "money-add", component: () => import("@/views/ReceiptView.vue"), meta: { mfa: true } },
+    { path: "/money/accounts", name: "accounts", component: () => import("@/views/AccountsView.vue"), meta: { mfa: true } },
     { path: "/digests", name: "digests", component: () => import("@/views/DigestsView.vue") },
     { path: "/household", name: "household", component: () => import("@/views/HouseholdView.vue") },
     { path: "/setup", name: "setup", component: () => import("@/views/SetupView.vue") },
@@ -24,7 +28,7 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-  const { ready, user, isMember } = useAuth();
+  const { ready, user, isMember, isAdult, isMfa } = useAuth();
   if (!ready.value) {
     await new Promise<void>((resolve) => {
       const stop = setInterval(() => {
@@ -41,5 +45,11 @@ router.beforeEach(async (to) => {
   if (!signedIn) return to.name === "login" ? true : { name: "login", query: { next: to.fullPath } };
   if (!isMember.value) return to.name === "start" ? true : { name: "start" };
   if (to.name === "login" || to.name === "start") return { name: "today" };
+  // Money (and later Taxes, the Vault) is adults with a second factor only,
+  // same as the rules. A child lands on Today; an adult lands on Security.
+  if (to.meta.mfa) {
+    if (!isAdult.value) return { name: "today" };
+    if (!isMfa.value) return { name: "security", query: { next: to.fullPath } };
+  }
   return true;
 });

@@ -177,3 +177,39 @@ export interface Suggestion {
   resolvedAt: Timestamp | null;
   resolvedBy: string | null;
 }
+
+export type AccountType = "chequing" | "savings" | "credit" | "cash" | "loan";
+
+export interface Account {
+  name: string;
+  type: AccountType;
+  currency: string;
+  visibility: Visibility;
+  ownerUid: string;
+  balance?: number | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Transaction {
+  amount: number;
+  direction: "expense" | "income";
+  date: string;
+  merchant: string;
+  category: string;
+  taxCategory: string;
+  accountId: string | null;
+  businessId: string | null;
+  receiptPath: string | null;
+  notes: string;
+  visibility: Visibility;
+  ownerUid: string;
+  source: "portal" | "receipt" | "import" | "cli";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Budget {
+  envelopes: Record<string, number>;
+  updatedAt: Timestamp;
+}

@@ -18,6 +18,12 @@ Things only Johnny can do. Tick them off in order; each phase's code assumes the
 - [ ] **CI deploys.** Two service account keys (Firebase Admin + Cloud Functions Developer + Service Account User): one for `familyhub-prod` as the GitHub secret `FIREBASE_SA_FAMILY_HUB` (workflow `app-family-hub.yml` deploys functions + rules), one for `johnnyjansen-site` as `FIREBASE_SA_SITE` (workflow `site.yml` deploys hosting). Then set the GitHub variable `FIREBASE_DEPLOY_ENABLED=true`. Until then the workflows only check.
 - [ ] **Claude Code environment.** On the Household screen tap Mint token (Claude Code access) and copy it. In claude.ai/code → Environments, create `johnnyjansen` with the env var `ME_TOKEN=<that token>`. Then in any session: `npm run me today`. Carly can mint her own.
 
+## Phase 2
+
+- [ ] **Vertex AI (2b).** Google Cloud console → APIs & Services → enable *Vertex AI API* on `familyhub-prod`, and grant the functions' service account the *Vertex AI User* role. `VERTEX_MODEL` / `VERTEX_LOCATION` in `functions/.env` default to `gemini-2.5-flash` in `us-central1`. Until this is on, Snap a receipt says "Could not read it" and the manual form still works.
+- [ ] **Indexes.** `npm run deploy:rules` also ships the two new `transactions` composite indexes (`firestore.indexes.json`); Money's lists stay empty with a console error until they finish building (a few minutes).
+- [ ] **Turn on your second factor before opening Money** (Household → Security), then sign in again. The router sends you there if you forget. Carly too.
+
 ## Phase 1
 
 - [ ] **Read the Terms and Privacy pages once** (`/app/legal/terms`, `/app/legal/privacy`). They are plain-language beta terms; a lawyer reviews before other families join.

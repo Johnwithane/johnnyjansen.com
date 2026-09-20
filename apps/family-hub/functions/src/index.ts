@@ -9,3 +9,4 @@ export { addChild } from "./household/addChild";
 export { mintMeToken, revokeMeToken } from "./household/meToken";
 export { googleConnectStart, googleOAuthCallback, googleDisconnect, googleCalendars, setCalendars } from "./google/connect";
 export { markFeedbackShipped } from "./feedback/markShipped";
+export { analyzeReceipt } from "./money/analyzeReceipt";

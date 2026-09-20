@@ -52,10 +52,19 @@ export function unverified(env: RulesTestEnvironment, uid: string, hid: string):
   return env.authenticatedContext(uid, { email: `${uid}@example.com`, email_verified: false, hid, role: "adult" });
 }
 
+/** A member whose session passed the TOTP second factor (Money, Taxes, Vault). */
+export function mfaMember(env: RulesTestEnvironment, uid: string, hid: string, role: Role): RulesTestContext {
+  return env.authenticatedContext(uid, { email: `${uid}@example.com`, email_verified: true, hid, role, firebase: { sign_in_provider: "google.com", sign_in_second_factor: "totp" } });
+}
+
 export function adultA(env: RulesTestEnvironment) { return member(env, ADULT_A, HID_A, "adult"); }
 export function adultA2(env: RulesTestEnvironment) { return member(env, ADULT_A2, HID_A, "adult"); }
 export function childA(env: RulesTestEnvironment) { return member(env, CHILD_A, HID_A, "child"); }
 export function adultB(env: RulesTestEnvironment) { return member(env, ADULT_B, HID_B, "adult"); }
+export function mfaA(env: RulesTestEnvironment) { return mfaMember(env, ADULT_A, HID_A, "adult"); }
+export function mfaA2(env: RulesTestEnvironment) { return mfaMember(env, ADULT_A2, HID_A, "adult"); }
+export function mfaB(env: RulesTestEnvironment) { return mfaMember(env, ADULT_B, HID_B, "adult"); }
+export function mfaChildA(env: RulesTestEnvironment) { return mfaMember(env, CHILD_A, HID_A, "child"); }
 
 /** Seed both households and a user doc per member, rules off. */
 export async function seed(env: RulesTestEnvironment): Promise<void> {

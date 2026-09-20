@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 import { BRAND_NAME } from "@/seo/site";
 import ReportDialog from "@/components/ReportDialog.vue";
 
-const { logOut } = useAuth();
+const { logOut, isAdult } = useAuth();
 const route = useRoute();
 const reporting = ref(false);
 const thanks = ref(false);
@@ -14,12 +14,16 @@ function filed() {
   setTimeout(() => (thanks.value = false), 2500);
 }
 
-const tabs = [
-  { to: "/", label: "Today", match: ["today"] },
-  { to: "/calendar", label: "Plan", match: ["calendar", "tasks"] },
-  { to: "/review", label: "Review", match: ["review"] },
-  { to: "/household", label: "More", match: ["household", "digests", "feedback", "security", "setup"] },
-];
+// Money is adults only (the router and the rules agree), so a child's bar has four tabs.
+const tabs = computed(() =>
+  [
+    { to: "/", label: "Today", match: ["today"] },
+    { to: "/calendar", label: "Plan", match: ["calendar", "tasks"] },
+    { to: "/money", label: "Money", match: ["money", "receipt", "money-add", "accounts"], adult: true },
+    { to: "/review", label: "Review", match: ["review"] },
+    { to: "/household", label: "More", match: ["household", "digests", "feedback", "security", "setup"] },
+  ].filter((t) => !t.adult || isAdult.value),
+);
 </script>
 
 <template>

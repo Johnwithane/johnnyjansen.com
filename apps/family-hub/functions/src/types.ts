@@ -197,3 +197,45 @@ export interface SuggestionDoc {
   resolvedAt: Timestamp | null;
   resolvedBy: string | null;
 }
+
+export type AccountType = "chequing" | "savings" | "credit" | "cash" | "loan";
+
+/** households/{hid}/accounts/{id} */
+export interface AccountDoc {
+  name: string;
+  type: AccountType;
+  currency: string;
+  visibility: Visibility;
+  ownerUid: string;
+  /** Last known balance, entered or imported. Optional. */
+  balance?: number | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/** households/{hid}/transactions/{id}. amount is positive; direction says which way. */
+export interface TransactionDoc {
+  amount: number;
+  direction: "expense" | "income";
+  /** YYYY-MM-DD */
+  date: string;
+  merchant: string;
+  category: string;
+  taxCategory: string;
+  accountId: string | null;
+  businessId: string | null;
+  receiptPath: string | null;
+  notes: string;
+  visibility: Visibility;
+  ownerUid: string;
+  source: "portal" | "receipt" | "import" | "cli";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/** households/{hid}/settings/budget */
+export interface BudgetDoc {
+  /** category -> monthly amount */
+  envelopes: Record<string, number>;
+  updatedAt: Timestamp;
+}
