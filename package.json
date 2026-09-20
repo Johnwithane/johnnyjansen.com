@@ -15,11 +15,11 @@
     "lint": "npm run portal:lint",
     "build": "npm run portal:build && npm run site:build && npm run functions:build",
     "test:run": "npm run portal:test && npm run functions:test",
-    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "deploy:functions": "firebase deploy --only functions",
     "site:build": "node scripts/build-site.mjs",
     "deploy:hosting": "npm run portal:build && npm run site:build && firebase deploy --only hosting",
-    "test:rules": "firebase --project demo-familyhub-rules emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "firebase --project demo-familyhub-rules emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "emulators": "firebase --project demo-familyhub emulators:start"
   },
   "engines": {

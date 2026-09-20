@@ -118,3 +118,27 @@ export interface Digest {
   emailError?: string;
   generatedAt: Timestamp;
 }
+
+export type FeedbackType = "bug" | "idea" | "improvement";
+export type FeedbackStatus = "open" | "triaged" | "in_progress" | "shipped" | "wontfix";
+
+export interface Feedback {
+  reportId: string;
+  type: FeedbackType;
+  description: string;
+  route: string;
+  url: string;
+  environment: string;
+  appVersion: string;
+  screenshotPaths: string[];
+  status: FeedbackStatus;
+  notes: string;
+  reporterUid: string;
+  reporterName: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
+  shippedAt?: Timestamp | null;
+  shippedVersion?: string | null;
+}

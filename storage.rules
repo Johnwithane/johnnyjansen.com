@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function inHousehold(h) { return signedIn() && request.auth.token.hid == h; }
+
+    // Every object path starts with the household. No public reads anywhere
+    // (FAMILY_PLAN.md 9.4).
+    match /households/{h}/feedback/{u}/{file} {
+      allow read: if inHousehold(h);
+      allow create: if inHousehold(h) && request.auth.uid == u
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

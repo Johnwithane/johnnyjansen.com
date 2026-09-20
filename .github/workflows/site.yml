@@ -61,6 +61,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -73,9 +75,24 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-      - name: Deploy rules + indexes
-        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes --project familyhub-prod --non-interactive
+      - name: Deploy rules + indexes + storage
+        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes,storage --project familyhub-prod --non-interactive
       - name: Deploy functions
         run: npx firebase-tools@15 deploy --only functions --project familyhub-prod --non-interactive --force
       - name: Deploy hosting
+        id: deploy_hosting
         run: npx firebase-tools@15 deploy --only hosting --project familyhub-prod --non-interactive
+
+      # Feedback loop, last step: any Feedback-Id trailer in the pushed commits
+      # marks that report shipped, which is what tells the reporter it is live.
+      - name: Mark feedback shipped
+        if: ${{ !cancelled() && steps.deploy_hosting.outcome == 'success' && github.event_name == 'push' }}
+        env:
+          CI_FEEDBACK_TOKEN: ${{ secrets.CI_FEEDBACK_TOKEN }}
+        run: |
+          if [ -z "$CI_FEEDBACK_TOKEN" ]; then echo "CI_FEEDBACK_TOKEN not set; skipping"; exit 0; fi
+          IDS=$(git log --format=%B ${{ github.event.before }}..${{ github.sha }} | grep -E '^Feedback-Id:' | sed -E 's/^Feedback-Id:[[:space:]]*//' | sort -u | tr -d '\r')
+          if [ -z "$IDS" ]; then echo "no Feedback-Id trailers"; exit 0; fi
+          BODY=$(printf '%s\n' "$IDS" | node -e 'const ids=require("fs").readFileSync(0,"utf8").split("\n").filter(Boolean);process.stdout.write(JSON.stringify({reportIds:ids,version:process.argv[1]}))' "${GITHUB_SHA::7}")
+          curl -sS -f -X POST -H "Content-Type: application/json" -H "x-ci-token: $CI_FEEDBACK_TOKEN" \
+            --data "$BODY" https://us-central1-familyhub-prod.cloudfunctions.net/markFeedbackShipped || echo "::warning::markFeedbackShipped failed; reports stay open"

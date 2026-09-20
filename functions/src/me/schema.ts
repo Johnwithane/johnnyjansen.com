@@ -28,6 +28,17 @@ export const MeBody = z.discriminatedUnion("action", [
   z.object({ action: z.literal("digest.get"), day: day.optional() }),
   /** Build + store + email today's digest right now. */
   z.object({ action: z.literal("digest.run") }),
+  /** The household's feedback queue, screenshots as one-hour signed URLs. */
+  z.object({ action: z.literal("feedback.list"), status: z.enum(["open", "triaged", "in_progress", "shipped", "wontfix", "all"]).default("open") }),
+  z.object({ action: z.literal("feedback.get"), id: z.string().min(1).max(128) }),
+  z.object({
+    action: z.literal("feedback.triage"),
+    id: z.string().min(1).max(128),
+    status: z.enum(["open", "triaged", "in_progress", "wontfix"]),
+    notes: z.string().max(2000).optional(),
+  }),
+  /** Open a GitHub issue for a report (adults). */
+  z.object({ action: z.literal("feedback.dispatch"), id: z.string().min(1).max(128) }),
 ]);
 
 export type MeBody = z.infer<typeof MeBody>;

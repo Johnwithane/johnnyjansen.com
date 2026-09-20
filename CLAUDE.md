@@ -35,6 +35,7 @@ Same as bettertour and Wishbone, shortened:
 - Firebase changes deploy before the commit that depends on them. A credential-less session writes "deploy owed" in the commit body and CI deploys on merge to `main` once `FIREBASE_DEPLOY_ENABLED` is on.
 - The `me` endpoint is a closed menu of actions, not a query surface. Add an action to `schema.ts` + `me.ts` + `scripts/me.mjs` together, and keep write actions to what the portal can do by hand.
 - Copy: terse, plain, no dashes, no AI voice. One short sentence per helper text.
+- Fixing a feedback report? Add the trailer `Feedback-Id: <id>` to the commit body. CI marks it shipped after the deploy; that is the only honest "shipped". `npm run me feedback` lists the queue with screenshots downloaded.
 
 ## Layout
 
@@ -45,7 +46,8 @@ portal/src/
   firebase/interfaces.ts     doc types (mirror of functions/src/types.ts, keep in step)
   firebase/services/         pure async functions per collection + callable wrappers
   composables/useAuth.ts     Google sign-in + { hid, role } claims, refreshClaims()
-  views/                     Login, Onboarding (found a household), Setup (wizard spine), Invite (accept), Today, Tasks, Digests, Household
+  views/                     Login, Onboarding (found a household), Setup (wizard spine), Invite (accept), Today, Tasks, Digests, Household, Feedback
+  components/ReportDialog    the Report control (type, one line, screenshots, environment dump)
   utils/birthdays.ts         upcoming birthdays from member records (tested)
 functions/src/
   lib/brand.ts               BRAND_NAME, BRAND_DOMAIN, APP_BASE_URL
@@ -58,9 +60,10 @@ functions/src/
   google/                    oauth.ts (scopes, consent URL), connect.ts (start, callback, disconnect, calendars), per-person clients from the sealed grant, calendar, gmail (read + send)
   sync/collect.ts, people.ts one pull of today per person → users/{uid}/snapshots/today
   digest/                    pure builder (tested), runDigestFor(person), 06:30 schedule over every adult
-  me/                        personal-token endpoint + schema (tested)
+  me/                        personal-token endpoint + schema (tested), incl. feedback.list/get/triage/dispatch
+  feedback/                  trailers.ts (Feedback-Id parsing, tested), markShipped.ts (CI endpoint), dispatch.ts (GitHub issue)
   auth/onUserCreated.ts      profile doc only; no claims until a household
-tests/rules/                 Firestore rules tests (households, tasks, users), two households seeded
+tests/rules/                 Firestore + Storage rules tests (households, tasks, users, feedback), two households seeded
 scripts/me.mjs               CLI over the me endpoint (token minted on the Household screen)
 ```
 

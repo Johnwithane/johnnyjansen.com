@@ -12,6 +12,8 @@ import { listUnread } from "../google/gmail";
 import { collectToday, storeSnapshot, type Person } from "../sync/collect";
 import { personFor } from "../sync/people";
 import { runDigestFor } from "../digest/runDigest";
+import { dispatchToGitHub, GITHUB_FEEDBACK_TOKEN } from "../feedback/dispatch";
+import { storage } from "../lib/admin";
 import type { TaskDoc } from "../types";
 import { MeBody } from "./schema";
 
@@ -19,6 +21,40 @@ import { MeBody } from "./schema";
 // (mintMeToken), stored as a hash at meTokens/{hash} -> { uid, hid }. A leaked
 // token reaches one person's view of one household and is revocable from the
 // Household screen. A closed menu of actions (schema.ts), not a query surface.
+
+async function signShots(paths: string[]): Promise<string[]> {
+  const out: string[] = [];
+  for (const p of paths.slice(0, 3)) {
+    try {
+      const [url] = await storage.bucket().file(p).getSignedUrl({ action: "read", expires: Date.now() + 3600_000 });
+      out.push(url);
+    } catch {
+      /* a missing object is not worth failing the digest */
+    }
+  }
+  return out;
+}
+
+function reportOut(id: string, d: Record<string, unknown>, shots: string[]) {
+  const ts = (v: unknown) => (v && typeof v === "object" && "toDate" in v ? (v as { toDate(): Date }).toDate().toISOString() : null);
+  return {
+    id,
+    type: d.type,
+    status: d.status,
+    description: d.description,
+    route: d.route,
+    url: d.url,
+    environment: d.environment,
+    appVersion: d.appVersion,
+    notes: d.notes ?? "",
+    reporterName: d.reporterName,
+    screenshots: shots,
+    githubIssueUrl: d.githubIssueUrl ?? null,
+    createdAt: ts(d.createdAt),
+    updatedAt: ts(d.updatedAt),
+    shippedAt: ts(d.shippedAt),
+  };
+}
 
 async function resolveCaller(req: Request): Promise<(Person & { email: string }) | null> {
   const raw = req.get("x-me-token") ?? "";
@@ -130,11 +166,42 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       const r = await runDigestFor(p, now);
       return { dayKey: r.dayKey, subject: r.subject, text: r.text, counts: r.counts, emailed: r.emailed, emailError: r.emailError ?? null };
     }
+    case "feedback.list": {
+      const col = db.collection("households").doc(p.hid).collection("feedback");
+      const snap = body.status === "all" ? await col.orderBy("createdAt", "desc").limit(200).get() : await col.where("status", "==", body.status).orderBy("createdAt", "desc").limit(200).get();
+      const reports = [];
+      for (const d of snap.docs) {
+        const data = d.data() as Record<string, unknown>;
+        reports.push(reportOut(d.id, data, await signShots((data.screenshotPaths as string[]) ?? [])));
+      }
+      return { reports };
+    }
+    case "feedback.get": {
+      const snap = await db.collection("households").doc(p.hid).collection("feedback").doc(body.id).get();
+      if (!snap.exists) return { error: "not_found", id: body.id };
+      const data = snap.data() as Record<string, unknown>;
+      return { report: reportOut(snap.id, data, await signShots((data.screenshotPaths as string[]) ?? [])) };
+    }
+    case "feedback.triage": {
+      const ref = db.collection("households").doc(p.hid).collection("feedback").doc(body.id);
+      const snap = await ref.get();
+      if (!snap.exists) return { error: "not_found", id: body.id };
+      if (snap.data()?.status === "shipped") return { error: "already_shipped", id: body.id };
+      await ref.update({ status: body.status, ...(body.notes !== undefined ? { notes: body.notes } : {}), updatedAt: FieldValue.serverTimestamp() });
+      return { id: body.id, status: body.status };
+    }
+    case "feedback.dispatch": {
+      try {
+        return { issue: await dispatchToGitHub(p.hid, body.id) };
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : "dispatch_failed", id: body.id };
+      }
+    }
   }
 }
 
 export const me = onRequest(
-  { region: "us-central1", secrets: GOOGLE_SECRETS, timeoutSeconds: 120, memory: "256MiB", cors: false },
+  { region: "us-central1", secrets: [...GOOGLE_SECRETS, GITHUB_FEEDBACK_TOKEN], timeoutSeconds: 120, memory: "256MiB", cors: false },
   async (req: Request, res: Response) => {
     if (req.method !== "POST") {
       res.status(405).json({ error: "POST only" });

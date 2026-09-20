@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import type { Agenda, Household, Snapshot, UserProfile } from "@/firebase/interfaces";
 import { subscribeAgenda, subscribeHousehold, subscribeProfile } from "@/firebase/services/householdService";
 import { birthdayLine, upcomingBirthdays } from "@/utils/birthdays";
+import type { Feedback, WithId } from "@/firebase/interfaces";
+import { subscribeFeedback } from "@/firebase/services/feedbackService";
 import { refreshToday, subscribeToday } from "@/firebase/services/snapshotService";
 import { ago, senderName, timeOf } from "@/utils/format";
 import { useAuth } from "@/composables/useAuth";
@@ -12,6 +14,7 @@ const snap = ref<Snapshot | null>(null);
 const agenda = ref<Agenda[]>([]);
 const household = ref<Household | null>(null);
 const profile = ref<UserProfile | null>(null);
+const feedback = ref<WithId<Feedback>[]>([]);
 const stops: (() => void)[] = [];
 const refreshing = ref(false);
 const note = ref("");
@@ -23,6 +26,7 @@ onMounted(() => {
   if (hid.value) {
     stops.push(subscribeAgenda(hid.value, (a) => (agenda.value = a)));
     stops.push(subscribeHousehold(hid.value, (h) => (household.value = h)));
+    stops.push(subscribeFeedback(hid.value, (f) => (feedback.value = f), 50));
   }
 });
 onUnmounted(() => {
@@ -39,6 +43,11 @@ const familyEvents = computed(() =>
 );
 const birthdays = computed(() => upcomingBirthdays(household.value?.members ?? {}, new Date(), 14));
 const setupPending = computed(() => !!profile.value && profile.value.setup?.done !== true);
+/** Reports shipped in the last seven days: the "What's new" line. */
+const whatsNew = computed(() => {
+  const cutoff = Date.now() - 7 * 86400000;
+  return feedback.value.filter((f) => f.status === "shipped" && (f.shippedAt?.toMillis?.() ?? 0) > cutoff);
+});
 
 const updated = computed(() => ago(snap.value?.generatedAt?.toDate?.() ?? null));
 const googleState = computed(() => snap.value?.sources.google ?? "unconfigured");
@@ -77,6 +86,10 @@ async function refresh() {
     <p v-if="snap" class="mb-6 text-xs text-muted">Updated {{ updated }}</p>
 
     <RouterLink v-if="setupPending" to="/setup" class="mb-6 block border-b border-line py-3 text-sm">Finish setup <span class="text-accent">→</span></RouterLink>
+
+    <RouterLink v-if="whatsNew.length" to="/feedback" class="mb-6 block border-b border-line py-3 text-sm">
+      What&#39;s new: {{ whatsNew.length }} thing{{ whatsNew.length === 1 ? "" : "s" }} you asked for shipped this week <span class="text-accent">→</span>
+    </RouterLink>
 
     <section v-if="birthdays.length" class="mb-8">
       <h2 class="mb-2 text-xs font-medium uppercase tracking-widest text-accent">Coming up</h2>

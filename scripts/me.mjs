@@ -13,10 +13,18 @@
 //   npm run me done <id> | reopen <id> | rm <id>
 //   npm run me digest [day]             the stored digest (newest, or YYYY-MM-DD)
 //   npm run me digest run               build + store + email today's digest now
+//   npm run me feedback [status|all]    the household's bug / idea queue (default open), screenshots downloaded
+//   npm run me feedback show <id>       one report in full
+//   npm run me feedback triage <id> <open|triaged|in_progress|wontfix> [notes...]
+//   npm run me feedback dispatch <id>   open a GitHub issue for it (label: claude)
 //   npm run me raw '{"action":"..."}'   any action, verbatim JSON
 //
 // Every command prints a readable digest to stdout; add --json for the raw
 // response (what a script wants).
+
+import { mkdir, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 const TOKEN = process.env.ME_TOKEN || "";
 const ENDPOINT = process.env.ME_ENDPOINT || "https://us-central1-familyhub-prod.cloudfunctions.net/me";
@@ -87,6 +95,39 @@ function printTasks(tasks) {
   for (const t of tasks) console.log(`  [${t.id}] ${t.title}${t.due ? ` (due ${t.due})` : ""}${t.visibility === "private" ? "  (private)" : ""}`);
 }
 
+const SHOT_DIR = process.env.ME_SHOTS || path.join(os.tmpdir(), "me-feedback");
+
+/** Download a report's signed screenshot URLs so a session can Read the images. */
+async function pullShots(id, urls) {
+  const files = [];
+  if (!urls.length) return files;
+  const dir = path.join(SHOT_DIR, id);
+  await mkdir(dir, { recursive: true });
+  for (let i = 0; i < urls.length; i++) {
+    try {
+      const res = await fetch(urls[i]);
+      if (!res.ok) continue;
+      const ext = (res.headers.get("content-type") || "image/png").split("/")[1].split(";")[0] || "png";
+      const file = path.join(dir, `shot-${i + 1}.${ext}`);
+      await writeFile(file, Buffer.from(await res.arrayBuffer()));
+      files.push(file);
+    } catch {
+      /* skip a dead URL */
+    }
+  }
+  return files;
+}
+
+async function printReport(r, full = false) {
+  const shots = await pullShots(r.id, r.screenshots || []);
+  console.log(`\n--- [${r.id}] ${r.type} · ${r.status} · ${r.reporterName} · ${(r.createdAt || "").slice(0, 10)}`);
+  console.log(`  ${r.description.replace(/\n/g, "\n  ")}`);
+  console.log(`  route: ${r.route}${r.githubIssueUrl ? `  issue: ${r.githubIssueUrl}` : ""}`);
+  if (r.notes) console.log(`  notes: ${r.notes}`);
+  for (const f of shots) console.log(`  screenshot: ${f}`);
+  if (full) console.log(`  env:\n    ${(r.environment || "").replace(/\n/g, "\n    ")}`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const json = args.includes("--json");
@@ -126,6 +167,15 @@ async function main() {
     case "digest":
       body = rest[0] === "run" ? { action: "digest.run" } : { action: "digest.get", ...(rest[0] ? { day: rest[0] } : {}) };
       break;
+    case "feedback": {
+      const sub = rest[0];
+      if (sub === "show") body = { action: "feedback.get", id: rest[1] };
+      else if (sub === "triage") body = { action: "feedback.triage", id: rest[1], status: rest[2], ...(rest.length > 3 ? { notes: rest.slice(3).join(" ") } : {}) };
+      else if (sub === "dispatch") body = { action: "feedback.dispatch", id: rest[1] };
+      else body = { action: "feedback.list", status: sub || "open" };
+      if ((sub === "show" || sub === "triage" || sub === "dispatch") && !rest[1]) die(`Usage: me feedback ${sub} <id> ...`);
+      break;
+    }
     case "raw":
       try {
         body = JSON.parse(rest.join(" "));
@@ -134,7 +184,7 @@ async function main() {
       }
       break;
     default:
-      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | digest [day|run] | raw");
+      die("Commands: today | calendar [days] | inbox [max] | tasks [done] | add | done | reopen | rm | digest [day|run] | feedback [status|show|triage|dispatch] | raw");
   }
 
   const out = await call(body);
@@ -176,6 +226,20 @@ async function main() {
     case "digest.run":
       if (out.error) return console.log(out.error);
       console.log(`${out.subject}\nemailed: ${out.emailed}${out.emailError ? ` (${out.emailError})` : ""}\n\n${out.text}`);
+      break;
+    case "feedback.list":
+      console.log(`${out.reports.length} report(s)`);
+      for (const r of out.reports) await printReport(r);
+      break;
+    case "feedback.get":
+      if (out.error) return console.log(`${out.error}: ${out.id}`);
+      await printReport(out.report, true);
+      break;
+    case "feedback.triage":
+      console.log(out.error ? `${out.error}: ${out.id}` : `${out.id} -> ${out.status}`);
+      break;
+    case "feedback.dispatch":
+      console.log(out.error ? `${out.error}: ${out.id}` : `issue #${out.issue.number} ${out.issue.url}`);
       break;
     default:
       console.log(JSON.stringify(out, null, 2));

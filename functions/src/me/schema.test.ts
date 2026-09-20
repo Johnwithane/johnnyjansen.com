@@ -7,6 +7,7 @@ describe("MeBody", () => {
     expect(ME_ACTIONS).toContain("today");
     expect(ME_ACTIONS).toContain("tasks.add");
     expect(ME_ACTIONS).toContain("digest.run");
+    expect(ME_ACTIONS).toContain("feedback.triage");
   });
 
   it("fills defaults", () => {

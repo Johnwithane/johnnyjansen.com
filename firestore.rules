@@ -48,6 +48,27 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Bugs, ideas, improvements (FAMILY_PLAN.md 4.18). Any member files
+      // one; the whole household reads the queue; adults triage status +
+      // notes; shipped is set by CI through markFeedbackShipped, never here.
+      match /feedback/{reportId} {
+        function validReport() {
+          let d = request.resource.data;
+          return d.type in ['bug', 'idea', 'improvement']
+            && d.description is string && d.description.size() > 0 && d.description.size() <= 4000
+            && d.status == 'open'
+            && d.reporterUid == uid()
+            && d.screenshotPaths is list && d.screenshotPaths.size() <= 3
+            && d.keys().hasOnly(['type', 'description', 'route', 'url', 'environment', 'appVersion', 'screenshotPaths', 'status', 'notes', 'reporterUid', 'reporterName', 'createdAt', 'updatedAt']);
+        }
+        allow read: if inHousehold(h);
+        allow create: if inHousehold(h) && validReport();
+        allow update: if isAdult(h)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'notes', 'updatedAt'])
+          && request.resource.data.status in ['open', 'triaged', 'in_progress', 'wontfix'];
+        allow delete: if false;
+      }
+
       match /tasks/{taskId} {
         function visibleToMe() {
           return resource.data.visibility == 'household' || resource.data.ownerUid == uid();

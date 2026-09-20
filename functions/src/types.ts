@@ -128,3 +128,29 @@ export interface DigestDoc {
   emailError?: string;
   generatedAt: Timestamp;
 }
+
+export type FeedbackType = "bug" | "idea" | "improvement";
+export type FeedbackStatus = "open" | "triaged" | "in_progress" | "shipped" | "wontfix";
+
+/** households/{hid}/feedback/{id}. reportId mirrors the doc id so CI can find it by collection group. */
+export interface FeedbackDoc {
+  reportId: string;
+  type: FeedbackType;
+  description: string;
+  route: string;
+  url: string;
+  environment: string;
+  appVersion: string;
+  screenshotPaths: string[];
+  status: FeedbackStatus;
+  notes: string;
+  reporterUid: string;
+  reporterName: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
+  dispatchedAt?: Timestamp | null;
+  shippedAt?: Timestamp | null;
+  shippedVersion?: string | null;
+}

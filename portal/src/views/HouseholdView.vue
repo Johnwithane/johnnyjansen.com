@@ -202,6 +202,8 @@ async function copyToken() {
     <p class="mb-6 text-xs text-muted">{{ household?.timeZone }}</p>
     <p v-if="note" class="mb-4 text-sm text-muted">{{ note }}</p>
 
+    <RouterLink to="/feedback" class="mb-6 block border-b border-line py-3 text-sm">Feedback queue <span class="text-accent">→</span></RouterLink>
+
     <section class="mb-8">
       <h2 class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Members</h2>
       <ul>
