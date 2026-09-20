@@ -73,6 +73,7 @@ describe("tasks: update and delete", () => {
   it("any member completes a shared task; ownership stays", async () => {
     await assertSucceeds(adultA2(env).firestore().doc(path("shared")).update({ done: true }));
     await assertFails(adultA2(env).firestore().doc(path("shared")).update({ ownerUid: ADULT_A2 }));
+    await assertFails(adultA2(env).firestore().doc(path("shared")).update({ source: "digest" }));
   });
   it("only the owner edits a private task", async () => {
     await assertSucceeds(adultA(env).firestore().doc(path("mine")).update({ title: "Mine, edited" }));

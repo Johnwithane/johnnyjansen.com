@@ -1,10 +1,12 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { z } from "zod";
 import { db } from "../lib/admin";
 import { callOpts } from "../lib/callOpts";
 import { enforceHouseholdCap } from "../lib/rateLimit";
 import { requireMfaAdult } from "../lib/tenant";
+import { dayKey } from "../lib/dates";
 import { generateJson } from "../lib/vertex";
 import { CATEGORIES, TAX_CATEGORIES, isCategory, isTaxCategory } from "./categories";
 
@@ -69,16 +71,16 @@ export const analyzeReceipt = onCall(callOpts({ timeoutSeconds: 90 }), async (re
   const caller = requireMfaAdult(request);
   const parsed = Input.safeParse(request.data);
   if (!parsed.success) throw new HttpsError("invalid-argument", "Send a JPEG, PNG, WebP or PDF under 6MB.");
-  const hh = (await db.collection("households").doc(caller.hid).get()).data() as { limits?: { aiCallsPerDay?: number } } | undefined;
-  await enforceHouseholdCap(caller.hid, "ai", hh?.limits?.aiCallsPerDay ?? 20);
+  const hh = (await db.collection("households").doc(caller.hid).get()).data() as { limits?: { aiCallsPerDay?: number }; timeZone?: string } | undefined;
+  const today = dayKey(new Date(), hh?.timeZone || "America/Vancouver");
+  await enforceHouseholdCap(caller.hid, "receipt", hh?.limits?.aiCallsPerDay ?? 20, { today });
   const ctx = { fn: "analyzeReceipt", uid: caller.uid, hid: caller.hid, mimeType: parsed.data.mimeType };
-  const today = new Date().toISOString().slice(0, 10);
   let data: z.infer<typeof Extracted>;
   try {
     const out = await generateJson([{ inlineData: { mimeType: parsed.data.mimeType, data: parsed.data.dataBase64 } }, { text: prompt(today, parsed.data.businesses) }]);
     data = Extracted.parse(out);
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     throw new HttpsError("unavailable", "Could not read that receipt. Try a clearer photo.");
   }
   logger.info("ok", { ...ctx, confidence: data.confidence, category: data.category });

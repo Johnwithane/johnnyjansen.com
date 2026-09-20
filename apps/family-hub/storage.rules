@@ -12,17 +12,20 @@ service firebase.storage {
       allow read: if inHousehold(h);
       allow create: if inHousehold(h) && request.auth.uid == u
         && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType.matches('image/(png|jpe?g|webp|heic)');
       allow update, delete: if false;
     }
 
     // Receipt photos, one folder per person inside the household. Money
     // needs an adult who passed the second factor, same as the Firestore side.
+    // Read is the OWNER's folder only: a transaction can be private and
+    // Storage cannot see that flag, so the image follows the strictest case.
+    // A shared receipt another adult needs goes through a function later.
     match /households/{h}/receipts/{u}/{file} {
-      allow read: if inHousehold(h) && request.auth.token.role == 'adult' && request.auth.token.firebase.sign_in_second_factor != null;
+      allow read: if inHousehold(h) && request.auth.token.role == 'adult' && request.auth.token.firebase.sign_in_second_factor != null && request.auth.uid == u;
       allow create: if inHousehold(h) && request.auth.token.role == 'adult' && request.auth.token.firebase.sign_in_second_factor != null && request.auth.uid == u
         && request.resource.size < 10 * 1024 * 1024
-        && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+        && (request.resource.contentType.matches('image/(png|jpe?g|webp|heic)') || request.resource.contentType == 'application/pdf');
       allow update, delete: if false;
     }
 

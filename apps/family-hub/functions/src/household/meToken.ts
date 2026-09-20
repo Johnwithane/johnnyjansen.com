@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
@@ -32,7 +33,7 @@ export const mintMeToken = onCall(callOpts(), async (request) => {
     logger.info("minted", ctx);
     return { token };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     throw new HttpsError("internal", "Could not mint a token");
   }
 });
@@ -52,7 +53,7 @@ export const revokeMeToken = onCall(callOpts(), async (request) => {
     logger.info("revoked", ctx);
     return { ok: true };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     throw new HttpsError("internal", "Could not revoke the token");
   }
 });

@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
@@ -26,7 +27,7 @@ export const addChild = onCall(callOpts(), async (request) => {
     logger.info("added", { ...ctx, memberId });
     return { memberId };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Could not add the child");
   }

@@ -9,6 +9,15 @@ describe("MeBody", () => {
     expect(ME_ACTIONS).toContain("digest.run");
     expect(ME_ACTIONS).toContain("feedback.triage");
     expect(ME_ACTIONS).toContain("events.add");
+    expect(ME_ACTIONS).toContain("intake.senders");
+  });
+  it("ids never carry a slash; senders are addresses or dotted domains", () => {
+    expect(MeBody.safeParse({ action: "tasks.done", id: "abc_-123" }).success).toBe(true);
+    expect(MeBody.safeParse({ action: "tasks.done", id: "a/b" }).success).toBe(false);
+    expect(MeBody.safeParse({ action: "tasks.done", id: "../x" }).success).toBe(false);
+    expect(MeBody.safeParse({ action: "intake.senders", set: ["School@sd23.bc.ca", "sd23.bc.ca"] }).success).toBe(true);
+    expect(MeBody.safeParse({ action: "intake.senders", set: ["ca"] }).success).toBe(false);
+    expect(MeBody.safeParse({ action: "intake.senders", set: ["###"] }).success).toBe(false);
   });
 
   it("fills defaults", () => {

@@ -1,4 +1,5 @@
 import { onRequest, type Request } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import type { Response } from "express";
@@ -14,7 +15,8 @@ import { personFor } from "../sync/people";
 import { runDigestFor } from "../digest/runDigest";
 import { dispatchToGitHub, GITHUB_FEEDBACK_TOKEN } from "../feedback/dispatch";
 import { storage } from "../lib/admin";
-import { scanIntakeFor } from "../intake/scan";
+import { scanIntakeFor, validSenders } from "../intake/scan";
+import { enforceHouseholdCap } from "../lib/rateLimit";
 import type { BillDoc, EventDoc, SuggestionDoc, TaskDoc, UserDoc } from "../types";
 import { MeBody } from "./schema";
 
@@ -73,6 +75,9 @@ async function resolveCaller(req: Request): Promise<(Person & { email: string })
   if (!uid) return null;
   const p = await personFor(uid);
   if (!p) return null;
+  // The token was minted for one household. If the person has since moved
+  // (or the record disagrees for any reason), the token is dead.
+  if (snap.data()?.hid !== p.hid) return null;
   const email = ((await db.collection("users").doc(uid).get()).data()?.email as string | undefined) ?? "";
   return { ...p, email };
 }
@@ -160,7 +165,8 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       const snap = await ref.get();
       const t = snap.data() as TaskDoc | undefined;
       if (!snap.exists || !t || !canSee(p, t)) return { error: "not_found", id: body.id };
-      if (t.ownerUid !== p.uid && t.visibility === "private") return { error: "not_found", id: body.id };
+      // Same as the rule: the owner always, an adult for a shared task.
+      if (t.ownerUid !== p.uid && !(p.role === "adult" && t.visibility === "household")) return { error: "not_found", id: body.id };
       await ref.delete();
       return { deleted: body.id };
     }
@@ -172,6 +178,8 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       return { dayKey: d.dayKey, subject: d.subject, text: d.text, counts: d.counts, emailed: d.emailed, emailError: d.emailError ?? null };
     }
     case "digest.run": {
+      // Sends an email through the person's Gmail: a leaked token must not be able to spam them.
+      await enforceHouseholdCap(p.hid, "me.digest", 10, { subject: p.uid, today: dayKey(now, p.timeZone) });
       const r = await runDigestFor(p, now);
       return { dayKey: r.dayKey, subject: r.subject, text: r.text, counts: r.counts, emailed: r.emailed, emailError: r.emailError ?? null };
     }
@@ -192,6 +200,7 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       return { report: reportOut(snap.id, data, await signShots(p.hid, data.screenshotPaths)) };
     }
     case "feedback.triage": {
+      if (p.role !== "adult") return { error: "adults_only", id: body.id };
       const ref = db.collection("households").doc(p.hid).collection("feedback").doc(body.id);
       const snap = await ref.get();
       if (!snap.exists) return { error: "not_found", id: body.id };
@@ -227,7 +236,10 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
     case "events.delete": {
       const ref = db.collection("households").doc(p.hid).collection("events").doc(body.id);
       const snap = await ref.get();
-      if (!snap.exists) return { error: "not_found", id: body.id };
+      const e = snap.data() as EventDoc | undefined;
+      if (!snap.exists || !e) return { error: "not_found", id: body.id };
+      // Same as the rule: the owner, or an adult.
+      if (e.ownerUid !== p.uid && p.role !== "adult") return { error: "not_found", id: body.id };
       await ref.delete();
       return { deleted: body.id };
     }
@@ -256,7 +268,9 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       try {
         return { issue: await dispatchToGitHub(p.hid, body.id) };
       } catch (err) {
-        return { error: err instanceof Error ? err.message : "dispatch_failed", id: body.id };
+        const m = err instanceof Error ? err.message : "";
+        logger.warn("me: dispatch failed", { uid: p.uid, id: body.id, err: errMeta(err) });
+        return { error: /not set/i.test(m) ? "not_configured" : /not found/i.test(m) ? "not_found" : "dispatch_failed", id: body.id };
       }
     }
     case "bills.list": {
@@ -270,6 +284,11 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
     }
     case "bills.add": {
       if (p.role !== "adult") return { error: "adults_only" };
+      // Same as the rule: the responsible adult must be a member of this household.
+      if (body.responsibleUid) {
+        const uids = ((await db.collection("households").doc(p.hid).get()).data()?.memberUids as string[] | undefined) ?? [];
+        if (!uids.includes(body.responsibleUid)) return { error: "not_a_member", responsibleUid: body.responsibleUid };
+      }
       const ref = await db.collection("households").doc(p.hid).collection("bills").add({
         name: body.name,
         amount: Math.round(body.amount * 100) / 100,
@@ -306,8 +325,8 @@ async function handle(p: Person & { email: string }, body: MeBody): Promise<unkn
       if (p.role !== "adult") return { error: "adults_only" };
       const ref = db.collection("users").doc(p.uid);
       if (body.set) {
-        const senders = [...new Set(body.set.map((s) => s.toLowerCase()))];
-        await ref.set({ intake: { senders }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        const senders = validSenders(body.set);
+        await ref.set({ intake: { senders }, updatedAt: FieldValue.serverTimestamp() }, { mergeFields: ["intake.senders", "updatedAt"] });
         return { senders };
       }
       const u = (await ref.get()).data() as UserDoc | undefined;
@@ -339,7 +358,7 @@ export const me = onRequest(
       logger.info("me: ok", ctx);
       res.json({ ok: true, ...(out as object) });
     } catch (err) {
-      logger.error("me: failed", { ...ctx, err });
+      logger.error("me: failed", { ...ctx, err: errMeta(err) });
       res.status(500).json({ error: "internal" });
     }
   },

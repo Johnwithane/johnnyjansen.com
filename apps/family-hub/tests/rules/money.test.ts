@@ -104,11 +104,10 @@ describe("transactions", () => {
     await assertFails(mfaA(env).firestore().doc(txp("t4")).set(tx({ source: "hacker" })));
     await assertFails(mfaB(env).firestore().doc(txp("t4")).set(tx({ ownerUid: "adult-b" })));
   });
-  it("a receipt path must be in this household and this person's folder, and cannot be swapped later", async () => {
+  it("a receipt path must be in this household and this person's folder", async () => {
     await assertSucceeds(mfaA(env).firestore().doc(txp("t5")).set(tx({ receiptPath: `households/${HID_A}/receipts/${ADULT_A}/1.jpg` })));
     await assertFails(mfaA(env).firestore().doc(txp("t6")).set(tx({ receiptPath: `households/${HID_B}/receipts/adult-b/1.jpg` })));
     await assertFails(mfaA(env).firestore().doc(txp("t6")).set(tx({ receiptPath: `households/${HID_A}/receipts/${ADULT_A2}/1.jpg` })));
-    await assertFails(mfaA(env).firestore().doc(txp("t1")).update({ receiptPath: `households/${HID_A}/receipts/${ADULT_A}/x.jpg` }));
   });
   it("edits keep the owner; delete is adults only", async () => {
     await assertSucceeds(mfaA2(env).firestore().doc(txp("t1")).update({ category: "groceries" }));
@@ -144,12 +143,32 @@ describe("bills", () => {
 });
 
 describe("settings and rateLimits", () => {
-  it("settings: members read, adults write, nobody deletes", async () => {
-    await assertSucceeds(childA(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
-    await assertSucceeds(adultA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: { groceries: 950 } }, { merge: true }));
-    await assertFails(childA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: {} }));
-    await assertFails(adultB(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
-    await assertFails(adultA(env).firestore().doc(`households/${HID_A}/settings/budget`).delete());
+  it("settings/budget is Money: MFA adults only, shaped, only that id, never deleted", async () => {
+    await assertSucceeds(mfaA2(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
+    await assertSucceeds(mfaA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: { groceries: 950 }, updatedAt: new Date() }, { merge: true }));
+    await assertFails(childA(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
+    await assertFails(mfaChildA(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
+    await assertFails(adultA(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
+    await assertFails(adultA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: { groceries: 950 } }, { merge: true }));
+    await assertFails(mfaA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: "x" }));
+    await assertFails(mfaA(env).firestore().doc(`households/${HID_A}/settings/budget`).set({ envelopes: {}, extra: 1 }));
+    await assertFails(mfaA(env).firestore().doc(`households/${HID_A}/settings/other`).set({ envelopes: {} }));
+    await assertFails(mfaB(env).firestore().doc(`households/${HID_A}/settings/budget`).get());
+    await assertFails(mfaA(env).firestore().doc(`households/${HID_A}/settings/budget`).delete());
+  });
+  it("cross-tenant writes on accounts and bills are denied, MFA or not", async () => {
+    await assertFails(mfaB(env).firestore().doc(acc("x")).set(account({ ownerUid: "adult-b" })));
+    await assertFails(mfaB(env).firestore().doc(bl("x")).set(bill({ ownerUid: "adult-b", responsibleUid: null })));
+    await assertFails(mfaB(env).firestore().doc(acc("chq")).update({ balance: 0 }));
+    await assertFails(mfaB(env).firestore().doc(bl("rent")).delete());
+  });
+  it("money field types are checked; a receipt can be attached once, never swapped", async () => {
+    await assertFails(mfaA(env).firestore().doc(acc("bad")).set(account({ balance: "lots" })));
+    await assertFails(mfaA(env).firestore().doc(txp("bad")).set(tx({ notes: "x".repeat(1001) })));
+    await assertFails(mfaA(env).firestore().doc(txp("bad")).set(tx({ accountId: 5 })));
+    await assertSucceeds(mfaA(env).firestore().doc(txp("t1")).update({ receiptPath: `households/${HID_A}/receipts/${ADULT_A}/late.jpg` }));
+    await assertFails(mfaA(env).firestore().doc(txp("t1")).update({ receiptPath: `households/${HID_A}/receipts/${ADULT_A}/other.jpg` }));
+    await assertFails(mfaA(env).firestore().doc(txp("t1")).update({ receiptPath: null }));
   });
   it("rateLimits are invisible to every client", async () => {
     await assertFails(adultA(env).firestore().doc(`rateLimits/ai_${HID_A}_2026-09-20`).get());
@@ -160,14 +179,17 @@ describe("settings and rateLimits", () => {
 describe("receipt photos (storage)", () => {
   const jpg = new Uint8Array([255, 216, 255]);
   const mine = `households/${HID_A}/receipts/${ADULT_A}/1.jpg`;
-  it("an MFA adult uploads under their own uid; MFA adults in the household read it", async () => {
+  it("an MFA adult uploads under their own uid and reads their own folder only", async () => {
     await assertSucceeds(uploadBytes(ref(mfaA(env).storage(), mine), jpg, { contentType: "image/jpeg" }));
-    await assertSucceeds(getBytes(ref(mfaA2(env).storage(), mine)));
+    await assertSucceeds(getBytes(ref(mfaA(env).storage(), mine)));
+    await assertFails(getBytes(ref(mfaA2(env).storage(), mine)));
     await assertFails(getBytes(ref(mfaB(env).storage(), mine)));
   });
-  it("no second factor, a child, another uid's folder, a non-image: all refused", async () => {
+  it("no second factor, a child, another uid's folder, another household, a non-image, an SVG: all refused", async () => {
     await assertFails(uploadBytes(ref(adultA(env).storage(), mine), jpg, { contentType: "image/jpeg" }));
-    await assertFails(getBytes(ref(adultA2(env).storage(), mine)));
+    await assertFails(getBytes(ref(adultA(env).storage(), mine)));
+    await assertFails(uploadBytes(ref(mfaA(env).storage(), `households/${HID_B}/receipts/${ADULT_A}/1.jpg`), jpg, { contentType: "image/jpeg" }));
+    await assertFails(uploadBytes(ref(mfaA(env).storage(), `households/${HID_A}/receipts/${ADULT_A}/x.svg`), jpg, { contentType: "image/svg+xml" }));
     await assertFails(uploadBytes(ref(mfaChildA(env).storage(), `households/${HID_A}/receipts/${CHILD_A}/1.jpg`), jpg, { contentType: "image/jpeg" }));
     await assertFails(uploadBytes(ref(mfaA(env).storage(), `households/${HID_A}/receipts/${ADULT_A2}/1.jpg`), jpg, { contentType: "image/jpeg" }));
     await assertFails(uploadBytes(ref(mfaA(env).storage(), `households/${HID_A}/receipts/${ADULT_A}/1.txt`), jpg, { contentType: "text/plain" }));

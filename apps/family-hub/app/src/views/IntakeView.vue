@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import type { UserProfile } from "@/firebase/interfaces";
 import { subscribeProfile } from "@/firebase/services/householdService";
-import { scanInbox, setIntakeSenders } from "@/firebase/services/intakeService";
+import { SENDER_RE, scanInbox, setIntakeSenders } from "@/firebase/services/intakeService";
 import { ago } from "@/utils/format";
 
 // Intake (PLAN.md 4.20): senders you approve get read once a day, and what
@@ -28,7 +28,8 @@ const busy = ref(false);
 
 function add() {
   const v = draft.value.trim().toLowerCase();
-  if (v.length < 3 || senders.value.includes(v)) return;
+  if (!SENDER_RE.test(v)) return (note.value = "An address, or a domain like sd23.bc.ca.");
+  if (senders.value.includes(v)) return;
   setIntakeSenders(me, [...senders.value, v]).catch(() => (note.value = "Could not save."));
   draft.value = "";
 }
@@ -83,7 +84,7 @@ async function scan() {
         <template v-else-if="lastScan">Last scan {{ ago(lastScan) }}. Runs daily at 6am.</template>
         <template v-else>Runs daily at 6am once a sender is approved.</template>
       </p>
-      <p class="mt-6 text-xs text-muted">Only new mail from these senders is read, once, and the text is never stored. Everything lands on Review first.</p>
+      <p class="mt-6 text-xs text-muted">Only new mail from these senders is read, once, and the text is never stored. What it proposes shows on Review for the whole household.</p>
     </template>
   </div>
 </template>

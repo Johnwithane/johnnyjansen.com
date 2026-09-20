@@ -74,6 +74,13 @@ service cloud.firestore {
             && d.reportId == reportId
             && d.screenshotPaths is list && d.screenshotPaths.size() <= 3
             && shotOk(d.screenshotPaths, 0) && shotOk(d.screenshotPaths, 1) && shotOk(d.screenshotPaths, 2)
+            // These reach a GitHub issue body (feedback/dispatch.ts): bounded so a report cannot break out of it.
+            && d.route is string && d.route.size() <= 200
+            && d.url is string && d.url.size() <= 500
+            && d.environment is string && d.environment.size() <= 1500
+            && d.appVersion is string && d.appVersion.size() <= 40
+            && d.reporterName is string && d.reporterName.size() <= 80
+            && d.notes == ''
             && d.keys().hasOnly(['reportId', 'type', 'description', 'route', 'url', 'environment', 'appVersion', 'screenshotPaths', 'status', 'notes', 'reporterUid', 'reporterName', 'createdAt', 'updatedAt']);
         }
         allow read: if inHousehold(h);
@@ -97,11 +104,14 @@ service cloud.firestore {
             && d.kind in ['event', 'bill', 'birthday', 'renewal', 'trip', 'school']
             && d.memberIds is list && d.memberIds.size() <= 12
             && d.ownerUid is string
+            && d.source in ['portal', 'cli', 'intake', 'rule']
             && d.keys().hasOnly(['title', 'start', 'end', 'allDay', 'kind', 'memberIds', 'location', 'notes', 'source', 'ownerUid', 'createdAt', 'updatedAt']);
         }
         allow read: if inHousehold(h);
         allow create: if inHousehold(h) && validEvent() && request.resource.data.ownerUid == uid();
-        allow update: if inHousehold(h) && validEvent() && request.resource.data.ownerUid == resource.data.ownerUid;
+        // Provenance (source) is set once: a hand-made event cannot be relabelled as machine-made later.
+        allow update: if inHousehold(h) && validEvent() && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.source == resource.data.source;
         allow delete: if inHousehold(h) && (resource.data.ownerUid == uid() || isAdult(h));
       }
 
@@ -138,6 +148,7 @@ service cloud.firestore {
             && d.currency is string && d.currency.size() == 3
             && d.visibility in ['household', 'private']
             && d.ownerUid is string
+            && (d.balance == null || d.balance is number)
             && d.keys().hasOnly(['name', 'type', 'currency', 'visibility', 'ownerUid', 'balance', 'createdAt', 'updatedAt']);
         }
         allow read: if isAdult(h) && isMfa() && visibleAccount();
@@ -159,13 +170,17 @@ service cloud.firestore {
             && d.visibility in ['household', 'private']
             && d.ownerUid is string
             && d.source in ['portal', 'receipt', 'import', 'cli']
+            && (d.accountId == null || (d.accountId is string && d.accountId.size() <= 64))
+            && (d.businessId == null || (d.businessId is string && d.businessId.size() <= 64))
+            && d.notes is string && d.notes.size() <= 1000
             && (d.receiptPath == null || (d.receiptPath is string && d.receiptPath.matches('households/' + h + '/receipts/' + uid() + '/[^/]+')))
             && d.keys().hasOnly(['amount', 'direction', 'date', 'merchant', 'category', 'taxCategory', 'accountId', 'businessId', 'receiptPath', 'notes', 'visibility', 'ownerUid', 'source', 'createdAt', 'updatedAt']);
         }
         allow read: if isAdult(h) && isMfa() && visibleTx();
         allow create: if isAdult(h) && isMfa() && validTx() && request.resource.data.ownerUid == uid();
+        // A receipt can be attached once (null -> a path in the writer's own folder), never swapped or removed.
         allow update: if isAdult(h) && isMfa() && visibleTx() && validTx() && request.resource.data.ownerUid == resource.data.ownerUid
-          && request.resource.data.receiptPath == resource.data.receiptPath;
+          && (resource.data.receiptPath == null || request.resource.data.receiptPath == resource.data.receiptPath);
         allow delete: if isAdult(h) && isMfa() && visibleTx();
       }
 
@@ -182,6 +197,7 @@ service cloud.firestore {
             && d.cadence in ['weekly', 'monthly', 'quarterly', 'yearly', 'once']
             && d.nextDue is string && d.nextDue.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
             && d.category is string && d.category.size() <= 40
+            && (d.accountId == null || (d.accountId is string && d.accountId.size() <= 64))
             && (d.responsibleUid == null || (d.responsibleUid is string && d.responsibleUid in resource_household_uids(h)))
             && d.autopay is bool
             && d.notes is string && d.notes.size() <= 1000
@@ -196,11 +212,17 @@ service cloud.firestore {
         allow delete: if isAdult(h) && isMfa() && visibleBill();
       }
 
-      // Household settings docs (budget envelopes, later digest and paper
-      // config). Adults write; everyone reads.
+      // Household settings docs. Each id is listed here with its shape and
+      // its gate; an unlisted id is denied. budget is Money data, so it sits
+      // behind the second factor like the rest of Money.
       match /settings/{settingId} {
-        allow read: if inHousehold(h);
-        allow create, update: if isAdult(h);
+        function validBudget() {
+          let d = request.resource.data;
+          return settingId == 'budget' && d.envelopes is map && d.envelopes.size() <= 40
+            && d.keys().hasOnly(['envelopes', 'updatedAt']);
+        }
+        allow read: if isAdult(h) && isMfa() && settingId == 'budget';
+        allow create, update: if isAdult(h) && isMfa() && validBudget();
         allow delete: if false;
       }
 
@@ -223,7 +245,8 @@ service cloud.firestore {
         // Anyone in the household can edit a shared task; only the owner can
         // touch a private one. Ownership never changes hands.
         allow update: if inHousehold(h) && visibleToMe() && validTask()
-          && request.resource.data.ownerUid == resource.data.ownerUid;
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.source == resource.data.source;
         allow delete: if inHousehold(h)
           && (resource.data.ownerUid == uid() || (isAdult(h) && resource.data.visibility == 'household'));
       }
@@ -234,14 +257,43 @@ service cloud.firestore {
       // and are function-written; the person may edit display fields.
       allow read: if signedIn() && uid() == u;
       allow create, delete: if false;
+      // name and colour are copied into the household agenda and rendered
+      // as a colour swatch on every member's screen, so their shape matters.
+      function nameOk() {
+        return !('name' in request.resource.data.diff(resource.data).affectedKeys())
+          || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60);
+      }
+      function colourOk() {
+        return !('colour' in request.resource.data.diff(resource.data).affectedKeys())
+          || (request.resource.data.colour is string && request.resource.data.colour.matches('#[0-9a-fA-F]{6}'));
+      }
+      // Intake: at most 30 approved senders, each a short string. lastScanAt
+      // is function-written: it cannot be set, changed or erased from here.
+      function senderOk(l, i) {
+        return l.size() <= i || (l[i] is string && l[i].size() >= 3 && l[i].size() <= 120);
+      }
+      function scanAtKept() {
+        return !('intake' in resource.data) || !('lastScanAt' in resource.data.intake)
+          || (('lastScanAt' in request.resource.data.intake) && request.resource.data.intake.lastScanAt == resource.data.intake.lastScanAt);
+      }
+      function intakeOk() {
+        let n = request.resource.data.intake;
+        return !('intake' in request.resource.data.diff(resource.data).affectedKeys())
+          || (n.senders is list && n.senders.size() <= 30
+              && n.keys().hasOnly(['senders', 'lastScanAt'])
+              && senderOk(n.senders, 0) && senderOk(n.senders, 1) && senderOk(n.senders, 2) && senderOk(n.senders, 3) && senderOk(n.senders, 4)
+              && senderOk(n.senders, 5) && senderOk(n.senders, 6) && senderOk(n.senders, 7) && senderOk(n.senders, 8) && senderOk(n.senders, 9)
+              && senderOk(n.senders, 10) && senderOk(n.senders, 11) && senderOk(n.senders, 12) && senderOk(n.senders, 13) && senderOk(n.senders, 14)
+              && senderOk(n.senders, 15) && senderOk(n.senders, 16) && senderOk(n.senders, 17) && senderOk(n.senders, 18) && senderOk(n.senders, 19)
+              && senderOk(n.senders, 20) && senderOk(n.senders, 21) && senderOk(n.senders, 22) && senderOk(n.senders, 23) && senderOk(n.senders, 24)
+              && senderOk(n.senders, 25) && senderOk(n.senders, 26) && senderOk(n.senders, 27) && senderOk(n.senders, 28) && senderOk(n.senders, 29)
+              && (!('lastScanAt' in n) || (('intake' in resource.data) && ('lastScanAt' in resource.data.intake) && n.lastScanAt == resource.data.intake.lastScanAt))
+              && scanAtKept());
+      }
       allow update: if signedIn() && uid() == u
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['name', 'colour', 'digest', 'timeZone', 'setup', 'legal', 'intake', 'updatedAt'])
-        // Intake: at most 30 approved senders, each a short string. lastScanAt is function-written and read-only here.
-        && (!('intake' in request.resource.data.diff(resource.data).affectedKeys())
-            || (request.resource.data.intake.senders is list && request.resource.data.intake.senders.size() <= 30
-                && request.resource.data.intake.keys().hasOnly(['senders', 'lastScanAt'])
-                && (!('lastScanAt' in request.resource.data.intake) || ('intake' in resource.data && request.resource.data.intake.lastScanAt == resource.data.intake.lastScanAt))));
+        && nameOk() && colourOk() && intakeOk();
 
       // Google grant (KMS-encrypted), me token hash: functions only.
       match /private/{doc} {
@@ -253,8 +305,10 @@ service cloud.firestore {
         allow read: if signedIn() && uid() == u;
         allow write: if false;
       }
+      // A digest that lists bills is Money, so that one needs the second factor.
       match /digests/{doc} {
-        allow read: if signedIn() && uid() == u;
+        allow read: if signedIn() && uid() == u
+          && (!('counts' in resource.data) || !('bills' in resource.data.counts) || resource.data.counts.bills == 0 || isMfa());
         allow write: if false;
       }
     }

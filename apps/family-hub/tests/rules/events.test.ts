@@ -64,11 +64,13 @@ describe("events", () => {
     await assertFails(adultA(env).firestore().doc(ev("e3")).set(event({ kind: "party" })));
     await assertFails(adultA(env).firestore().doc(ev("e3")).set(event({ title: "" })));
     await assertFails(adultA(env).firestore().doc(ev("e3")).set({ ...event(), extra: 1 }));
+    await assertFails(adultA(env).firestore().doc(ev("e3")).set(event({ source: "hacker" })));
     await assertFails(adultB(env).firestore().doc(ev("e3")).set(event({ ownerUid: "adult-b" })));
   });
   it("anyone in the household edits; ownership never changes; delete is owner or adult", async () => {
     await assertSucceeds(adultA(env).firestore().doc(ev("e1")).update({ title: "Rent, moved" }));
     await assertFails(adultA(env).firestore().doc(ev("e1")).update({ ownerUid: ADULT_A }));
+    await assertFails(adultA(env).firestore().doc(ev("e1")).update({ source: "intake" }));
     await assertFails(childA(env).firestore().doc(ev("e1")).delete());
     await assertSucceeds(adultA(env).firestore().doc(ev("e1")).delete());
   });

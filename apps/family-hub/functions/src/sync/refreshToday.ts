@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { GOOGLE_SECRETS } from "../lib/params";
@@ -18,7 +19,7 @@ export const refreshToday = onCall(callOpts({ secrets: GOOGLE_SECRETS, timeoutSe
     logger.info("refreshed", { ...ctx, events: c.events.length, unread: c.unreadTotal });
     return { dayKey: c.dayKey, google: c.sources.google };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Refresh failed");
   }

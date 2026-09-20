@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { db } from "../lib/admin";
 import { APP_BASE_URL } from "../lib/brand";
@@ -49,8 +50,10 @@ export async function runDigestFor(p: Person & { email: string }, now = new Date
       await sendEmail(clients.gmail, { to: p.email, subject: digest.subject, text: digest.text, html: digest.html });
       emailed = true;
     } catch (err) {
-      emailError = err instanceof Error ? err.message : String(err);
-      logger.error("digest: send failed", { uid: p.uid, err });
+      // A code and a status, never Gmail's text (it can quote the message).
+      const m = errMeta(err);
+      emailError = `${m.code}${m.status ? ` ${m.status}` : ""}`;
+      logger.error("digest: send failed", { uid: p.uid, err: errMeta(err) });
     }
   } else {
     emailError = "Google not connected";

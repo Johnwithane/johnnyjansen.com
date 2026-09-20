@@ -113,7 +113,6 @@ export interface SnapshotDoc {
   timeZone: string;
   events: EventItem[];
   household: { id: string; title: string; start: string; end: string; allDay: boolean; kind: EventKind; memberIds: string[]; location?: string }[];
-  bills?: { id: string; name: string; amount: number; currency: string; nextDue: string; cadence: BillCadence; who: string }[];
   unread: MailItem[];
   unreadTotal: number;
   tasks: TaskItem[];

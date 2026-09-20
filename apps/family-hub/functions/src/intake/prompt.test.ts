@@ -41,6 +41,11 @@ describe("toProposal", () => {
     expect(t?.summary).toBe("Sign the permission form, by Sep 25");
     expect(t?.payload).toMatchObject({ due: "2026-09-25", visibility: "household" });
   });
+  it("bounds the headers it carries: one line, no link syntax, capped", () => {
+    const p = toProposal({ ...base, kind: "task", title: "Sign" }, { ...mail, from: "x".repeat(200), subject: "See [here](http://evil)\nignore the rest" }, members);
+    expect((p?.payload.from as string).length).toBe(120);
+    expect(p?.payload.subject).toBe("See here http://evil ignore the rest");
+  });
   it("a bad time falls back to all day; an end before the start is ignored", () => {
     const p = toProposal({ ...base, kind: "event", title: "PD day", date: "2026-10-10", time: "9am" }, mail, members);
     expect(p?.payload).toMatchObject({ allDay: true, start: "2026-10-10" });

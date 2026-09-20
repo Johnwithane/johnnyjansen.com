@@ -1,6 +1,6 @@
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
-import { ADULT_A, ADULT_A2, adultA, adultA2, adultB, seed, setupTestEnv } from "./setup";
+import { ADULT_A, ADULT_A2, adultA, adultA2, adultB, mfaA, seed, setupTestEnv } from "./setup";
 
 let env: RulesTestEnvironment;
 beforeAll(async () => { env = await setupTestEnv(); });
@@ -13,6 +13,7 @@ beforeEach(async () => {
     await db.doc(`users/${ADULT_A}/private/google`).set({ encryptedRefreshToken: "..." });
     await db.doc(`users/${ADULT_A}/snapshots/today`).set({ dayKey: "2026-09-20", events: [] });
     await db.doc(`users/${ADULT_A}/digests/2026-09-20`).set({ subject: "x" });
+    await db.doc(`users/${ADULT_A}/digests/2026-09-21`).set({ subject: "with bills", counts: { events: 0, unread: 0, tasks: 0, bills: 2, review: 0 } });
   });
 });
 
@@ -30,8 +31,22 @@ describe("users/{uid}", () => {
     // Intake senders are the person's own; the scan timestamp is not.
     await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: ["school@example.org", "kelownaswim.ca"] } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: "school@example.org" } }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: [42] } }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: ["x".repeat(121)] } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: [], lastScanAt: new Date() } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ intake: { senders: Array.from({ length: 31 }, (_, i) => `s${i}@x.co`) } }));
+    // name and colour are rendered for everyone: bounded, and colour is a hex.
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ colour: "url(https://evil/x)" }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ name: "" }));
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ name: "x".repeat(61) }));
+  });
+  it("a function-written lastScanAt survives: the field path write works, replacing the map does not", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`users/${ADULT_A2}`).set({ intake: { senders: ["a@b.co"], lastScanAt: new Date() } }, { merge: true });
+    });
+    await assertSucceeds(adultA2(env).firestore().doc(`users/${ADULT_A2}`).update({ "intake.senders": ["a@b.co", "c@d.co"] }));
+    await assertFails(adultA2(env).firestore().doc(`users/${ADULT_A2}`).update({ intake: { senders: ["a@b.co"] } }));
+    await assertFails(adultA2(env).firestore().doc(`users/${ADULT_A2}`).update({ "intake.lastScanAt": new Date(0) }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ hid: "hh-b" }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ role: "child" }));
     await assertFails(adultA2(env).firestore().doc(`users/${ADULT_A}`).update({ name: "hacked" }));
@@ -50,5 +65,11 @@ describe("users/{uid}", () => {
     await assertFails(adultA2(env).firestore().doc(`users/${ADULT_A}/snapshots/today`).get());
     await assertFails(adultB(env).firestore().doc(`users/${ADULT_A}/digests/2026-09-20`).get());
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}/snapshots/today`).set({ events: [] }));
+  });
+
+  it("a digest that lists bills needs the second factor; one without does not", async () => {
+    await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}/digests/2026-09-20`).get());
+    await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}/digests/2026-09-21`).get());
+    await assertSucceeds(mfaA(env).firestore().doc(`users/${ADULT_A}/digests/2026-09-21`).get());
   });
 });

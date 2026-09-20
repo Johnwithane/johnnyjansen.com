@@ -101,7 +101,11 @@ export function toProposal(item: IntakeItem, mail: MailRef, members: MemberRef[]
   const endTime = TIME.test(item.endTime) ? item.endTime : "";
   const who = memberFor(item.forWhom, members);
   const notes = item.notes.trim().slice(0, 500);
-  const origin = { messageId: mail.messageId, from: mail.from, subject: mail.subject };
+  // Headers are attacker-controlled (any sender on an approved domain) and
+  // travel into payloads a person and a Claude Code session both read: cut
+  // to a line, bounded, with link syntax flattened.
+  const clean = (v: string, n: number) => v.replace(/[\r\n\t]+/g, " ").replace(/[\[\]()<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+  const origin = { messageId: mail.messageId.slice(0, 64), from: clean(mail.from, 120), subject: clean(mail.subject, 200) };
   const whoTag = who ? ` (${who.name})` : "";
 
   switch (kind) {

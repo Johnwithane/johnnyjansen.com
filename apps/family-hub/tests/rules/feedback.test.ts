@@ -58,6 +58,11 @@ describe("feedback", () => {
     await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [`households/${HID_A}/feedback/${ADULT_A2}/x.png`] })));
     await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [mine, 42] })));
     await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [`households/${HID_A}/feedback/${ADULT_A}/../../x`] })));
+    // Fields that reach a GitHub issue body are bounded; notes start empty; at most three shots.
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", reporterName: "x".repeat(81) })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", environment: "x".repeat(1501) })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", notes: "pre-triaged" })));
+    await assertFails(adultA(env).firestore().doc(path("r5")).set(report({ reportId: "r5", screenshotPaths: [1, 2, 3, 4].map((i) => `households/${HID_A}/feedback/${ADULT_A}/${i}.png`) })));
   });
   it("adults triage status and notes; nobody sets shipped or edits the text", async () => {
     await assertSucceeds(adultA(env).firestore().doc(path("r1")).update({ status: "triaged", notes: "Reproduced" }));

@@ -1,4 +1,5 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { db } from "../lib/admin";
 import { dayBounds, dayKey } from "../lib/dates";
@@ -108,7 +109,7 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
       unreadTotal = mail.total;
       google = "ok";
     } catch (err) {
-      logger.error("collect: google failed", { uid: p.uid, err });
+      logger.error("collect: google failed", { uid: p.uid, err: errMeta(err) });
       google = "error";
     }
   }
@@ -122,8 +123,13 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
  * never leave users/{uid}.
  */
 export async function storeSnapshot(p: Person, c: Collected): Promise<void> {
+  // Bills stay out of the stored snapshot: users/{uid}/snapshots is readable
+  // by a first-factor session and bills are Money. The digest email carries
+  // them; the stored digest doc is gated in the rules when it does.
+  const { bills: _bills, ...rest } = c;
+  void _bills;
   const doc: Omit<SnapshotDoc, "generatedAt"> & { generatedAt: FieldValue | Timestamp } = {
-    ...c,
+    ...rest,
     generatedAt: FieldValue.serverTimestamp(),
   };
   const family = c.events.filter((e) => p.familyCalendarIds.includes(e.calendarId));

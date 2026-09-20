@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
@@ -46,7 +47,7 @@ export const createInvite = onCall(callOpts(), async (request) => {
     logger.info("created", { ...ctx, inviteId: ref.id });
     return { inviteId: ref.id, link: `${APP_BASE_URL}/invite/${caller.hid}/${ref.id}#${token}` };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Could not create the invite");
   }

@@ -1,4 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { GOOGLE_SECRETS } from "../lib/params";
 import { rollBills } from "../money/bills";
@@ -25,7 +26,7 @@ export const dailyDigest = onSchedule(
     // before anyone's email reads them.
     for (const hid of new Set(people.map((p) => p.hid))) {
       const tz = people.find((p) => p.hid === hid)?.timeZone ?? "America/Vancouver";
-      await rollBills(hid, dayKey(new Date(), tz)).catch((err) => logger.error("dailyDigest: roll failed", { hid, err }));
+      await rollBills(hid, dayKey(new Date(), tz)).catch((err) => logger.error("dailyDigest: roll failed", { hid, err: errMeta(err) }));
     }
     let failed = 0;
     for (const p of people) {
@@ -33,7 +34,7 @@ export const dailyDigest = onSchedule(
         await runDigestFor(p);
       } catch (err) {
         failed++;
-        logger.error("dailyDigest: person failed", { uid: p.uid, err });
+        logger.error("dailyDigest: person failed", { uid: p.uid, err: errMeta(err) });
       }
     }
     logger.info("dailyDigest: done", { people: people.length, failed });

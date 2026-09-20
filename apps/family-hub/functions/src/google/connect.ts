@@ -1,4 +1,5 @@
 import { onCall, onRequest, HttpsError, type Request } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
@@ -47,7 +48,7 @@ export const googleConnectStart = onCall(callOpts({ secrets: GOOGLE_SECRETS }), 
     logger.info("started", ctx);
     return { url };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     throw new HttpsError("internal", "Could not start Google connect");
   }
 });
@@ -113,7 +114,7 @@ export const googleOAuthCallback = onRequest(
       logger.info("connected", ctx);
       res.redirect(302, returnUrl("connected"));
     } catch (err) {
-      logger.error("failed", { ...ctx, err });
+      logger.error("failed", { ...ctx, err: errMeta(err) });
       res.redirect(302, returnUrl("error"));
     }
   },
@@ -131,7 +132,7 @@ export const googleDisconnect = onCall(callOpts({ secrets: GOOGLE_SECRETS }), as
         const { token } = await clients.auth.getAccessToken();
         if (token) await clients.auth.revokeToken(token);
       } catch (err) {
-        logger.warn("revoke at Google failed", { ...ctx, err });
+        logger.warn("revoke at Google failed", { ...ctx, err: errMeta(err) });
       }
     }
     await db.runTransaction(async (tx) => {
@@ -142,7 +143,7 @@ export const googleDisconnect = onCall(callOpts({ secrets: GOOGLE_SECRETS }), as
     logger.info("disconnected", ctx);
     return { ok: true };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     throw new HttpsError("internal", "Could not disconnect");
   }
 });
@@ -159,7 +160,7 @@ export const googleCalendars = onCall(callOpts({ secrets: GOOGLE_SECRETS }), asy
         .map((c) => ({ id: c.id!, name: c.summary ?? c.id!, primary: !!c.primary, selected: c.selected !== false })),
     };
   } catch (err) {
-    logger.error("googleCalendars failed", { uid: caller.uid, err });
+    logger.error("googleCalendars failed", { uid: caller.uid, err: errMeta(err) });
     throw new HttpsError("internal", "Could not list calendars");
   }
 });

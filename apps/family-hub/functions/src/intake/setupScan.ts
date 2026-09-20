@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -28,7 +29,7 @@ export const setupScanInbox = onCall(callOpts({ secrets: GOOGLE_SECRETS, timeout
     if (!p) throw new HttpsError("failed-precondition", "Not in a household");
     const g = await googleClientsFor(p.uid);
     if (!g) return { skipped: "google_unconfigured", scanned: 0, proposed: 0 };
-    await enforceHouseholdCap(`${p.hid}~${p.uid}`, "setupScan", 2);
+    await enforceHouseholdCap(p.hid, "setupScan", 2, { subject: p.uid, today: dayKey(new Date(), p.timeZone) });
 
     const hh = db.collection("households").doc(p.hid);
     const [bills, accounts, meta] = await Promise.all([
@@ -69,7 +70,7 @@ export const setupScanInbox = onCall(callOpts({ secrets: GOOGLE_SECRETS, timeout
     logger.info("ok", { ...ctx, scanned: meta.length, lines: lines.length, proposed: n });
     return { scanned: meta.length, proposed: n };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("unavailable", "The scan did not finish. Try again in a minute.");
   }

@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, type Timestamp } from "firebase-admin/firestore";
@@ -61,7 +62,7 @@ export const acceptInvite = onCall(callOpts(), async (request) => {
     logger.info("accepted", ctx);
     return { hid: input.hid };
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Could not accept the invite");
   }

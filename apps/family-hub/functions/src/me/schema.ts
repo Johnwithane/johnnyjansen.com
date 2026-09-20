@@ -5,6 +5,10 @@ import { z } from "zod";
 // loading firebase-admin.
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
+/** A Firestore auto id or one we minted: never a slash, never a dot, so it can only name a document in the expected collection. */
+const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/, "id");
+/** An address, or a domain with a dot in it. */
+const sender = z.string().trim().toLowerCase().regex(/^(?:[a-z0-9._%+-]+@)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/, "address or domain").max(120);
 
 export const MeBody = z.discriminatedUnion("action", [
   /** Calendar + unread + open tasks for today, fresh from Google. Also refreshes snapshots/today. */
@@ -21,24 +25,24 @@ export const MeBody = z.discriminatedUnion("action", [
     notes: z.string().max(4000).optional(),
     visibility: z.enum(["household", "private"]).default("household"),
   }),
-  z.object({ action: z.literal("tasks.done"), id: z.string().min(1).max(128) }),
-  z.object({ action: z.literal("tasks.reopen"), id: z.string().min(1).max(128) }),
-  z.object({ action: z.literal("tasks.delete"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("tasks.done"), id }),
+  z.object({ action: z.literal("tasks.reopen"), id }),
+  z.object({ action: z.literal("tasks.delete"), id }),
   /** The stored digest for a day (default: the newest). */
   z.object({ action: z.literal("digest.get"), day: day.optional() }),
   /** Build + store + email today's digest right now. */
   z.object({ action: z.literal("digest.run") }),
   /** The household's feedback queue, screenshots as one-hour signed URLs. */
   z.object({ action: z.literal("feedback.list"), status: z.enum(["open", "triaged", "in_progress", "shipped", "wontfix", "all"]).default("open") }),
-  z.object({ action: z.literal("feedback.get"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("feedback.get"), id }),
   z.object({
     action: z.literal("feedback.triage"),
-    id: z.string().min(1).max(128),
+    id,
     status: z.enum(["open", "triaged", "in_progress", "wontfix"]),
     notes: z.string().max(2000).optional(),
   }),
   /** Open a GitHub issue for a report (adults). */
-  z.object({ action: z.literal("feedback.dispatch"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("feedback.dispatch"), id }),
   /** The household calendar for the next N days (default 7). */
   z.object({ action: z.literal("events.list"), days: z.number().int().min(1).max(60).default(7) }),
   z.object({
@@ -51,10 +55,10 @@ export const MeBody = z.discriminatedUnion("action", [
     location: z.string().max(300).optional(),
     notes: z.string().max(2000).optional(),
   }),
-  z.object({ action: z.literal("events.delete"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("events.delete"), id }),
   /** Pending suggestions this person can see. */
   z.object({ action: z.literal("suggestions.list") }),
-  z.object({ action: z.literal("suggestions.dismiss"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("suggestions.dismiss"), id }),
   /** Bills and subscriptions. Adults only; the token itself is minted from a second-factor session (mintMeToken). */
   z.object({ action: z.literal("bills.list") }),
   z.object({
@@ -66,10 +70,10 @@ export const MeBody = z.discriminatedUnion("action", [
     responsibleUid: z.string().max(128).optional(),
     notes: z.string().max(1000).optional(),
   }),
-  z.object({ action: z.literal("bills.delete"), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("bills.delete"), id }),
   /** Intake: run the approved-sender inbox scan now, or read / replace the approved list. */
   z.object({ action: z.literal("intake.scan") }),
-  z.object({ action: z.literal("intake.senders"), set: z.array(z.string().trim().min(3).max(120)).max(30).optional() }),
+  z.object({ action: z.literal("intake.senders"), set: z.array(sender).max(30).optional() }),
 ]);
 
 export type MeBody = z.infer<typeof MeBody>;

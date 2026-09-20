@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { errMeta } from "../lib/log";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import { db } from "../lib/admin";
@@ -20,7 +21,7 @@ export const scanInbox = onCall(callOpts({ secrets: GOOGLE_SECRETS, timeoutSecon
     logger.info("ok", { ...ctx, ...r });
     return r;
   } catch (err) {
-    logger.error("failed", { ...ctx, err });
+    logger.error("failed", { ...ctx, err: errMeta(err) });
     if (err instanceof HttpsError) throw err;
     throw new HttpsError("internal", "Scan failed");
   }
@@ -45,7 +46,7 @@ export const dailyIntake = onSchedule(
         await scanIntakeFor({ uid: d.id, hid: u.hid, role: "adult", timeZone: u.timeZone || DEFAULT_TIMEZONE.value(), calendarIds: [], familyCalendarIds: [], name: u.name, colour: u.colour });
       } catch (err) {
         failed++;
-        logger.error("dailyIntake: person failed", { uid: d.id, err });
+        logger.error("dailyIntake: person failed", { uid: d.id, err: errMeta(err) });
       }
     }
     logger.info("dailyIntake: done", { people, failed });
