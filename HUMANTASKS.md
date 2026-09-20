@@ -18,4 +18,5 @@ Things only Johnny can do. Tick them off in order; each phase's code assumes the
 
 ## Phase 1
 
+- [ ] **Enter the family in the wizard**, not in the repo. Names, birth dates and colours for both adults and both kids go in through the setup screens once the project is live (the repo is public, so they are never written here; the private mockups already show them).
 - [ ] Decide the weekend rule for the digest (send / skip / shorter).
