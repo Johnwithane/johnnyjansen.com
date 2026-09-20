@@ -7,7 +7,7 @@
 //   firebase functions:secrets:set GOOGLE_OAUTH_REFRESH_TOKEN   (paste it)
 //
 // The client id/secret come from a "Desktop app" OAuth client in the Google
-// Cloud console of the johnnyjansen-portal project (see HUMANTASKS.md). Scopes
+// Cloud console of the familyhub-prod project (see HUMANTASKS.md). Scopes
 // are the minimum the functions use: read calendars, read mail, send mail.
 // No deps: node's http server + fetch.
 

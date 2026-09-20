@@ -9,7 +9,7 @@ Two things share one repo and one domain:
 1. **The portfolio** at the repo root (`index.html`, `resume.html`, `PocketJams.html`, `css/`, `js/`, `static/`, `videos/`). Plain static files, no build step. Leave it alone unless the task is about the portfolio.
 2. **The personal management portal**: `portal/` (Vue 3 + Vite + Tailwind, one user, served at `/app`), `functions/` (Cloud Functions: daily digest, Google calendar + Gmail pull, the `me` endpoint), `scripts/me.mjs` (the CLI a Claude Code session uses), `firestore.rules`.
 
-Both ship as ONE Firebase Hosting site (project `johnnyjansen-portal`): `scripts/build-site.mjs` copies the root static files into `dist/` and the portal build into `dist/app/`. GitHub Pages still serves the root until DNS moves (HUMANTASKS.md); the portfolio files stay at the root so that cutover is DNS only. Anything new at the repo root that is not site content must be added to the skip lists in `build-site.mjs`.
+Both ship as ONE Firebase Hosting site (project `familyhub-prod`): `scripts/build-site.mjs` copies the root static files into `dist/` and the portal build into `dist/app/`. GitHub Pages still serves the root until DNS moves (HUMANTASKS.md); the portfolio files stay at the root so that cutover is DNS only. Anything new at the repo root that is not site content must be added to the skip lists in `build-site.mjs`.
 
 Nothing personal goes in the repo. It is public. Identity and credentials live in Firebase params and Secret Manager (`functions/src/lib/params.ts`).
 

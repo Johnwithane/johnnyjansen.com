@@ -19,7 +19,7 @@
 // response (what a script wants).
 
 const TOKEN = process.env.ME_TOKEN || "";
-const ENDPOINT = process.env.ME_ENDPOINT || "https://us-central1-johnnyjansen-portal.cloudfunctions.net/me";
+const ENDPOINT = process.env.ME_ENDPOINT || "https://us-central1-familyhub-prod.cloudfunctions.net/me";
 
 function die(msg) {
   console.error(msg);

@@ -66,8 +66,8 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Deploy rules + indexes
-        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes --project johnnyjansen-portal --non-interactive
+        run: npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes --project familyhub-prod --non-interactive
       - name: Deploy functions
-        run: npx firebase-tools@15 deploy --only functions --project johnnyjansen-portal --non-interactive --force
+        run: npx firebase-tools@15 deploy --only functions --project familyhub-prod --non-interactive --force
       - name: Deploy hosting
-        run: npx firebase-tools@15 deploy --only hosting --project johnnyjansen-portal --non-interactive
+        run: npx firebase-tools@15 deploy --only hosting --project familyhub-prod --non-interactive

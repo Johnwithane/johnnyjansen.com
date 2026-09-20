@@ -300,10 +300,15 @@ Decided 2026-09-19, later: image and document reading is Vertex AI (Gemini), the
 
 Decided 2026-09-19, later still: a setup wizard for both adults (module 4.19), founder and invited flows, driven by a one-time Gemini scan of inbox subjects and senders. Spine ships in Phase 1, the scan in Phase 2.
 
-Decided 2026-09-20: security is a standing requirement (section 9) and the app is built as a multi-tenant product from Phase 1 (section 10). Johnny's household is tenant one.
+Decided 2026-09-20: security is a standing requirement (section 9) and the app is built as a multi-tenant product from Phase 1 (section 10). Johnny's household is tenant one. MFA for adults is on (authenticator app) before Money, Taxes and the Vault.
+
+Decided 2026-09-20: **prototype in this repo, migrate later.** Johnny: no time to name it, and he wants to prototype the flow first. Agreed, on three conditions that make the later move a `git subtree split` plus a DNS change rather than a rewrite:
+1. The Firebase project id is neutral (`familyhub-prod`, never `johnnyjansen-*`), because a project id cannot be renamed and it will outlive the repo.
+2. The app is only ever `portal/`, `functions/`, `scripts/`, the rules and the workflow. The portfolio never imports from them and they never import from the portfolio. Moving the app is moving those directories with their history.
+3. The brand is in two files from Phase 1 (section 10.2), so the rename is a two-line change plus DNS.
+The migration itself is its own checklist when the name lands: new repo from the subtree, custom domain on the same Firebase project, Resend domain, Stripe, and a redirect from `johnnyjansen.com/app`.
 
 Still open:
-- Repository and project split: keep building inside johnnyjansen.com for the private beta, or start the product repo and Firebase project now (recommended now, see the question in chat).
 - Product name (needed before Resend and the domain; not before Phase 1).
 - The businesses' names and which are GST registered (Phase 3).
 - Bank sync: worth paying for later, or is CSV import enough? (Phase 2 scope.)

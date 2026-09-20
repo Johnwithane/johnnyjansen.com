@@ -22,7 +22,7 @@ Phone / laptop                     Claude Code (remote, any machine)
 
 Decisions, and why:
 
-- **Firebase, separate project (`johnnyjansen-portal`).** Same stack as bettertour and Wishbone so nothing is new to maintain, and its own project because it holds personal credentials and must never share a project with a company app.
+- **Firebase, separate project (`familyhub-prod`).** Same stack as bettertour and Wishbone so nothing is new to maintain, and its own project because it holds personal credentials and must never share a project with a company app.
 - **Everything on Firebase Hosting, one site (Johnny, 2026-09-19).** `scripts/build-site.mjs` assembles `dist/` from the static portfolio at the repo root plus the portal build at `/app`. The portfolio files stay at the repo root, not in a `site/` folder, on purpose: GitHub Pages keeps serving them unchanged until DNS moves to Firebase, so the cutover is one DNS change with nothing to coordinate. After cutover, Pages gets turned off and the files can move.
 - **One user, by claim.** Google sign-in creates accounts for anyone, so `onUserCreated` stamps `owner: true` on the OWNER_EMAIL account and deletes every other account on creation. Rules check the claim only.
 - **Google via a refresh token, not the sign-in session.** The scheduled job runs with nobody logged in, so it needs its own long-lived grant. `scripts/google-oauth.mjs` mints it once; it lives in Secret Manager.
