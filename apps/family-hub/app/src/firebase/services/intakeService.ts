@@ -19,3 +19,15 @@ export async function scanInbox(): Promise<ScanResult> {
   const fn = httpsCallable<void, ScanResult>(functions, "scanInbox");
   return (await fn()).data;
 }
+
+export interface SetupScanResult {
+  scanned: number;
+  proposed: number;
+  skipped?: "google_unconfigured";
+}
+
+/** The wizard's one-time 90-day scan (senders and subjects only). Proposals land on Review. Two runs a day. */
+export async function setupScanInbox(): Promise<SetupScanResult> {
+  const fn = httpsCallable<void, SetupScanResult>(functions, "setupScanInbox");
+  return (await fn()).data;
+}

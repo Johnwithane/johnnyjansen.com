@@ -11,3 +11,4 @@ export { googleConnectStart, googleOAuthCallback, googleDisconnect, googleCalend
 export { markFeedbackShipped } from "./feedback/markShipped";
 export { analyzeReceipt } from "./money/analyzeReceipt";
 export { scanInbox, dailyIntake } from "./intake/callables";
+export { setupScanInbox } from "./intake/setupScan";

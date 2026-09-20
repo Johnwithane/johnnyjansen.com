@@ -182,7 +182,7 @@ export interface EventDoc {
   updatedAt: Timestamp;
 }
 
-export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "contact" | "document" | "recipe" | "pantry";
+export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "account" | "contact" | "document" | "recipe" | "pantry";
 export type SuggestionSource = "gemini" | "laptop" | "rule" | "scan" | "forward";
 
 /** households/{hid}/suggestions/{id}: machines propose, people confirm. */

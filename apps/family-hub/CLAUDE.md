@@ -44,8 +44,10 @@ app/src/
   firebase/config.ts         Firebase init (persistent cache on)
   firebase/interfaces.ts     doc types (mirror of functions/src/types.ts, keep in step)
   firebase/services/         pure async functions per collection + callable wrappers
-  composables/useAuth.ts     Google sign-in + { hid, role } claims, refreshClaims()
-  views/                     Login (MFA code step), Onboarding, Setup (wizard spine), Invite, Today, Calendar (week strip, household + Google), Tasks, Review (suggestions queue), Money (envelopes, due this week, recent), Receipt (snap or type a transaction), Accounts, Bills (subscriptions audit, load ledger, creep flags), Import (bank CSV), Intake (approved senders, scan now), Digests, Household (the More hub), Feedback, Security (TOTP enrol), Legal
+  composables/useAuth.ts     Google sign-in + { hid, role, mfa } claims, refreshClaims()
+  composables/useSuggestionAppliers.ts  accept = apply through the normal service, then mark accepted; shared by Review and the wizard
+  utils/setupPlan.ts         which wizard steps show for whom (tested)
+  views/                     Login (MFA code step), Onboarding, Setup (wizard: people, Google, what we found, money starter, done), Invite, Today, Calendar (week strip, household + Google), Tasks, Review (suggestions queue), Money (envelopes, due this week, recent), Receipt (snap or type a transaction), Accounts, Bills (subscriptions audit, load ledger, creep flags), Import (bank CSV), Intake (approved senders, scan now), Digests, Household (the More hub), Feedback, Security (TOTP enrol), Legal
   router/index.ts            routes with meta.mfa go to Security until the session passed the second factor; children never reach them
   data/categories.ts         spend categories + tax categories (mirror of functions/src/money/categories.ts, keep in step)
   utils/money.ts             month math, envelope sums, shrinkImage for receipt photos (tested)
@@ -62,7 +64,7 @@ functions/src/
   lib/vertex.ts              generateJson over Vertex AI Gemini + salvageJson for truncated output (tested)
   lib/rateLimit.ts           per-household daily caps in rateLimits/ (function-only)
   money/                     categories.ts (spend + CRA tax lines, tested), analyzeReceipt (image or PDF in, proposal out, writes nothing), cadence.ts (tested), bills.ts (due this week, daily roll)
-  intake/                    prompt.ts (the closed vocabulary + toProposal, tested), mailText.ts (plain text from a Gmail payload, tested), scan.ts (approved senders → suggestions, bodies never stored), callables.ts (scanInbox + the 06:00 dailyIntake)
+  intake/                    prompt.ts (the closed vocabulary + toProposal, tested), mailText.ts (plain text from a Gmail payload, tested), scan.ts (approved senders → suggestions, bodies never stored), callables.ts (scanInbox + the 06:00 dailyIntake), setupPrompt.ts + setupScan.ts (the wizard's 90-day senders-and-subjects pass, grouped proposals, tested)
   sync/review.ts             pending-suggestion count for the digest
   lib/claims.ts, audit.ts    claim stamping; server-written audit trail
   lib/tokens.ts              random token + sha256 hash + constant-time compare

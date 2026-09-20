@@ -45,6 +45,41 @@ export async function listUnread(
   return { items, total };
 }
 
+export interface MailMeta {
+  from: string;
+  subject: string;
+  /** YYYY-MM-DD */
+  day: string;
+}
+
+/**
+ * Sender, subject and day for recent mail, metadata only: the setup scan
+ * (PLAN.md 4.19) reads what a mailbox has been receiving, never what it
+ * says. Promotions and social are skipped; they are noise for this.
+ */
+export async function listRecentMeta(gmail: gmail_v1.Gmail, days: number, max: number): Promise<MailMeta[]> {
+  const out: MailMeta[] = [];
+  let pageToken: string | undefined;
+  while (out.length < max) {
+    const res = await gmail.users.messages.list({
+      userId: "me",
+      q: `newer_than:${days}d -category:promotions -category:social -in:trash -in:spam`,
+      maxResults: Math.min(100, max - out.length),
+      pageToken,
+    });
+    const ids = res.data.messages ?? [];
+    for (const m of ids) {
+      if (!m.id) continue;
+      const full = await gmail.users.messages.get({ userId: "me", id: m.id, format: "metadata", metadataHeaders: ["From", "Subject"] });
+      const dateMs = Number(full.data.internalDate ?? 0);
+      out.push({ from: header(full.data, "From"), subject: header(full.data, "Subject") || "(no subject)", day: dateMs ? new Date(dateMs).toISOString().slice(0, 10) : "" });
+    }
+    pageToken = res.data.nextPageToken ?? undefined;
+    if (!pageToken || !ids.length) break;
+  }
+  return out;
+}
+
 function base64url(s: string): string {
   return Buffer.from(s, "utf8")
     .toString("base64")

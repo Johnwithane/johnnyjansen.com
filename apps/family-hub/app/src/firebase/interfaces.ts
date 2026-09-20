@@ -166,7 +166,7 @@ export interface HouseholdEvent {
   updatedAt: Timestamp;
 }
 
-export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "contact" | "document" | "recipe" | "pantry";
+export type SuggestionKind = "event" | "task" | "bill" | "transaction" | "account" | "contact" | "document" | "recipe" | "pantry";
 
 export interface Suggestion {
   kind: SuggestionKind;
