@@ -27,7 +27,9 @@ Same as bettertour and Wishbone, shortened:
 - Consistency over cleverness. Match the existing pattern.
 - Strict TS, no `any`. Zod at every boundary (`functions/src/me/schema.ts` is the model).
 - Mobile first, 375px. Johnny uses this on his phone.
-- Default deny in `firestore.rules`. Phase 0: the only role is `owner` (a custom claim set by `onUserCreated`). Phase 1 replaces it with household claims `{ hid, role }` (FAMILY_PLAN.md section 3). Never add a doc-lookup rule.
+- Default deny in `firestore.rules`. Phase 0: the only role is `owner` (a custom claim set by `onUserCreated`). Phase 1 replaces it with household claims `{ hid, role, mfa }` (FAMILY_PLAN.md section 3). Never add a doc-lookup rule.
+- Security is a requirement (FAMILY_PLAN.md section 9). Every document path starts with `households/{hid}/`; every rule checks the `hid` claim first; every collection has an allow, a deny and a cross-tenant deny test; Google tokens are KMS-encrypted; sensitive fields are encrypted client-side; App Check on; a security review pass before a phase ships.
+- This is a product with one tenant so far (FAMILY_PLAN.md section 10). Nothing hardcodes the Jansens, the brand lives in two files, and system mail comes from the product domain, never a personal Gmail.
 - Machines propose, people confirm. Anything AI or the laptop worker produces lands in the suggestions queue; a person accepts it through the normal service. Never write real data from an automation directly.
 - Offline: the portal reads from Firestore's persistent cache. Never `await` a Firestore write in a UI handler (the ack never comes offline); `onSnapshot` already shows it. Anything that needs the network (callables) is guarded by `navigator.onLine` and says so.
 - Firebase changes deploy before the commit that depends on them. A credential-less session writes "deploy owed" in the commit body and CI deploys on merge to `main` once `FIREBASE_DEPLOY_ENABLED` is on.

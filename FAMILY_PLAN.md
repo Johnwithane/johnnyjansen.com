@@ -4,6 +4,12 @@ The master spec for `johnnyjansen.com/app`. Started as Johnny's own back office 
 
 Design brief from Johnny (2026-09-19): invite my wife; sort our photos; manage finance; do taxes; small-business invoicing; everything a family needs; minimalist.
 
+## 0. Two things decided on 2026-09-20 that shape everything below
+
+**Security is a requirement, not a phase.** Section 9 is the security model. Every phase ships against it, and a feature that cannot meet it does not ship.
+
+**This becomes a product.** Johnny's household is the first tenant of a family manager hub other families will pay for. So the code is multi-tenant from the first commit of Phase 1, the brand is centralised for a rename, system email comes from a product domain, and the free versus paid line follows BetterTour's model (the core is free, the tools that cost money to run are paid). Section 10 is the product track.
+
 ## 1. Principles
 
 1. **Two people, one place, honest privacy.** Everything is shared by default except what is personal by nature (your own inbox, your own private tasks). Every item carries `visibility: household | private`, and the rules enforce it, not the UI.
@@ -203,6 +209,83 @@ Each phase ships fully (lint, build, tests, rules tests, offline pass, QA path, 
 | 9 | **Automations and the local worker.** Rules engine, inbox triage on the laptop, `me` coverage of every module, in-app assistant | |
 | later | Kids module, bank sync connector, light theme, Microsoft 365 for the work mailbox | Decisions for Johnny when they come up |
 
+## 9. Security model
+
+The threat model is plain: this holds a family's money, tax slips, passports, children's names and photos, and a standing grant to two Gmail accounts. A breach is not a bug; it is the end of the product. These are the rules, in the order they bite.
+
+### 9.1 Tenant isolation, by construction
+- **Every document lives under `households/{hid}/…`.** No top-level collection holds tenant data. A query that could span households cannot be written, because there is no path for it.
+- **Every rule checks the claim first.** `request.auth.token.hid == hid` on every read and write, then the role, then ownership for private items. No doc lookups in rules. Custom claims are set by one function (`acceptInvite` / `createChild`), audited, and never by the client.
+- **Private items are private in the rules, not the UI.** `visibility: "private"` items also require `ownerUid == request.auth.uid`. The private inbox snapshot and personal task list live under `users/{uid}/private/…`, readable by exactly one uid.
+- **Functions re-check the claim server-side.** A callable never trusts a `hid` in the payload; it reads it off the token. The `me` endpoint is per household and per person: each adult mints their own token, and the token record carries `{ hid, uid }`, so a leaked token reaches one person's view of one household.
+- **Rules tests are required, not aspirational.** `tests/rules/` under the emulator, one allow and one deny per rule, plus a cross-tenant deny for every collection (a member of household A reading household B). CI fails without them.
+
+### 9.2 Identity
+- **Google sign-in only, verified email required.** No password accounts (nothing to phish or stuff). `email_verified` is checked in rules and functions.
+- **Second factor for adults.** Firebase Auth multi-factor (TOTP) required before an adult can reach Money, Taxes or the Vault; enforced by a claim `mfa: true` set by a blocking function, checked in rules on those collections. Kids never see those collections, so the child role has no MFA.
+- **Invites are one-time, expiring, bound to an email.** The token is a random 32-byte value stored hashed; accepting compares hashes, checks the signed-in email matches, and burns the token. Seven-day expiry.
+- **Child accounts** are created by an adult and hold no email of their own until the adult adds one. Under-13 accounts are a legal matter for the product track (section 10.4); for this household the adults are the parents and consent is theirs.
+- **Sessions**: the app signs out after 30 days idle; the Vault re-prompts for MFA after 15 minutes.
+
+### 9.3 Secrets and tokens
+- **Google refresh tokens are encrypted at rest** with Cloud KMS (one key per environment, envelope encryption per household) before they touch Firestore. A Firestore dump does not yield working Gmail access. Decryption happens only inside the function that uses the token, and the plaintext never leaves the function.
+- **Scopes are the minimum**: calendar read, gmail read, gmail send. Nothing that modifies mail or calendars beyond sending the digest and the invite. If a feature needs a write scope later, it is a separate consent the person sees.
+- **The one-time inbox scan** reads subjects and senders only, returns candidates, stores none of the mail, and is capped at two runs per person per day.
+- **Every other secret** (ME tokens, API keys, GitHub token) is in Secret Manager, referenced by functions that declare it, and rotatable without a deploy. `ME_TOKEN` per person is revocable from the Household screen.
+- **App Check enforced** on every callable and on Firestore, with reCAPTCHA Enterprise for the web app. The BetterTour rollout order applies: ship the client init, then flip enforcement.
+
+### 9.4 Data
+- **Sensitive fields are encrypted client-side before write**: passport and ID numbers, account numbers, SIN. The key is derived per household and held in the adults' devices (WebCrypto, non-exportable) with a recovery code shown once at setup. Firestore holds ciphertext; the rules cannot leak what they cannot read. Displayed masked, revealed on tap behind MFA.
+- **Storage rules mirror Firestore**: every object path starts with `households/{hid}/`, read and write gated on the claim, size and content-type limits per path, and no public reads anywhere (thumbnails included). Signed URLs, one hour, for anything shown in email.
+- **Backups**: PITR seven days, daily exports kept fourteen weeks, delete protection on the database, Storage soft delete 30 days. The BetterTour `DISASTER_RECOVERY` runbook is ported.
+- **Export and delete are features, not tickets.** An adult can export the household (JSON plus files) and delete it. Delete is a two-step with a seven-day cooling period, then a function removes Firestore, Storage, KMS keys, Google grants (token revocation), and the members' claims.
+- **AI calls carry no more than they need.** A receipt image goes to Vertex; a fridge photo goes to Vertex; the household's name and members do not. Vertex is used with data-use settings that keep inputs out of training. The laptop worker sees the photo library because it is the family's laptop; nothing from it leaves except the index.
+
+### 9.5 Application
+- **Zod at every boundary**, including every `me` action and every AI response.
+- **Rate limits** per person on every callable that costs money or sends mail (the BetterTour `rateLimit` helper).
+- **Audit log**: `households/{hid}/audit/{id}` written server-side for sign-ins, invites, role changes, MFA changes, exports, deletes, token mints, Google connections and disconnections, and any Vault reveal. Readable by adults, written by nobody but functions.
+- **Error and usage logs** without PII (the BetterTour `errorLogs` pattern, with a scrubber for emails and numbers).
+- **Headers**: strict CSP, HSTS preload, COOP, no framing. Already in `firebase.json`; extended when the product domain lands.
+- **Dependencies**: Dependabot on, `npm audit` in CI, lockfiles committed, no post-install scripts from unknown packages.
+- **Security review before every phase ships**: the `security-review` pass on the branch, findings fixed or documented, and the phase's rules tests green.
+
+### 9.6 What we will not do
+- No password auth. No SMS as a second factor. No public Storage paths. No cross-household features (sharing between families) until there is a design for consent on both sides. No storing mail bodies. No selling or analysing tenant data.
+
+## 10. Product track: a family manager hub for others
+
+### 10.1 Multi-tenant from the first commit
+Section 9.1 already makes every household a tenant. The remaining product plumbing goes in during Phase 1 so nothing is retrofitted:
+- `households/{hid}` carries `plan` (`free` | `pro`), `createdAt`, `region`, `locale`, and a `limits` map read by functions (AI calls per day, members, storage).
+- A person can belong to more than one household in the data model (a separated parent, a grandparent), with one active household in the claim and a switcher. Not built for the Jansens; not blocked either.
+- Nothing hardcodes the Jansens. Time zone, currency, tax country and the list of tax lines are household settings. Canada ships first; the line mapping is a data file per country.
+
+### 10.2 Brand and domains
+- The product name is not settled. Two files own the brand, exactly as in BetterTour (`src/seo/site.ts` and `functions/src/lib/brand.ts`), and a test fails on any hardcoded domain. Everything derives: titles, email footers, invite links, support address.
+- **System email leaves from a product domain through Resend**, not from a personal Gmail. The digest still sends from each person's own Gmail (it is their email to themselves), but invites, receipts, verification and notifications come from `hello@<product>`. The Wishbone `emailTemplate` and `mail` libraries are ported.
+- johnnyjansen.com stays a portfolio. The app moves to the product domain when it has one; the Jansens' household is simply the first row. Until then it runs at `/app` on the portfolio domain as the private beta.
+
+### 10.3 Free and paid
+The BetterTour rule: the core is free for the whole family; what costs us money to run is Pro. Free: household, calendar, tasks, meals, vault, feedback, one adult's daily digest. Pro: AI reads (receipts, slips, documents, recipes, pantry, inbox scan), invoicing, tax package, the photo worker's cloud index, every adult's digest. Stripe Checkout and the customer portal, the BetterTour `billing/` pattern, with the paywall dormant behind an admin switch until launch. Pricing lives in Stripe, never in copy.
+
+### 10.4 Legal and trust
+- Terms and a privacy policy in `src/legal/` with a version constant and a re-accept prompt on change (BetterTour pattern). Written for PIPEDA first; GDPR readiness (export, delete, data-processing terms) is section 9.4 already.
+- **Children.** A product with child sign-ins needs verifiable parental consent for under-13s (COPPA if any US family joins) and a clear rule that a child's data is the parents' to export and delete. The child role is designed so that a child account holds the minimum: a name, a colour, chores, allowance, their own calendar view. No email, no photos of them beyond what the parents put in the family library, no analytics on children.
+- A security page for customers: what is encrypted, what is not, how to report a vulnerability, how to export and delete.
+- Status and incident process: a status page, an incident log, and the disaster recovery runbook kept current.
+
+### 10.5 Operations
+- Separate Firebase projects for dev, staging and prod, with CI promoting through them. The Jansens live on prod from day one, so staging is where risky migrations rehearse.
+- Monitoring: error logs, function failure alerts, budget alerts on Vertex and Stripe, a weekly usage digest to Johnny.
+- Support: the feedback module is the support channel for beta families; an admin console is a later phase and, like Wishbone's, is a separate app that reads through the same rules.
+
+### 10.6 What this changes in the phases
+- Phase 1 gains: KMS encryption for Google tokens, MFA for adults, App Check init, rules tests with cross-tenant denies, audit log, brand centralisation, Resend for system mail, the `plan` and `limits` fields, and the legal pages.
+- Phase 2 (Money) gains: client-side field encryption and the Vault reveal flow.
+- Every phase ends with the security review pass.
+- A "Product" phase before public beta: staging project, Stripe, status page, security page, second household in testing (a friend's family), and the rename.
+
 ## 8. Decisions and open questions
 
 Decided 2026-09-19: personal Gmail; everything on Firebase Hosting at `/app`; digest 06:30 Pacific; a `johnnyjansen` Claude Code environment carries `ME_TOKEN`.
@@ -217,6 +300,10 @@ Decided 2026-09-19, later: image and document reading is Vertex AI (Gemini), the
 
 Decided 2026-09-19, later still: a setup wizard for both adults (module 4.19), founder and invited flows, driven by a one-time Gemini scan of inbox subjects and senders. Spine ships in Phase 1, the scan in Phase 2.
 
+Decided 2026-09-20: security is a standing requirement (section 9) and the app is built as a multi-tenant product from Phase 1 (section 10). Johnny's household is tenant one.
+
 Still open:
+- Repository and project split: keep building inside johnnyjansen.com for the private beta, or start the product repo and Firebase project now (recommended now, see the question in chat).
+- Product name (needed before Resend and the domain; not before Phase 1).
 - The businesses' names and which are GST registered (Phase 3).
 - Bank sync: worth paying for later, or is CSV import enough? (Phase 2 scope.)
