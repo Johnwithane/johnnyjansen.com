@@ -13,6 +13,7 @@ export const router = createRouter({
     { path: "/tasks", name: "tasks", component: () => import("@/views/TasksView.vue") },
     { path: "/digests", name: "digests", component: () => import("@/views/DigestsView.vue") },
     { path: "/household", name: "household", component: () => import("@/views/HouseholdView.vue") },
+    { path: "/setup", name: "setup", component: () => import("@/views/SetupView.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });

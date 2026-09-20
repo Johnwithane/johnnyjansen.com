@@ -40,6 +40,7 @@ onUnmounted(() => stops.forEach((s) => s()));
 const googleBusy = ref(false);
 const calendars = ref<CalendarChoice[] | null>(null);
 const picked = ref<string[]>([]);
+const family = ref<string[]>([]);
 async function connectGoogle() {
   if (!navigator.onLine) return (note.value = "You need a connection for this.");
   googleBusy.value = true;
@@ -71,6 +72,7 @@ async function loadCalendars() {
     calendars.value = await googleCalendars();
     const chosen = profile.value?.google?.calendarIds ?? [];
     picked.value = chosen.length ? chosen : calendars.value.filter((c) => c.selected).map((c) => c.id);
+    family.value = profile.value?.google?.familyCalendarIds ?? [];
   } catch {
     note.value = "Could not list calendars.";
   } finally {
@@ -79,11 +81,16 @@ async function loadCalendars() {
 }
 function togglePick(id: string) {
   picked.value = picked.value.includes(id) ? picked.value.filter((x) => x !== id) : [...picked.value, id];
+  if (!picked.value.includes(id)) family.value = family.value.filter((x) => x !== id);
+}
+function toggleFamily(id: string) {
+  family.value = family.value.includes(id) ? family.value.filter((x) => x !== id) : [...family.value, id];
+  if (family.value.includes(id) && !picked.value.includes(id)) picked.value = [...picked.value, id];
 }
 async function saveCalendars() {
   googleBusy.value = true;
   try {
-    await setCalendars(picked.value);
+    await setCalendars(picked.value, family.value);
     note.value = "Calendars saved.";
     calendars.value = null;
   } catch {
@@ -223,8 +230,13 @@ async function copyToken() {
               <li v-for="c in calendars" :key="c.id" class="flex items-center gap-3 border-b border-line py-2.5">
                 <input :id="`cal-${c.id}`" type="checkbox" class="h-5 w-5 accent-accent" :checked="picked.includes(c.id)" @change="togglePick(c.id)" />
                 <label :for="`cal-${c.id}`" class="flex-1 text-sm">{{ c.name }}<span v-if="c.primary" class="text-muted"> · primary</span></label>
+                <label class="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" class="h-4 w-4 accent-accent" :checked="family.includes(c.id)" @change="toggleFamily(c.id)" />
+                  Family
+                </label>
               </li>
             </ul>
+            <p class="mt-2 text-xs text-muted">Ticked calendars feed your Today. Family ones also show on everyone&#39;s.</p>
             <button type="button" class="mt-3 h-11 w-full rounded-full bg-accent text-sm font-medium text-ink disabled:opacity-50" :disabled="googleBusy" @click="saveCalendars">Save</button>
           </div>
         </template>

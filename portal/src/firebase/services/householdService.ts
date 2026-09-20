@@ -1,6 +1,6 @@
 import { db, functions } from "@/firebase/config";
-import type { Household, PersonColour, UserProfile } from "@/firebase/interfaces";
-import { doc, onSnapshot } from "firebase/firestore";
+import type { Agenda, Household, PersonColour, UserProfile } from "@/firebase/interfaces";
+import { collection, doc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 
 export function subscribeHousehold(hid: string, cb: (h: Household | null) => void): () => void {
@@ -74,7 +74,17 @@ export async function googleCalendars(): Promise<CalendarChoice[]> {
   return (await fn()).data.calendars;
 }
 
-export async function setCalendars(calendarIds: string[]): Promise<void> {
-  const fn = httpsCallable<{ calendarIds: string[] }, { ok: true }>(functions, "setCalendars");
-  await fn({ calendarIds });
+export async function setCalendars(calendarIds: string[], familyCalendarIds: string[]): Promise<void> {
+  const fn = httpsCallable<{ calendarIds: string[]; familyCalendarIds: string[] }, { ok: true }>(functions, "setCalendars");
+  await fn({ calendarIds, familyCalendarIds });
+}
+
+/** Everyone's family-marked events for today. */
+export function subscribeAgenda(hid: string, cb: (items: Agenda[]) => void): () => void {
+  return onSnapshot(collection(db, "households", hid, "agenda"), (snap) => cb(snap.docs.map((d) => d.data() as Agenda)));
+}
+
+/** Mark the setup wizard finished (or not) on the person's own profile. */
+export function setSetupDone(uid: string, done: boolean): Promise<void> {
+  return updateDoc(doc(db, "users", uid), { setup: { done }, updatedAt: serverTimestamp() });
 }

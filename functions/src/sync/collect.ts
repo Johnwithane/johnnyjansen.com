@@ -12,6 +12,9 @@ export interface Person {
   hid: string;
   timeZone: string;
   calendarIds: string[];
+  familyCalendarIds: string[];
+  name: string;
+  colour: string;
 }
 
 export interface Collected {
@@ -78,10 +81,26 @@ export async function collectToday(p: Person, now: Date): Promise<Collected> {
   return { dayKey: key, timeZone: p.timeZone, events, unread, unreadTotal, tasks, sources: { google } };
 }
 
+/**
+ * Write the person's private snapshot, and their slice of the family agenda:
+ * only events from calendars they marked as family. Their private calendars
+ * never leave users/{uid}.
+ */
 export async function storeSnapshot(p: Person, c: Collected): Promise<void> {
   const doc: Omit<SnapshotDoc, "generatedAt"> & { generatedAt: FieldValue | Timestamp } = {
     ...c,
     generatedAt: FieldValue.serverTimestamp(),
   };
-  await db.collection("users").doc(p.uid).collection("snapshots").doc("today").set(doc);
+  const family = c.events.filter((e) => p.familyCalendarIds.includes(e.calendarId));
+  const batch = db.batch();
+  batch.set(db.collection("users").doc(p.uid).collection("snapshots").doc("today"), doc);
+  batch.set(db.collection("households").doc(p.hid).collection("agenda").doc(p.uid), {
+    uid: p.uid,
+    name: p.name,
+    colour: p.colour,
+    dayKey: c.dayKey,
+    events: family,
+    generatedAt: FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
 }

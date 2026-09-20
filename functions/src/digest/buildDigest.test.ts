@@ -26,8 +26,8 @@ describe("buildDigest", () => {
     const d = buildDigest({
       ...base,
       events: [
-        { id: "1", title: "Standup", start: "2026-09-19T16:30:00Z", end: "2026-09-19T17:00:00Z", allDay: false, location: "Zoom" },
-        { id: "2", title: "Kelowna", start: "2026-09-19", end: "2026-09-20", allDay: true },
+        { id: "1", calendarId: "primary", title: "Standup", start: "2026-09-19T16:30:00Z", end: "2026-09-19T17:00:00Z", allDay: false, location: "Zoom" },
+        { id: "2", calendarId: "primary", title: "Kelowna", start: "2026-09-19", end: "2026-09-20", allDay: true },
       ],
     });
     expect(d.text).toContain("- All day: Kelowna");

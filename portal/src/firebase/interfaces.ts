@@ -41,7 +41,8 @@ export interface UserProfile {
   email: string;
   timeZone?: string;
   digest?: { enabled: boolean; hour: number; minute: number };
-  google?: { connected: boolean; email?: string | null; calendarIds: string[] };
+  google?: { connected: boolean; email?: string | null; calendarIds: string[]; familyCalendarIds: string[] };
+  setup?: { done: boolean };
 }
 
 export interface Task {
@@ -60,6 +61,7 @@ export interface Task {
 
 export interface EventItem {
   id: string;
+  calendarId: string;
   title: string;
   start: string;
   end: string;
@@ -94,6 +96,15 @@ export interface Snapshot {
   unreadTotal: number;
   tasks: TaskItem[];
   sources: { google: "ok" | "unconfigured" | "error" };
+  generatedAt: Timestamp;
+}
+
+export interface Agenda {
+  uid: string;
+  name: string;
+  colour: string;
+  dayKey: string;
+  events: EventItem[];
   generatedAt: Timestamp;
 }
 

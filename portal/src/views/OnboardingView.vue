@@ -38,7 +38,7 @@ async function submit() {
       ...(birthDate.value ? { birthDate: birthDate.value } : {}),
     });
     await refreshClaims();
-    router.replace({ name: "today" });
+    router.replace({ name: "setup" });
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Could not create the household";
   } finally {

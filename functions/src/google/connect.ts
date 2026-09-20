@@ -104,7 +104,7 @@ export const googleOAuthCallback = onRequest(
         });
         tx.set(
           db.collection("users").doc(st.uid),
-          { google: { connected: true, email: grantedEmail, calendarIds: [] }, updatedAt: FieldValue.serverTimestamp() },
+          { google: { connected: true, email: grantedEmail, calendarIds: [], familyCalendarIds: [] }, updatedAt: FieldValue.serverTimestamp() },
           { merge: true },
         );
       });
@@ -135,7 +135,7 @@ export const googleDisconnect = onCall({ region: "us-central1", secrets: GOOGLE_
     }
     await db.runTransaction(async (tx) => {
       tx.delete(db.collection("users").doc(caller.uid).collection("private").doc("google"));
-      tx.set(db.collection("users").doc(caller.uid), { google: { connected: false, email: null, calendarIds: [] }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      tx.set(db.collection("users").doc(caller.uid), { google: { connected: false, email: null, calendarIds: [], familyCalendarIds: [] }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
     await writeAudit(caller.hid, { action: "google.disconnect", actorUid: caller.uid });
     logger.info("disconnected", ctx);
@@ -163,12 +163,23 @@ export const googleCalendars = onCall({ region: "us-central1", secrets: GOOGLE_S
   }
 });
 
-const SetCalendars = z.object({ calendarIds: z.array(z.string().min(1).max(300)).max(50) });
+const SetCalendars = z.object({
+  calendarIds: z.array(z.string().min(1).max(300)).max(50),
+  familyCalendarIds: z.array(z.string().min(1).max(300)).max(50).default([]),
+});
 
-/** Which of the person's calendars feed Today and the digest. Empty = all selected in Google. */
+/**
+ * Which calendars feed the person's own Today (calendarIds; empty = all
+ * selected in Google) and which of those the family may see (familyCalendarIds).
+ * Family is always a subset of mine.
+ */
 export const setCalendars = onCall({ region: "us-central1" }, async (request) => {
   const caller = requireMember(request);
   const input = SetCalendars.parse(request.data);
-  await db.collection("users").doc(caller.uid).set({ google: { calendarIds: input.calendarIds }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  const family = input.familyCalendarIds.filter((id) => input.calendarIds.length === 0 || input.calendarIds.includes(id));
+  await db
+    .collection("users")
+    .doc(caller.uid)
+    .set({ google: { calendarIds: input.calendarIds, familyCalendarIds: family }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { ok: true };
 });

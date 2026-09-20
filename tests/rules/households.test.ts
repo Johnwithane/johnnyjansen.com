@@ -82,3 +82,18 @@ describe("oauthStates", () => {
     await assertFails(adultA(env).firestore().doc(`oauthStates/def`).set({ uid: ADULT_A, hid: HID_A }));
   });
 });
+
+describe("households/{hid}/agenda", () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`households/${HID_A}/agenda/${ADULT_A}`).set({ uid: ADULT_A, name: "A", colour: "#37ff8b", events: [] });
+    });
+  });
+  it("every member reads, including a child; other households do not", async () => {
+    await assertSucceeds(childA(env).firestore().doc(`households/${HID_A}/agenda/${ADULT_A}`).get());
+    await assertFails(adultB(env).firestore().doc(`households/${HID_A}/agenda/${ADULT_A}`).get());
+  });
+  it("no client writes", async () => {
+    await assertFails(adultA(env).firestore().doc(`households/${HID_A}/agenda/${ADULT_A}`).set({ events: [] }));
+  });
+});

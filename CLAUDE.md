@@ -45,7 +45,8 @@ portal/src/
   firebase/interfaces.ts     doc types (mirror of functions/src/types.ts, keep in step)
   firebase/services/         pure async functions per collection + callable wrappers
   composables/useAuth.ts     Google sign-in + { hid, role } claims, refreshClaims()
-  views/                     Login, Onboarding (found a household), Invite (accept), Today, Tasks, Digests, Household
+  views/                     Login, Onboarding (found a household), Setup (wizard spine), Invite (accept), Today, Tasks, Digests, Household
+  utils/birthdays.ts         upcoming birthdays from member records (tested)
 functions/src/
   lib/brand.ts               BRAND_NAME, BRAND_DOMAIN, APP_BASE_URL
   lib/tenant.ts              requireSignedIn / requireMember / requireAdult (household from the TOKEN)

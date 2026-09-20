@@ -35,6 +35,7 @@ export async function listEvents(
       const allDay = !!e.start?.date;
       out.push({
         id: e.id ?? `${cal.id}:${e.start?.dateTime ?? e.start?.date}`,
+        calendarId: cal.id!,
         title: e.summary?.trim() || "(no title)",
         start: e.start?.dateTime ?? e.start?.date ?? "",
         end: e.end?.dateTime ?? e.end?.date ?? "",

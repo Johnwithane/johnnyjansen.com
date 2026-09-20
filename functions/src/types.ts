@@ -42,7 +42,8 @@ export interface UserDoc {
   email: string;
   timeZone?: string;
   digest?: { enabled: boolean; hour: number; minute: number };
-  google?: { connected: boolean; email?: string | null; calendarIds: string[] };
+  google?: { connected: boolean; email?: string | null; calendarIds: string[]; familyCalendarIds: string[] };
+  setup?: { done: boolean };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -63,12 +64,27 @@ export interface TaskDoc {
 
 export interface EventItem {
   id: string;
+  calendarId: string;
   title: string;
   start: string;
   end: string;
   allDay: boolean;
   location?: string;
   link?: string;
+}
+
+/**
+ * One person's contribution to the family agenda: their events from the
+ * calendars they marked as family. households/{hid}/agenda/{uid}. Readable
+ * by the whole household, written by the sync only.
+ */
+export interface AgendaDoc {
+  uid: string;
+  name: string;
+  colour: string;
+  dayKey: string;
+  events: EventItem[];
+  generatedAt: Timestamp;
 }
 
 export interface MailItem {
