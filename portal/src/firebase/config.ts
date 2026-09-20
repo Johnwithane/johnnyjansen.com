@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
 import {
@@ -15,6 +16,14 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+
+// App Check (FAMILY_PLAN.md 9.3). Gated on the site key so local dev and
+// preview builds run without it; enforcement on the functions is a separate
+// switch (ENFORCE_APP_CHECK) flipped only after this init is live.
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+if (siteKey) {
+  initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
+}
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const functions = getFunctions(app, "us-central1");

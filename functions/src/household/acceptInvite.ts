@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, type Timestamp } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -23,7 +24,7 @@ interface InviteDoc {
  * the truth: wrong account, expired, already used, bad link. Membership,
  * the user doc, the invite's burn and the claims change in one go.
  */
-export const acceptInvite = onCall({ region: "us-central1" }, async (request) => {
+export const acceptInvite = onCall(callOpts(), async (request) => {
   const { uid, email } = requireSignedIn(request);
   const currentHid = request.auth?.token.hid;
   const input = AcceptInvite.parse(request.data);

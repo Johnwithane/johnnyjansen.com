@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -11,7 +12,7 @@ import { hashToken, randomToken } from "../lib/tokens";
  * adult, shown once, stored as a hash at meTokens/{hash} -> { uid, hid }.
  * Minting again replaces the old one; revoking deletes it. Both audited.
  */
-export const mintMeToken = onCall({ region: "us-central1" }, async (request) => {
+export const mintMeToken = onCall(callOpts(), async (request) => {
   const caller = requireAdult(request);
   const ctx = { fn: "mintMeToken", uid: caller.uid, hid: caller.hid };
   try {
@@ -34,7 +35,7 @@ export const mintMeToken = onCall({ region: "us-central1" }, async (request) => 
   }
 });
 
-export const revokeMeToken = onCall({ region: "us-central1" }, async (request) => {
+export const revokeMeToken = onCall(callOpts(), async (request) => {
   const caller = requireAdult(request);
   const ctx = { fn: "revokeMeToken", uid: caller.uid, hid: caller.hid };
   try {

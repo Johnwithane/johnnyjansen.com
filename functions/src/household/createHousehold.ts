@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -12,7 +13,7 @@ import { CreateHousehold } from "./schema";
  * first adult, stamps the claims. A person already in a household cannot
  * found another (one active household per token, FAMILY_PLAN.md 10.1).
  */
-export const createHousehold = onCall({ region: "us-central1" }, async (request) => {
+export const createHousehold = onCall(callOpts(), async (request) => {
   const { uid, email } = requireSignedIn(request);
   if (typeof request.auth?.token.hid === "string") {
     throw new HttpsError("failed-precondition", "Already in a household");

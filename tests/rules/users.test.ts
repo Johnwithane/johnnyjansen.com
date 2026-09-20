@@ -25,6 +25,7 @@ describe("users/{uid}", () => {
   it("edits display fields only; hid and role are function-owned", async () => {
     await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ name: "J", colour: "#7fd0ff" }));
     await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ setup: { done: true } }));
+    await assertSucceeds(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ legal: { version: 1 } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ google: { connected: true } }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ hid: "hh-b" }));
     await assertFails(adultA(env).firestore().doc(`users/${ADULT_A}`).update({ role: "child" }));

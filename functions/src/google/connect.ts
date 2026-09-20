@@ -1,4 +1,5 @@
 import { onCall, onRequest, HttpsError, type Request } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { Response } from "express";
@@ -27,7 +28,7 @@ import { authUrl, oauthClient, returnUrl } from "./oauth";
 const STATE_TTL_MS = 10 * 60 * 1000;
 const projectId = () => process.env.GCLOUD_PROJECT ?? process.env.GCP_PROJECT ?? "";
 
-export const googleConnectStart = onCall({ region: "us-central1", secrets: GOOGLE_SECRETS }, async (request) => {
+export const googleConnectStart = onCall(callOpts({ secrets: GOOGLE_SECRETS }), async (request) => {
   const caller = requireMember(request);
   if (caller.role !== "adult") throw new HttpsError("permission-denied", "Adults only");
   const ctx = { fn: "googleConnectStart", uid: caller.uid };
@@ -118,7 +119,7 @@ export const googleOAuthCallback = onRequest(
   },
 );
 
-export const googleDisconnect = onCall({ region: "us-central1", secrets: GOOGLE_SECRETS }, async (request) => {
+export const googleDisconnect = onCall(callOpts({ secrets: GOOGLE_SECRETS }), async (request) => {
   const caller = requireMember(request);
   const ctx = { fn: "googleDisconnect", uid: caller.uid };
   try {
@@ -146,7 +147,7 @@ export const googleDisconnect = onCall({ region: "us-central1", secrets: GOOGLE_
   }
 });
 
-export const googleCalendars = onCall({ region: "us-central1", secrets: GOOGLE_SECRETS }, async (request) => {
+export const googleCalendars = onCall(callOpts({ secrets: GOOGLE_SECRETS }), async (request) => {
   const caller = requireMember(request);
   const clients = await googleClientsFor(caller.uid);
   if (!clients) throw new HttpsError("failed-precondition", "Google is not connected");
@@ -173,7 +174,7 @@ const SetCalendars = z.object({
  * selected in Google) and which of those the family may see (familyCalendarIds).
  * Family is always a subset of mine.
  */
-export const setCalendars = onCall({ region: "us-central1" }, async (request) => {
+export const setCalendars = onCall(callOpts(), async (request) => {
   const caller = requireMember(request);
   const input = SetCalendars.parse(request.data);
   const family = input.familyCalendarIds.filter((id) => input.calendarIds.length === 0 || input.calendarIds.includes(id));

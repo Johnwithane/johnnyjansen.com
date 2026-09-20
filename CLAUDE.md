@@ -46,11 +46,13 @@ portal/src/
   firebase/interfaces.ts     doc types (mirror of functions/src/types.ts, keep in step)
   firebase/services/         pure async functions per collection + callable wrappers
   composables/useAuth.ts     Google sign-in + { hid, role } claims, refreshClaims()
-  views/                     Login, Onboarding (found a household), Setup (wizard spine), Invite (accept), Today, Tasks, Digests, Household, Feedback
+  views/                     Login (MFA code step), Onboarding, Setup (wizard spine), Invite, Today, Tasks, Digests, Household, Feedback, Security (TOTP enrol), Legal
+  legal/                     terms.ts, privacy.ts, version.ts (bump LEGAL_VERSION to re-prompt); LegalGate.vue blocks members until accepted
   components/ReportDialog    the Report control (type, one line, screenshots, environment dump)
   utils/birthdays.ts         upcoming birthdays from member records (tested)
 functions/src/
   lib/brand.ts               BRAND_NAME, BRAND_DOMAIN, APP_BASE_URL
+  lib/callOpts.ts            shared onCall options: region + App Check per ENFORCE_APP_CHECK
   lib/tenant.ts              requireSignedIn / requireMember / requireAdult (household from the TOKEN)
   lib/claims.ts, audit.ts    claim stamping; server-written audit trail
   lib/tokens.ts              random token + sha256 hash + constant-time compare

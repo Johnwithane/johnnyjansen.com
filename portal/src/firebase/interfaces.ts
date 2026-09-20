@@ -43,6 +43,7 @@ export interface UserProfile {
   digest?: { enabled: boolean; hour: number; minute: number };
   google?: { connected: boolean; email?: string | null; calendarIds: string[]; familyCalendarIds: string[] };
   setup?: { done: boolean };
+  legal?: { version: number; acceptedAt?: Timestamp };
 }
 
 export interface Task {

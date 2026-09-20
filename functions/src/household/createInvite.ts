@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -17,7 +18,7 @@ import { CreateInvite, INVITE_TTL_MS } from "./schema";
  * Phase 1 hands the link back for the inviter to share (share sheet, text).
  * Sending it from a product domain lands with Resend (FAMILY_PLAN.md 10.2).
  */
-export const createInvite = onCall({ region: "us-central1" }, async (request) => {
+export const createInvite = onCall(callOpts(), async (request) => {
   const caller = requireAdult(request);
   const input = CreateInvite.parse(request.data);
   const ctx = { fn: "createInvite", uid: caller.uid, hid: caller.hid };

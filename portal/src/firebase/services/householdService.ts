@@ -88,3 +88,8 @@ export function subscribeAgenda(hid: string, cb: (items: Agenda[]) => void): () 
 export function setSetupDone(uid: string, done: boolean): Promise<void> {
   return updateDoc(doc(db, "users", uid), { setup: { done }, updatedAt: serverTimestamp() });
 }
+
+/** Record acceptance of the current Terms + Privacy version on the profile. */
+export function acceptLegal(uid: string, version: number): Promise<void> {
+  return updateDoc(doc(db, "users", uid), { legal: { version, acceptedAt: serverTimestamp() }, updatedAt: serverTimestamp() });
+}

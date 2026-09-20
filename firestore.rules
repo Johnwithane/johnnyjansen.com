@@ -101,7 +101,7 @@ service cloud.firestore {
       allow create, delete: if false;
       allow update: if signedIn() && uid() == u
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['name', 'colour', 'digest', 'timeZone', 'setup', 'updatedAt']);
+             .hasOnly(['name', 'colour', 'digest', 'timeZone', 'setup', 'legal', 'updatedAt']);
 
       // Google grant (KMS-encrypted), me token hash: functions only.
       match /private/{doc} {

@@ -1,5 +1,14 @@
 import { computed, ref } from "vue";
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
+import {
+  getMultiFactorResolver,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  TotpMultiFactorGenerator,
+  type MultiFactorError,
+  type MultiFactorResolver,
+  type User,
+} from "firebase/auth";
 import { auth, googleProvider } from "@/firebase/config";
 import type { Role } from "@/firebase/interfaces";
 
@@ -20,6 +29,8 @@ const claims = ref<Claims>({ hid: null, role: null, mfa: false });
 const ready = ref(false);
 const error = ref<string | null>(null);
 const busy = ref(false);
+// Set when Google sign-in succeeded but the account needs a second factor.
+const mfaResolver = ref<MultiFactorResolver | null>(null);
 let started = false;
 
 async function readClaims(u: User, force: boolean): Promise<Claims> {
@@ -53,7 +64,30 @@ export function useAuth() {
       const cred = await signInWithPopup(auth, googleProvider);
       claims.value = await readClaims(cred.user, true);
     } catch (e) {
-      error.value = e instanceof Error ? e.message : "Sign in failed";
+      if ((e as { code?: string }).code === "auth/multi-factor-auth-required") {
+        mfaResolver.value = getMultiFactorResolver(auth, e as MultiFactorError);
+      } else {
+        error.value = e instanceof Error ? e.message : "Sign in failed";
+      }
+    } finally {
+      busy.value = false;
+    }
+  }
+
+  /** Finish a sign-in that asked for the authenticator code. */
+  async function completeMfa(code: string) {
+    const r = mfaResolver.value;
+    if (!r) return;
+    error.value = null;
+    busy.value = true;
+    try {
+      const factor = r.hints.find((h) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID) ?? r.hints[0];
+      const assertion = TotpMultiFactorGenerator.assertionForSignIn(factor.uid, code.trim());
+      const cred = await r.resolveSignIn(assertion);
+      claims.value = await readClaims(cred.user, true);
+      mfaResolver.value = null;
+    } catch {
+      error.value = "That code did not match";
     } finally {
       busy.value = false;
     }
@@ -81,7 +115,9 @@ export function useAuth() {
     ready: computed(() => ready.value),
     error: computed(() => error.value),
     busy: computed(() => busy.value),
+    needsMfa: computed(() => !!mfaResolver.value),
     signIn,
+    completeMfa,
     refreshClaims,
     logOut,
   };

@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { callOpts } from "../lib/callOpts";
 import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../lib/admin";
@@ -11,7 +12,7 @@ import { AddChild } from "./schema";
  * colour. Sign-in for a child comes later and links an account to this
  * record; nothing else about the child is stored (FAMILY_PLAN.md 10.4).
  */
-export const addChild = onCall({ region: "us-central1" }, async (request) => {
+export const addChild = onCall(callOpts(), async (request) => {
   const caller = requireAdult(request);
   const input = AddChild.parse(request.data);
   const ctx = { fn: "addChild", uid: caller.uid, hid: caller.hid };
