@@ -77,18 +77,6 @@
                 // 'https://www.youtube.com/embed/85qgSYOsGLQ'
             ]
         },
-        wishbone: {
-            logo: './static/logos/logo-wishbone.png',
-            title: 'Wishbone Site Furnishings',
-            description: 'Developed an integrated campaign series that connected print advertising with digital video content. Print ads in Landscape Architect Magazine featured QR codes linking to video profiles celebrating landscape architects, with Wishbone products showcased throughout their featured projects.',
-            type: 'series',
-            videos: [
-                'https://www.youtube.com/embed/oopMUokWKD8',
-                // 'https://www.youtube.com/embed/Z9i4g6y0b5E',
-                'https://www.youtube.com/embed/DKAlOmkSlSE',
-                'https://www.youtube.com/embed/Z3BdwuZTOJc'
-            ]
-        },
         brandvideos: {
             logo: './static/logos/logo-vanaqua.png',
             title: 'Brand Videos & Trailers',
