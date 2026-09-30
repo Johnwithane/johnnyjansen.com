@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /lab/admin
+
+Sitemap: https://johnnyjansen.com/sitemap.xml

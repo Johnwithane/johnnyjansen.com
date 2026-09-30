@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function unlocked(slug) {
+      return signedIn() && ('labs' in request.auth.token) && (slug in request.auth.token.labs);
+    }
+    function isPublicLab(slug) {
+      return firestore.exists(/databases/(default)/documents/labMeta/$(slug))
+        && firestore.get(/databases/(default)/documents/labMeta/$(slug)).data.public == true;
+    }
+
+    // Files a prototype stores. 10 MB, images and common documents only.
+    match /labs/{slug}/{path=**} {
+      allow read: if isAdmin() || unlocked(slug) || isPublicLab(slug);
+      allow write: if (isAdmin() || unlocked(slug) || isPublicLab(slug))
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('(image/.*|application/pdf|audio/.*|application/json|text/.*)');
+      allow delete: if isAdmin() || unlocked(slug);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

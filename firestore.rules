@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    // A visitor who entered the password carries the slug in a `labs` claim.
+    function unlocked(slug) {
+      return signedIn() && ('labs' in request.auth.token) && (slug in request.auth.token.labs);
+    }
+    // Public prototypes are declared by the admin in labMeta so rules can see it.
+    function isPublicLab(slug) {
+      return exists(/databases/$(database)/documents/labMeta/$(slug))
+        && get(/databases/$(database)/documents/labMeta/$(slug)).data.public == true;
+    }
+    function canOpen(slug) { return isAdmin() || unlocked(slug) || isPublicLab(slug); }
+
+    // Password hashes. Functions only.
+    match /labAccess/{slug} {
+      allow read, write: if false;
+    }
+
+    // Which prototypes are public. World readable, admin written.
+    match /labMeta/{slug} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['public', 'name', 'updatedAt'])
+        && request.resource.data.public is bool;
+      allow delete: if isAdmin();
+    }
+
+    // Feedback filed from inside a prototype. Anyone who can open it can file;
+    // only the admin reads. Nobody edits a report after the fact.
+    match /labs/{slug}/feedback/{id} {
+      allow read: if isAdmin();
+      allow create: if canOpen(slug)
+        && request.resource.data.keys().hasOnly(['kind', 'text', 'path', 'uid', 'createdAt'])
+        && request.resource.data.kind in ['idea', 'bug', 'question']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // A prototype's own data. Open to whoever can open the prototype.
+    match /labs/{slug}/data/{document=**} {
+      allow read, write: if canOpen(slug);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
